@@ -192,6 +192,23 @@ app.post('/api/usuarios', authMiddleware, async (req, res) => {
   }
 });
 
+app.put('/api/config', authMiddleware, async (req, res) => {
+  try {
+    const { nome, senha } = req.body;
+    if (senha) {
+      const senhaHash = await bcrypt.hash(senha, 10);
+      await pool.query('UPDATE usuarios SET nome=$1, senha=$2 WHERE id=$3', [nome, senhaHash, req.usuario.id]);
+    } else {
+      await pool.query('UPDATE usuarios SET nome=$1 WHERE id=$2', [nome, req.usuario.id]);
+    }
+    const result = await pool.query('SELECT id, nome, usuario FROM usuarios WHERE id=$1', [req.usuario.id]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar config:', err);
+    res.status(500).json({ erro: 'Erro ao salvar configurações' });
+  }
+});
+
 app.get('/api/setup', async (req, res) => {
   try {
     const fs = require('fs');

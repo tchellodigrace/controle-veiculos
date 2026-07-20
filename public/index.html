@@ -432,6 +432,18 @@
   .filtros-relatorio .campo{ flex:1; min-width:160px; }
   .filtros-relatorio .campo label{ display:block; font-size:12px; color:var(--cinza-texto); margin-bottom:4px; font-weight:600; }
   .filtros-relatorio .campo input{ width:100%; padding:8px 10px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; }
+  .campo-grupo input{ width:100%; padding:8px 10px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; box-sizing:border-box; }
+  .campo-grupo label{ display:block; font-size:12px; color:var(--cinza-texto); margin-bottom:4px; font-weight:600; }
+  .usuario-lista{ display:flex; flex-direction:column; gap:6px; }
+  .usuario-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:8px 12px; background:var(--cinza-claro); border-radius:6px;
+    font-size:13px;
+  }
+  .usuario-item small{ color:#8b93a1; font-size:11px; }
+  .usuario-item em{ font-size:11px; color:var(--verde-escuro); }
+  .usuario-status{ font-size:10px; background:#e0e3e7; padding:2px 8px; border-radius:10px; }
+  .badge-admin{ background:var(--verde-escuro); color:#fff; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
     aside{ display:none; }
@@ -668,8 +680,40 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalConfig">
+  <div class="modal-content" style="max-width:500px">
+    <div class="modal-header">
+      <h2>⚙️ Configurações</h2>
+      <button class="modal-close" onclick="fecharConfig()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="formConfig" onsubmit="salvarConfig(event)">
+        <div class="campo-grupo">
+          <label>Meu Nome</label>
+          <input type="text" id="configNome" required>
+        </div>
+        <div class="campo-grupo" style="margin-top:10px">
+          <label>Nova Senha (deixe em branco para manter)</label>
+          <input type="password" id="configSenha" placeholder="Nova senha">
+        </div>
+        <div class="campo-grupo" style="margin-top:10px">
+          <label>Confirmar Nova Senha</label>
+          <input type="password" id="configSenha2" placeholder="Confirmar senha">
+        </div>
+        <div class="acoes-form" style="margin-top:16px">
+          <button type="submit" class="btn btn-primario">Salvar</button>
+        </div>
+      </form>
+      <hr style="margin:20px 0">
+      <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 8px">Gerenciar Usuários</h3>
+      <div id="listaUsuarios" class="usuario-lista"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
+let usuarioLogado = null;
 
 function getToken() { return localStorage.getItem('token'); }
 
@@ -687,6 +731,7 @@ async function verificarAuth() {
     const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
     if (!res.ok) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); window.location.href = 'login.html'; return false; }
     const data = await res.json();
+    usuarioLogado = data.usuario;
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     if (usuario.nome) { document.getElementById('sidebarUsuario').textContent = usuario.nome; }
     return true;
@@ -889,7 +934,8 @@ document.getElementById("sair").addEventListener("click", ()=>{
 });
 
 document.getElementById("navRelatorios").addEventListener("click", abrirRelatorios);
-["navCadastros","navConfig","navSobre"].forEach(id=>{
+document.getElementById("navConfig").addEventListener("click", abrirConfig);
+["navCadastros","navSobre"].forEach(id=>{
   document.getElementById(id).addEventListener("click", ()=> {
     alert("Este módulo será disponibilizado em uma próxima versão do sistema.");
   });
@@ -905,6 +951,51 @@ function abrirRelatorios(){
 }
 function fecharRelatorios(){
   document.getElementById("modalRelatorios").classList.remove("mostrar");
+}
+function abrirConfig(){
+  document.getElementById("configNome").value = usuarioLogado?.nome || "";
+  document.getElementById("configSenha").value = "";
+  document.getElementById("configSenha2").value = "";
+  carregarUsuarios();
+  document.getElementById("modalConfig").classList.add("mostrar");
+}
+function fecharConfig(){
+  document.getElementById("modalConfig").classList.remove("mostrar");
+}
+async function salvarConfig(e){
+  e.preventDefault();
+  const nome = document.getElementById("configNome").value.trim();
+  const senha = document.getElementById("configSenha").value;
+  const senha2 = document.getElementById("configSenha2").value;
+  if(senha && senha !== senha2){ alert("Senhas não conferem."); return; }
+  const body = { nome };
+  if(senha) body.senha = senha;
+  try {
+    const res = await fetch(API + '/api/config', {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify(body)
+    });
+    if(!res.ok){ const e = await res.json(); alert(e.erro || "Erro ao salvar"); return; }
+    const data = await res.json();
+    usuarioLogado = data;
+    localStorage.setItem("usuarioLogado", JSON.stringify(data));
+    document.getElementById("nomeUsuario").textContent = data.nome;
+    alert("Configurações salvas!");
+    fecharConfig();
+  } catch { alert("Erro ao salvar"); }
+}
+async function carregarUsuarios(){
+  try {
+    const res = await fetch(API + '/api/usuarios', { headers: getHeaders() });
+    if(!res.ok) return;
+    const usuarios = await res.json();
+    const div = document.getElementById("listaUsuarios");
+    div.innerHTML = usuarios.filter(u => !u.desativado).map(u => `
+      <div class="usuario-item">
+        <span>${u.nome} <small>(${u.email})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
+        <span class="usuario-status ${u.admin ? 'badge-admin' : ''}">${u.admin ? 'Admin' : 'Operador'}</span>
+      </div>
+    `).join("");
+  } catch {}
 }
 async function carregarRelatorio(){
   const dataInicio = document.getElementById("filtroDataInicio").value;
