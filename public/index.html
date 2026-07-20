@@ -642,7 +642,8 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Nome Completo</label>
-              <input id="vNome" placeholder="Nome do visitante">
+              <input id="vNome" list="listaVisitantes" placeholder="Nome do visitante" autocomplete="off">
+              <datalist id="listaVisitantes"></datalist>
             </div>
             <div class="campo">
               <label>CPF</label>
@@ -890,7 +891,8 @@ function limparCampos(){
 async function marcarSaida(id){
   try {
     const res = await fetch(API + '/api/registros/' + id + '/saida', {
-      method: 'PUT', headers: getHeaders()
+      method: 'PUT', headers: getHeaders(),
+      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR') })
     });
     if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao marcar saída'); return; }
     atualizar();
@@ -1122,10 +1124,14 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   if (!await verificarAuth()) return;
   carregarDatalist();
   carregarDatalistEmpresas();
+  carregarDatalistVisitantes();
   document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
   document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
   document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
   document.getElementById("cnh").addEventListener("blur", autoPreencherCnh);
+  document.getElementById("vNome").addEventListener("blur", autoPreencherVisitanteNome);
+  document.getElementById("vCpf").addEventListener("blur", autoPreencherVisitanteCpf);
+  document.getElementById("vEmpresa").addEventListener("blur", autoPreencherVisitanteEmpresa);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
   atualizarRelogio();
@@ -1192,6 +1198,51 @@ async function autoPreencher(tipo, valor){
     if(row.modelo) document.getElementById("modelo").value = row.modelo;
     if(row.empresa) document.getElementById("empresa").value = row.empresa;
     if(row.cnh) document.getElementById("cnh").value = row.cnh;
+  } catch {}
+}
+
+async function carregarDatalistVisitantes(){
+  try {
+    const res = await fetch(API + '/api/visitantes-lista', { headers: getHeaders() });
+    if(!res.ok) return;
+    const lista = await res.json();
+    const dl = document.getElementById("listaVisitantes");
+    dl.innerHTML = lista.map(v => `<option value="${v.nome}" data-cpf="${v.cpf}" data-empresa="${v.empresa}" data-setor="${v.setor_visitado}">`).join("");
+  } catch {}
+}
+function autoPreencherVisitanteNome(){
+  const nome = document.getElementById("vNome").value.trim().toUpperCase();
+  if(!nome) return;
+  const opt = document.querySelector(`#listaVisitantes option[value="${nome.replace(/"/g,'\\"')}"]`);
+  if(opt){
+    if(opt.dataset.cpf) document.getElementById("vCpf").value = opt.dataset.cpf;
+    if(opt.dataset.empresa) document.getElementById("vEmpresa").value = opt.dataset.empresa;
+    if(opt.dataset.setor) document.getElementById("vSetor").value = opt.dataset.setor;
+  } else {
+    autoPreencherVisitante("nome", nome);
+  }
+}
+function autoPreencherVisitanteCpf(){
+  const cpf = document.getElementById("vCpf").value.trim();
+  if(!cpf) return;
+  autoPreencherVisitante("cpf", cpf);
+}
+function autoPreencherVisitanteEmpresa(){
+  const empresa = document.getElementById("vEmpresa").value.trim().toUpperCase();
+  if(!empresa) return;
+  autoPreencherVisitante("empresa", empresa);
+}
+async function autoPreencherVisitante(tipo, valor){
+  try {
+    const res = await fetch(API + `/api/auto-preenchimento-visitante?${tipo}=${encodeURIComponent(valor)}`, { headers: getHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!rows || rows.length === 0) return;
+    const row = rows[0];
+    if(row.nome) document.getElementById("vNome").value = row.nome;
+    if(row.cpf) document.getElementById("vCpf").value = row.cpf;
+    if(row.empresa) document.getElementById("vEmpresa").value = row.empresa;
+    if(row.setor_visitado) document.getElementById("vSetor").value = row.setor_visitado;
   } catch {}
 }
 
@@ -1267,7 +1318,10 @@ async function atualizarVisitantes(){
 async function saidaVisitante(id){
   if(!confirm("Registrar saída deste visitante?")) return;
   try {
-    const res = await fetch(API + '/api/visitantes/' + id + '/saida', { method: 'PUT', headers: getHeaders() });
+    const res = await fetch(API + '/api/visitantes/' + id + '/saida', {
+      method: 'PUT', headers: getHeaders(),
+      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR') })
+    });
     if(!res.ok){ alert("Erro ao registrar saída"); return; }
     atualizarVisitantes();
   } catch { alert("Erro ao registrar saída"); }

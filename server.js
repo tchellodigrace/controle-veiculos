@@ -107,7 +107,7 @@ app.post('/api/registros', authMiddleware, async (req, res) => {
 
 app.put('/api/registros/:id/saida', authMiddleware, async (req, res) => {
   try {
-    const hora = new Date().toLocaleTimeString('pt-BR');
+    const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
     const result = await pool.query(
       'UPDATE registros SET saida = $1 WHERE id = $2 AND saida = $3 RETURNING *',
       [hora, req.params.id, '']
@@ -179,6 +179,39 @@ app.get('/api/empresas-lista', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Erro ao listar empresas:', err);
     res.status(500).json({ erro: 'Erro ao listar empresas' });
+  }
+});
+
+app.get('/api/visitantes-lista', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT nome, cpf, empresa, setor_visitado FROM visitantes
+       WHERE nome != '' ORDER BY nome ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar visitantes:', err);
+    res.status(500).json({ erro: 'Erro ao listar visitantes' });
+  }
+});
+
+app.get('/api/auto-preenchimento-visitante', authMiddleware, async (req, res) => {
+  try {
+    const { nome, cpf, empresa } = req.query;
+    const params = [];
+    const conds = [];
+    if (nome) { params.push(`%${nome}%`); conds.push(`nome ILIKE $${params.length}`); }
+    if (cpf) { params.push(`%${cpf}%`); conds.push(`cpf ILIKE $${params.length}`); }
+    if (empresa) { params.push(`%${empresa}%`); conds.push(`empresa ILIKE $${params.length}`); }
+    if (conds.length === 0) return res.json(null);
+    const sql = `SELECT DISTINCT ON (COALESCE(NULLIF(nome,''),cpf)) nome, cpf, empresa, setor_visitado
+                 FROM visitantes WHERE (${conds.join(' OR ')}) AND nome != ''
+                 ORDER BY COALESCE(NULLIF(nome,''),cpf), id DESC`;
+    const result = await pool.query(sql, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro no auto-preenchimento visitante:', err);
+    res.status(500).json({ erro: 'Erro ao buscar dados' });
   }
 });
 
@@ -279,7 +312,7 @@ app.post('/api/visitantes', authMiddleware, async (req, res) => {
 
 app.put('/api/visitantes/:id/saida', authMiddleware, async (req, res) => {
   try {
-    const hora = new Date().toLocaleTimeString('pt-BR');
+    const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
     const result = await pool.query(
       'UPDATE visitantes SET saida = $1 WHERE id = $2 AND saida = $3 RETURNING *',
       [hora, req.params.id, '']
