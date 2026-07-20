@@ -1191,6 +1191,7 @@ function mostrarVisitantes(){
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   localStorage.setItem("activeView", "visitantes");
+  document.getElementById("vNome").focus();
   atualizarVisitantes();
 }
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
