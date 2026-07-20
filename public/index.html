@@ -771,9 +771,19 @@
           <button type="submit" class="btn btn-primario">Salvar</button>
         </div>
       </form>
-      <hr style="margin:20px 0">
-      <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 8px">Gerenciar Usuários</h3>
-      <div id="listaUsuarios" class="usuario-lista"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCadastros">
+  <div class="modal-content" style="max-width:550px">
+    <div class="modal-header">
+      <h2>📁 Cadastros</h2>
+      <button class="modal-close" onclick="fecharCadastros()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Usuários do Sistema</h3>
+      <div id="listaUsuarios" class="usuario-lista" style="margin-bottom:14px"></div>
     </div>
   </div>
 </div>
@@ -1003,7 +1013,8 @@ document.getElementById("sair").addEventListener("click", ()=>{
 
 document.getElementById("navRelatorios").addEventListener("click", abrirRelatorios);
 document.getElementById("navConfig").addEventListener("click", abrirConfig);
-["navCadastros","navSobre"].forEach(id=>{
+document.getElementById("navCadastros").addEventListener("click", abrirCadastros);
+["navSobre"].forEach(id=>{
   document.getElementById(id).addEventListener("click", ()=> {
     alert("Este módulo será disponibilizado em uma próxima versão do sistema.");
   });
@@ -1024,11 +1035,17 @@ function abrirConfig(){
   document.getElementById("configNome").value = usuarioLogado?.nome || "";
   document.getElementById("configSenha").value = "";
   document.getElementById("configSenha2").value = "";
-  carregarUsuarios();
   document.getElementById("modalConfig").classList.add("mostrar");
 }
 function fecharConfig(){
   document.getElementById("modalConfig").classList.remove("mostrar");
+}
+function abrirCadastros(){
+  carregarUsuarios();
+  document.getElementById("modalCadastros").classList.add("mostrar");
+}
+function fecharCadastros(){
+  document.getElementById("modalCadastros").classList.remove("mostrar");
 }
 async function salvarConfig(e){
   e.preventDefault();
