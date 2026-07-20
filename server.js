@@ -143,7 +143,7 @@ app.get('/api/auto-preenchimento', authMiddleware, async (req, res) => {
     if (motorista) { params.push(`%${motorista}%`); conds.push(`motorista ILIKE $${params.length}`); }
     if (placa) { params.push(`%${placa}%`); conds.push(`placa ILIKE $${params.length}`); }
     if (empresa) { params.push(`%${empresa}%`); conds.push(`empresa ILIKE $${params.length}`); }
-    if (cnh) { params.push(`%${cnh}%`); conds.push(`cnh ILIKE $${params.length}`); }
+    if (cnh) { const digits = cnh.replace(/[^0-9]/g, ''); if(digits) { params.push(`%${digits}%`); conds.push(`regexp_replace(cnh, '[^0-9]', '', 'g') ILIKE $${params.length}`); } }
     if (conds.length === 0) return res.json(null);
     const sql = `SELECT DISTINCT ON (COALESCE(NULLIF(motorista,''),placa)) motorista, placa, modelo, empresa, cnh, finalidade, entrada
                  FROM registros WHERE (${conds.join(' OR ')}) AND motorista != ''
@@ -201,7 +201,7 @@ app.get('/api/auto-preenchimento-visitante', authMiddleware, async (req, res) =>
     const params = [];
     const conds = [];
     if (nome) { params.push(`%${nome}%`); conds.push(`nome ILIKE $${params.length}`); }
-    if (cpf) { params.push(`%${cpf}%`); conds.push(`cpf ILIKE $${params.length}`); }
+    if (cpf) { const digits = cpf.replace(/[^0-9]/g, ''); if(digits) { params.push(`%${digits}%`); conds.push(`regexp_replace(cpf, '[^0-9]', '', 'g') ILIKE $${params.length}`); } }
     if (empresa) { params.push(`%${empresa}%`); conds.push(`empresa ILIKE $${params.length}`); }
     if (conds.length === 0) return res.json(null);
     const sql = `SELECT DISTINCT ON (COALESCE(NULLIF(nome,''),cpf)) nome, cpf, empresa, setor_visitado
