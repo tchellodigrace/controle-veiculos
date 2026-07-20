@@ -549,7 +549,8 @@
             </div>
             <div class="campo">
               <label>Empresa</label>
-              <input id="empresa" placeholder="Informe a empresa">
+              <input id="empresa" list="listaEmpresas" placeholder="Informe a empresa">
+            <datalist id="listaEmpresas"></datalist>
             </div>
             <div class="campo">
               <label>Motorista</label>
@@ -1120,9 +1121,11 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 (async function init(){
   if (!await verificarAuth()) return;
   carregarDatalist();
+  carregarDatalistEmpresas();
   document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
   document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
   document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
+  document.getElementById("cnh").addEventListener("blur", autoPreencherCnh);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
   atualizarRelogio();
@@ -1141,27 +1144,41 @@ async function carregarDatalist(){
     dl.innerHTML = lista.map(m => `<option value="${m.motorista}" data-placa="${m.placa}" data-empresa="${m.empresa}" data-cnh="${m.cnh}">`).join("");
   } catch {}
 }
+async function carregarDatalistEmpresas(){
+  try {
+    const res = await fetch(API + '/api/empresas-lista', { headers: getHeaders() });
+    if(!res.ok) return;
+    const lista = await res.json();
+    const dl = document.getElementById("listaEmpresas");
+    dl.innerHTML = lista.map(e => `<option value="${e.empresa}">`).join("");
+  } catch {}
+}
 function autoPreencherMotorista(){
-  const nome = document.getElementById("motorista").value.trim();
+  const nome = document.getElementById("motorista").value.trim().toUpperCase();
   if(!nome) return;
   const opt = document.querySelector(`#listaMotoristas option[value="${nome.replace(/"/g,'\\"')}"]`);
   if(opt){
-    document.getElementById("placa").value = opt.dataset.placa || "";
-    document.getElementById("empresa").value = opt.dataset.empresa || "";
-    document.getElementById("cnh").value = opt.dataset.cnh || "";
+    if(opt.dataset.placa) document.getElementById("placa").value = opt.dataset.placa;
+    if(opt.dataset.empresa) document.getElementById("empresa").value = opt.dataset.empresa;
+    if(opt.dataset.cnh) document.getElementById("cnh").value = opt.dataset.cnh;
   } else {
     autoPreencher("motorista", nome);
   }
 }
 function autoPreencherPlaca(){
-  const placa = document.getElementById("placa").value.trim();
+  const placa = document.getElementById("placa").value.trim().toUpperCase();
   if(!placa) return;
   autoPreencher("placa", placa);
 }
 function autoPreencherEmpresa(){
-  const empresa = document.getElementById("empresa").value.trim();
+  const empresa = document.getElementById("empresa").value.trim().toUpperCase();
   if(!empresa) return;
   autoPreencher("empresa", empresa);
+}
+function autoPreencherCnh(){
+  const cnh = document.getElementById("cnh").value.trim();
+  if(!cnh) return;
+  autoPreencher("cnh", cnh);
 }
 async function autoPreencher(tipo, valor){
   try {
