@@ -135,13 +135,35 @@ app.delete('/api/registros/:id', authMiddleware, async (req, res) => {
   }
 });
 
-app.get('/api/motoristas', authMiddleware, async (req, res) => {
+app.get('/api/auto-preenchimento', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM motoristas ORDER BY motorista ASC');
+    const { motorista, placa } = req.query;
+    const params = [];
+    const conds = [];
+    if (motorista) { params.push(`%${motorista}%`); conds.push(`motorista ILIKE $${params.length}`); }
+    if (placa) { params.push(`%${placa}%`); conds.push(`placa ILIKE $${params.length}`); }
+    if (conds.length === 0) return res.json(null);
+    const sql = `SELECT DISTINCT ON (COALESCE(NULLIF(motorista,''),placa)) motorista, placa, modelo, empresa, cnh, finalidade, entrada
+                 FROM registros WHERE ${conds.join(' OR ')} AND motorista != ''
+                 ORDER BY COALESCE(NULLIF(motorista,''),placa), id DESC`;
+    const result = await pool.query(sql, params);
     res.json(result.rows);
   } catch (err) {
-    console.error('Erro ao buscar motoristas:', err);
-    res.status(500).json({ erro: 'Erro ao buscar motoristas' });
+    console.error('Erro no auto-preenchimento:', err);
+    res.status(500).json({ erro: 'Erro ao buscar dados' });
+  }
+});
+
+app.get('/api/motoristas-lista', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT motorista, placa, empresa, cnh FROM registros
+       WHERE motorista != '' ORDER BY motorista ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar motoristas:', err);
+    res.status(500).json({ erro: 'Erro ao listar motoristas' });
   }
 });
 

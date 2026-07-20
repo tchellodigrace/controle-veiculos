@@ -1054,12 +1054,53 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 
 (async function init(){
   if (!await verificarAuth()) return;
+  carregarDatalist();
+  document.getElementById("motorista").addEventListener("change", autoPreencherMotorista);
+  document.getElementById("placa").addEventListener("change", autoPreencherPlaca);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
   atualizar();
   setInterval(atualizar, 30000);
 })();
+
+async function carregarDatalist(){
+  try {
+    const res = await fetch(API + '/api/motoristas-lista', { headers: getHeaders() });
+    if(!res.ok) return;
+    const lista = await res.json();
+    const dl = document.getElementById("listaMotoristas");
+    dl.innerHTML = lista.map(m => `<option value="${m.motorista}" data-placa="${m.placa}" data-empresa="${m.empresa}" data-cnh="${m.cnh}">`).join("");
+  } catch {}
+}
+function autoPreencherMotorista(){
+  const nome = document.getElementById("motorista").value.trim();
+  if(!nome) return;
+  document.getElementById("empresa").value = "";
+  document.getElementById("placa").value = "";
+  document.getElementById("cnh").value = "";
+  document.getElementById("modelo").value = "";
+  autoPreencher("motorista", nome);
+}
+function autoPreencherPlaca(){
+  const placa = document.getElementById("placa").value.trim();
+  if(!placa) return;
+  autoPreencher("placa", placa);
+}
+async function autoPreencher(tipo, valor){
+  try {
+    const res = await fetch(API + `/api/auto-preenchimento?${tipo}=${encodeURIComponent(valor)}`, { headers: getHeaders() });
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!rows || rows.length === 0) return;
+    const row = rows[0];
+    if(row.motorista) document.getElementById("motorista").value = row.motorista;
+    if(row.placa) document.getElementById("placa").value = row.placa;
+    if(row.modelo) document.getElementById("modelo").value = row.modelo;
+    if(row.empresa) document.getElementById("empresa").value = row.empresa;
+    if(row.cnh) document.getElementById("cnh").value = row.cnh;
+  } catch {}
+}
 </script>
 </body>
 </html>
