@@ -326,6 +326,7 @@
   .btn-saida{ background:var(--verde-primario); }
   .btn-saida:hover{ background:#166b3d; }
   .btn-saida:disabled{ background:#b9d9c4; cursor:not-allowed; }
+  .badge-ativo{ font-size:10px; background:#ffc107; color:#333; padding:2px 8px; border-radius:10px; font-weight:600; display:inline-block; }
   .btn-excluir{ background:var(--vermelho); }
   .btn-excluir:hover{ background:#b93636; }
   .badge-saida{
@@ -469,9 +470,13 @@
     </div>
   </header>
   <aside>
-    <div class="nav-item active">
+    <div class="nav-item active" id="navVeiculos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><path d="M14 2h6v6M10 14 20 4"/></svg>
-      Lançamentos
+      Veículos
+    </div>
+    <div class="nav-item" id="navVisitantes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Visitantes
     </div>
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
@@ -506,129 +511,189 @@
     </div>
   </aside>
   <main>
-    <div class="painel-topo">
-      <div class="card form-card">
-        <h3>NOVO REGISTRO</h3>
-        <div class="grid-inputs">
-          <div class="campo">
-            <label>Placa do Veículo</label>
-            <input id="placa" placeholder="Ex.: ABC1D23">
+    <div id="viewVeiculos">
+      <div class="painel-topo">
+        <div class="card form-card">
+          <h3>NOVO REGISTRO</h3>
+          <div class="grid-inputs">
+            <div class="campo">
+              <label>Placa do Veículo</label>
+              <input id="placa" placeholder="Ex.: ABC1D23">
+            </div>
+            <div class="campo">
+              <label>Modelo do Veículo</label>
+              <select id="modelo">
+                <option value="">Selecione</option>
+                <option>1 - Utilitário</option>
+                <option>2 - Toko</option>
+                <option>3 - Guindaste</option>
+                <option>4 - Munk</option>
+                <option>5 - P. Reta</option>
+                <option>6 - P. Baixa</option>
+                <option>7 - Truck</option>
+                <option>8 - Empilhadeira</option>
+                <option>9 - Caminhão</option>
+                <option>10 - Outros</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Finalidade</label>
+              <select id="finalidade">
+                <option value="">Selecione</option>
+                <option>1 - Coleta de material</option>
+                <option>2 - Entrega de material</option>
+                <option>3 - Coleta de Óleo</option>
+                <option>4 - Coleta de sucata</option>
+                <option>5 - Coleta de Resíduos</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Empresa</label>
+              <input id="empresa" placeholder="Informe a empresa">
+            </div>
+            <div class="campo">
+              <label>Motorista</label>
+              <input id="motorista" list="listaMotoristas" placeholder="Informe o motorista" autocomplete="off">
+              <datalist id="listaMotoristas"></datalist>
+            </div>
+            <div class="campo">
+              <label>CNH</label>
+              <input id="cnh" placeholder="Informe a CNH">
+            </div>
+            <div class="campo">
+              <label>Nota Fiscal / RT</label>
+              <input id="nota" placeholder="Informe a nota fiscal / RT">
+            </div>
+            <div class="campo campo-obs">
+              <label>Informações Adicionais</label>
+              <input id="obs" placeholder="Observações, serviço, destino, etc.">
+            </div>
+            <div class="aviso-sms" id="avisoSMS">
+              <span>⚠️</span>
+              <span>
+                <b>Atenção — Munck / Guindaste</b>
+                As inspeções nos veículos terceirizados, tipo Muncks e Guindastes, devem acontecer sempre antes do veículo adentrar a empresa. Devem ser evidenciadas no RO-SMS-031 - Inspeção de Veículos. Solicite a presença do pessoal do SMS.
+              </span>
+            </div>
           </div>
-          <div class="campo">
-            <label>Modelo do Veículo</label>
-            <select id="modelo">
-              <option value="">Selecione</option>
-              <option>1 - Utilitário</option>
-              <option>2 - Toko</option>
-              <option>3 - Guindaste</option>
-              <option>4 - Munk</option>
-              <option>5 - P. Reta</option>
-              <option>6 - P. Baixa</option>
-              <option>7 - Truck</option>
-              <option>8 - Empilhadeira</option>
-              <option>9 - Caminhão</option>
-              <option>10 - Outros</option>
-            </select>
-          </div>
-          <div class="campo">
-            <label>Finalidade</label>
-            <select id="finalidade">
-              <option value="">Selecione</option>
-              <option>1 - Coleta de material</option>
-              <option>2 - Entrega de material</option>
-              <option>3 - Coleta de Óleo</option>
-              <option>4 - Coleta de sucata</option>
-              <option>5 - Coleta de Resíduos</option>
-            </select>
-          </div>
-          <div class="campo">
-            <label>Empresa</label>
-            <input id="empresa" placeholder="Informe a empresa">
-          </div>
-          <div class="campo">
-            <label>Motorista</label>
-            <input id="motorista" list="listaMotoristas" placeholder="Informe o motorista" autocomplete="off">
-            <datalist id="listaMotoristas"></datalist>
-          </div>
-          <div class="campo">
-            <label>CNH</label>
-            <input id="cnh" placeholder="Informe a CNH">
-          </div>
-          <div class="campo">
-            <label>Nota Fiscal / RT</label>
-            <input id="nota" placeholder="Informe a nota fiscal / RT">
-          </div>
-          <div class="campo campo-obs">
-            <label>Informações Adicionais</label>
-            <input id="obs" placeholder="Observações, serviço, destino, etc.">
-          </div>
-          <div class="aviso-sms" id="avisoSMS">
-            <span>⚠️</span>
-            <span>
-              <b>Atenção — Munck / Guindaste</b>
-              As inspeções nos veículos terceirizados, tipo Muncks e Guindastes, devem acontecer sempre antes do veículo adentrar a empresa. Devem ser evidenciadas no RO-SMS-031 - Inspeção de Veículos. Solicite a presença do pessoal do SMS.
-            </span>
+          <div class="acoes-form">
+            <button class="btn btn-primario" onclick="registrar()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
+              Registrar Entrada
+            </button>
+            <button class="btn btn-secundario" onclick="limpar()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Limpar Campos
+            </button>
           </div>
         </div>
-        <div class="acoes-form">
-          <button class="btn btn-primario" onclick="registrar()">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
-            Registrar Entrada
-          </button>
-          <button class="btn btn-secundario" onclick="limpar()">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-            Limpar Campos
-          </button>
+      </div>
+      <div class="card tabela-card">
+        <div class="tabela-topo">
+          <h3 id="tituloRegistros">REGISTROS DO DIA</h3>
+        </div>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Chegada</th>
+                <th>Placa</th>
+                <th>Modelo</th>
+                <th>Finalidade</th>
+                <th>Empresa</th>
+                <th>Motorista</th>
+                <th>CNH</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>NF/RT</th>
+                <th>Obs</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card resumo-card">
+        <h3>📊 RESUMO DO DIA</h3>
+        <div class="resumo-grid">
+          <div class="resumo-item r-entradas">
+            <div class="num" id="numEntradas">0</div>
+            <div class="lbl">ENTRADAS</div>
+          </div>
+          <div class="resumo-item r-saidas">
+            <div class="num" id="numSaidas">0</div>
+            <div class="lbl">SAÍDAS</div>
+          </div>
+          <div class="resumo-item r-aguardando">
+            <div class="num" id="numAguardando">0</div>
+            <div class="lbl">AGUARDANDO SAÍDA</div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="card tabela-card">
-      <div class="tabela-topo">
-        <h3 id="tituloRegistros">REGISTROS DO DIA</h3>
-      </div>
-      <div class="tabela-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Chegada</th>
-              <th>Placa</th>
-              <th>Modelo</th>
-              <th>Finalidade</th>
-              <th>Empresa</th>
-              <th>Motorista</th>
-              <th>CNH</th>
-              <th>Entrada</th>
-              <th>Saída</th>
-              <th>NF/RT</th>
-              <th>Obs</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tabela"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card resumo-card">
-      <h3>📊 RESUMO DO DIA</h3>
-      <div class="resumo-grid">
-        <div class="resumo-item r-entradas">
-          <div class="num" id="numEntradas">0</div>
-          <div class="lbl">ENTRADAS</div>
+
+    <div id="viewVisitantes" style="display:none">
+      <div class="painel-topo">
+        <div class="card form-card">
+          <h3>NOVO VISITANTE</h3>
+          <div class="grid-inputs">
+            <div class="campo">
+              <label>Nome Completo</label>
+              <input id="vNome" placeholder="Nome do visitante">
+            </div>
+            <div class="campo">
+              <label>CPF</label>
+              <input id="vCpf" placeholder="000.000.000-00">
+            </div>
+            <div class="campo">
+              <label>Empresa</label>
+              <input id="vEmpresa" placeholder="Empresa onde trabalha">
+            </div>
+            <div class="campo">
+              <label>Setor Visitado</label>
+              <input id="vSetor" placeholder="Ex.: Administrativo, SMS, etc.">
+            </div>
+          </div>
+          <div class="acoes-form">
+            <button class="btn btn-primario" onclick="registrarVisitante()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
+              Registrar Entrada
+            </button>
+            <button class="btn btn-secundario" onclick="limparVisitante()">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+              Limpar Campos
+            </button>
+          </div>
         </div>
-        <div class="resumo-item r-saidas">
-          <div class="num" id="numSaidas">0</div>
-          <div class="lbl">SAÍDAS</div>
+      </div>
+      <div class="card tabela-card">
+        <div class="tabela-topo">
+          <h3 id="tituloVisitantes">VISITANTES DO DIA</h3>
         </div>
-        <div class="resumo-item r-aguardando">
-          <div class="num" id="numAguardando">0</div>
-          <div class="lbl">AGUARDANDO SAÍDA</div>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Empresa</th>
+                <th>Setor Visitado</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaVisitantes"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
   <footer>
-    <span>Sistema de Controle de Entrada e Saída de Veículos - Oceânica Engenharia</span>
+    <span>Sistema de Controle de Portaria - Oceânica Engenharia</span>
     <span>Versão 2.0.0</span>
   </footer>
 </div>
@@ -1059,10 +1124,12 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
   document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
+  if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
   atualizar();
   setInterval(atualizar, 30000);
+  setInterval(atualizarVisitantes, 30000);
 })();
 
 async function carregarDatalist(){
@@ -1109,6 +1176,91 @@ async function autoPreencher(tipo, valor){
     if(row.empresa) document.getElementById("empresa").value = row.empresa;
     if(row.cnh) document.getElementById("cnh").value = row.cnh;
   } catch {}
+}
+
+function mostrarVeiculos(){
+  document.getElementById("navVeiculos").classList.add("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("viewVeiculos").style.display = "block";
+  document.getElementById("viewVisitantes").style.display = "none";
+  localStorage.setItem("activeView", "veiculos");
+}
+function mostrarVisitantes(){
+  document.getElementById("navVisitantes").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("viewVisitantes").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  localStorage.setItem("activeView", "visitantes");
+  atualizarVisitantes();
+}
+document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
+document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
+
+async function registrarVisitante(){
+  const nome = document.getElementById("vNome").value.trim();
+  if(!nome){ alert("Informe o nome do visitante."); return; }
+  const payload = {
+    nome,
+    cpf: document.getElementById("vCpf").value.trim(),
+    empresa: document.getElementById("vEmpresa").value.trim(),
+    setor_visitado: document.getElementById("vSetor").value.trim(),
+    hora: new Date().toLocaleTimeString('pt-BR')
+  };
+  try {
+    const res = await fetch(API + '/api/visitantes', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const e = await res.json(); alert(e.erro || "Erro"); return; }
+    limparVisitante();
+    atualizarVisitantes();
+  } catch { alert("Erro ao registrar visitante"); }
+}
+function limparVisitante(){
+  document.getElementById("vNome").value = "";
+  document.getElementById("vCpf").value = "";
+  document.getElementById("vEmpresa").value = "";
+  document.getElementById("vSetor").value = "";
+  document.getElementById("vNome").focus();
+}
+async function atualizarVisitantes(){
+  try {
+    const res = await fetch(API + '/api/visitantes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById("tabelaVisitantes");
+    tbody.innerHTML = "";
+    dados.forEach((d,i) => {
+      tbody.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td><b>${d.nome}</b></td>
+        <td>${d.cpf || "—"}</td>
+        <td>${d.empresa || "—"}</td>
+        <td>${d.setor_visitado || "—"}</td>
+        <td>${d.entrada}</td>
+        <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
+        <td class="acoes">
+          ${d.saida ? '' : `<button class="btn-saida" onclick="saidaVisitante(${d.id})" title="Registrar Saída">🚪</button>`}
+          <button class="btn-excluir" onclick="excluirVisitante(${d.id})" title="Excluir">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  } catch {}
+}
+async function saidaVisitante(id){
+  if(!confirm("Registrar saída deste visitante?")) return;
+  try {
+    const res = await fetch(API + '/api/visitantes/' + id + '/saida', { method: 'PUT', headers: getHeaders() });
+    if(!res.ok){ alert("Erro ao registrar saída"); return; }
+    atualizarVisitantes();
+  } catch { alert("Erro ao registrar saída"); }
+}
+async function excluirVisitante(id){
+  if(!confirm("Excluir este registro?")) return;
+  try {
+    const res = await fetch(API + '/api/visitantes/' + id, { method: 'DELETE', headers: getHeaders() });
+    if(!res.ok){ alert("Erro ao excluir"); return; }
+    atualizarVisitantes();
+  } catch { alert("Erro ao excluir"); }
 }
 </script>
 </body>

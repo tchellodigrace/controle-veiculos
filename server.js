@@ -232,6 +232,67 @@ app.put('/api/config', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/api/visitantes', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM visitantes WHERE data_registro = CURRENT_DATE ORDER BY id ASC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar visitantes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar visitantes' });
+  }
+});
+
+app.post('/api/visitantes', authMiddleware, async (req, res) => {
+  try {
+    const { nome, cpf, empresa, setor_visitado, hora: clientHora } = req.body;
+    if (!nome) {
+      return res.status(400).json({ erro: 'Nome é obrigatório' });
+    }
+    const hora = clientHora || new Date().toLocaleTimeString('pt-BR');
+    const result = await pool.query(
+      `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, setor_visitado, entrada)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', setor_visitado||'', hora]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar visitante:', err);
+    res.status(500).json({ erro: 'Erro ao criar visitante' });
+  }
+});
+
+app.put('/api/visitantes/:id/saida', authMiddleware, async (req, res) => {
+  try {
+    const hora = new Date().toLocaleTimeString('pt-BR');
+    const result = await pool.query(
+      'UPDATE visitantes SET saida = $1 WHERE id = $2 AND saida = $3 RETURNING *',
+      [hora, req.params.id, '']
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Visitante não encontrado ou já possui saída' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao marcar saída:', err);
+    res.status(500).json({ erro: 'Erro ao marcar saída' });
+  }
+});
+
+app.delete('/api/visitantes/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM visitantes WHERE id = $1 RETURNING *', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ erro: 'Visitante não encontrado' });
+    }
+    res.json({ mensagem: 'Visitante excluído com sucesso' });
+  } catch (err) {
+    console.error('Erro ao excluir visitante:', err);
+    res.status(500).json({ erro: 'Erro ao excluir visitante' });
+  }
+});
+
 app.get('/api/setup', async (req, res) => {
   try {
     const fs = require('fs');
