@@ -1055,8 +1055,9 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 (async function init(){
   if (!await verificarAuth()) return;
   carregarDatalist();
-  document.getElementById("motorista").addEventListener("change", autoPreencherMotorista);
-  document.getElementById("placa").addEventListener("change", autoPreencherPlaca);
+  document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
+  document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
+  document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
@@ -1076,16 +1077,24 @@ async function carregarDatalist(){
 function autoPreencherMotorista(){
   const nome = document.getElementById("motorista").value.trim();
   if(!nome) return;
-  document.getElementById("empresa").value = "";
-  document.getElementById("placa").value = "";
-  document.getElementById("cnh").value = "";
-  document.getElementById("modelo").value = "";
-  autoPreencher("motorista", nome);
+  const opt = document.querySelector(`#listaMotoristas option[value="${nome.replace(/"/g,'\\"')}"]`);
+  if(opt){
+    document.getElementById("placa").value = opt.dataset.placa || "";
+    document.getElementById("empresa").value = opt.dataset.empresa || "";
+    document.getElementById("cnh").value = opt.dataset.cnh || "";
+  } else {
+    autoPreencher("motorista", nome);
+  }
 }
 function autoPreencherPlaca(){
   const placa = document.getElementById("placa").value.trim();
   if(!placa) return;
   autoPreencher("placa", placa);
+}
+function autoPreencherEmpresa(){
+  const empresa = document.getElementById("empresa").value.trim();
+  if(!empresa) return;
+  autoPreencher("empresa", empresa);
 }
 async function autoPreencher(tipo, valor){
   try {

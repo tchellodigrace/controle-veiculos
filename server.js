@@ -137,14 +137,15 @@ app.delete('/api/registros/:id', authMiddleware, async (req, res) => {
 
 app.get('/api/auto-preenchimento', authMiddleware, async (req, res) => {
   try {
-    const { motorista, placa } = req.query;
+    const { motorista, placa, empresa } = req.query;
     const params = [];
     const conds = [];
     if (motorista) { params.push(`%${motorista}%`); conds.push(`motorista ILIKE $${params.length}`); }
     if (placa) { params.push(`%${placa}%`); conds.push(`placa ILIKE $${params.length}`); }
+    if (empresa) { params.push(`%${empresa}%`); conds.push(`empresa ILIKE $${params.length}`); }
     if (conds.length === 0) return res.json(null);
     const sql = `SELECT DISTINCT ON (COALESCE(NULLIF(motorista,''),placa)) motorista, placa, modelo, empresa, cnh, finalidade, entrada
-                 FROM registros WHERE ${conds.join(' OR ')} AND motorista != ''
+                 FROM registros WHERE (${conds.join(' OR ')}) AND motorista != ''
                  ORDER BY COALESCE(NULLIF(motorista,''),placa), id DESC`;
     const result = await pool.query(sql, params);
     res.json(result.rows);
