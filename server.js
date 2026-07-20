@@ -16,7 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 function gerarToken(usuario) {
   return jwt.sign(
-    { id: usuario.id, usuario: usuario.usuario, nome: usuario.nome, turno: usuario.turno },
+    { id: usuario.id, usuario: usuario.usuario, nome: usuario.nome },
     JWT_SECRET,
     { expiresIn: '12h' }
   );
@@ -51,7 +51,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
     }
     const token = gerarToken(user);
-    res.json({ token, usuario: { nome: user.nome, usuario: user.usuario, turno: user.turno } });
+    res.json({ token, usuario: { nome: user.nome, usuario: user.usuario } });
   } catch (err) {
     console.error('Erro no login:', err);
     res.status(500).json({ erro: 'Erro interno do servidor' });
@@ -164,7 +164,7 @@ app.get('/api/resumo', authMiddleware, async (req, res) => {
 
 app.get('/api/usuarios', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nome, usuario, turno, ativo, criado_em FROM usuarios ORDER BY nome');
+    const result = await pool.query('SELECT id, nome, usuario, ativo, criado_em FROM usuarios ORDER BY nome');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
@@ -174,14 +174,14 @@ app.get('/api/usuarios', authMiddleware, async (req, res) => {
 
 app.post('/api/usuarios', authMiddleware, async (req, res) => {
   try {
-    const { nome, usuario, senha, turno } = req.body;
+    const { nome, usuario, senha } = req.body;
     if (!nome || !usuario || !senha) {
       return res.status(400).json({ erro: 'Nome, usuário e senha são obrigatórios' });
     }
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, usuario, senha, turno) VALUES ($1, $2, $3, $4) RETURNING id, nome, usuario, turno',
-      [nome, usuario.toLowerCase(), senhaHash, turno || 'TARDE']
+      'INSERT INTO usuarios (nome, usuario, senha) VALUES ($1, $2, $3) RETURNING id, nome, usuario',
+      [nome, usuario.toLowerCase(), senhaHash]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -227,8 +227,8 @@ async function iniciar() {
       const senhaPortaria = await bcrypt.hash('portaria123', 10);
       const senhaAdmin = await bcrypt.hash('admin123', 10);
       await pool.query(
-        'INSERT INTO usuarios (nome, usuario, senha, turno) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)',
-        ['PORTARIA', 'portaria', senhaPortaria, 'TARDE', 'ADMIN', 'admin', senhaAdmin, 'ADMIN']
+        'INSERT INTO usuarios (nome, usuario, senha) VALUES ($1, $2, $3), ($4, $5, $6)',
+        ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
       );
       console.log('Usuários padrão criados (portaria/portaria123, admin/admin123)');
     }

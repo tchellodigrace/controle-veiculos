@@ -462,7 +462,6 @@
     </div>
     <div class="sidebar-footer">
       <div class="linha"><span>👤 Usuário<b id="sidebarUsuario">PORTARIA</b></span></div>
-      <div class="linha"><span>🕓 Turno<b id="sidebarTurno">TARDE</b></span></div>
       <div class="sair" id="sair">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
         Sair do Sistema
@@ -618,7 +617,6 @@ async function verificarAuth() {
     const data = await res.json();
     const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
     if (usuario.nome) { document.getElementById('sidebarUsuario').textContent = usuario.nome; }
-    if (usuario.turno) { document.getElementById('sidebarTurno').textContent = usuario.turno; }
     return true;
   } catch {
     window.location.href = 'login.html'; return false;
