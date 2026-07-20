@@ -267,23 +267,23 @@
     width:100%;
     border-collapse:collapse;
     font-size:12.5px;
-    min-width:900px;
+    min-width:0;
   }
   thead th{
     background:var(--verde-escuro);
     color:#fff;
     text-align:left;
-    padding:10px 12px;
+    padding:7px 6px;
     font-weight:600;
     white-space:nowrap;
-    font-size:11.5px;
-    letter-spacing:.4px;
+    font-size:11px;
+    letter-spacing:.3px;
   }
   tbody td{
-    padding:10px 12px;
+    padding:7px 6px;
     border-bottom:1px solid var(--cinza-borda);
     color:#3a444d;
-    white-space:nowrap;
+    vertical-align:top;
   }
   tbody tr:hover{ background:#f7faf8; }
   tbody tr:last-child td{ border-bottom:none; }
@@ -528,18 +528,17 @@
         <table>
           <thead>
             <tr>
-              <th>Item</th>
-              <th>Hora Chegada</th>
-              <th>Placa do Veículo</th>
-              <th>Modelo do Veículo</th>
+              <th>#</th>
+              <th>Placa</th>
+              <th>Modelo</th>
               <th>Finalidade</th>
               <th>Empresa</th>
               <th>Motorista</th>
               <th>CNH</th>
-              <th>Horário Entrada</th>
-              <th>Horário Saída</th>
-              <th>Nota Fiscal / RT</th>
-              <th>Informações Adicionais</th>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>NF/RT</th>
+              <th>Obs</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -719,7 +718,7 @@ async function atualizar(){
     const tabela = document.getElementById("tabela");
     tabela.innerHTML = "";
     if(dados.length === 0){
-      tabela.innerHTML = `<tr><td colspan="13" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
+      tabela.innerHTML = `<tr><td colspan="12" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
       return;
     }
     const iconSaida = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
@@ -728,7 +727,6 @@ async function atualizar(){
       tabela.innerHTML += `
       <tr>
         <td>${i+1}</td>
-        <td>${d.chegada}</td>
         <td><b>${d.placa}</b></td>
         <td>${d.modelo || "—"}</td>
         <td>${d.finalidade || "—"}</td>
@@ -756,9 +754,9 @@ async function exportar(){
     if (!res.ok) return;
     const dados = await res.json();
     if(dados.length === 0){ alert("Não há registros para exportar."); return; }
-    let csv = "Item,Chegada,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,Nota,Obs,Data\n";
+    let csv = "Item,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,NF/RT,Obs,Data\n";
     dados.forEach((d,i) => {
-      csv += `${i+1},${d.chegada},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${d.data_registro}\n`;
+      csv += `${i+1},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${d.data_registro}\n`;
     });
     let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     let url = window.URL.createObjectURL(blob);
