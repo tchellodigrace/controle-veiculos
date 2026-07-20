@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oceânica | Controle de Veículos</title>
+<style>
+  :root{
+    --verde-escuro:#0e4d2e;
+    --verde-primario:#1c8a4f;
+    --verde-claro:#e7f5ec;
+    --azul:#2f6fb0;
+    --azul-claro:#e9f1fa;
+    --laranja:#e08a1e;
+    --laranja-claro:#fdf1e2;
+    --vermelho:#d64545;
+    --cinza-texto:#5b6672;
+    --cinza-borda:#e3e7eb;
+    --cinza-fundo:#f2f4f6;
+    --branco:#ffffff;
+    --sombra: 0 1px 3px rgba(16,38,26,0.08), 0 1px 2px rgba(16,38,26,0.06);
+    --sombra-card: 0 2px 8px rgba(16,38,26,0.06);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:var(--cinza-fundo);
+    color:#26313a;
+  }
+  .app{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    grid-template-rows:72px 1fr auto;
+    grid-template-areas:
+      "header header"
+      "sidebar main"
+      "footer footer";
+    min-height:100vh;
+  }
+  header{
+    grid-area:header;
+    background:var(--branco);
+    border-bottom:1px solid var(--cinza-borda);
+    display:flex;
+    align-items:center;
+    padding:0 28px;
+    gap:20px;
+  }
+  header .logo img{ height:38px; display:block; }
+  header .titulo{
+    flex:1;
+    text-align:center;
+  }
+  header .titulo h1{
+    margin:0;
+    font-size:22px;
+    letter-spacing:0.5px;
+    color:var(--verde-escuro);
+    font-weight:800;
+  }
+  header .titulo p{
+    margin:2px 0 0;
+    font-size:12.5px;
+    letter-spacing:2px;
+    color:var(--cinza-texto);
+    font-weight:600;
+  }
+  header .titulo .doc-code{
+    margin:4px 0 0;
+    font-size:10.5px;
+    letter-spacing:0.5px;
+    color:#8b93a1;
+    font-weight:600;
+  }
+  header .relogio{
+    text-align:right;
+    font-size:13px;
+    color:var(--cinza-texto);
+    min-width:150px;
+  }
+  header .relogio div{ display:flex; align-items:center; justify-content:flex-end; gap:6px; margin:2px 0; }
+  aside{
+    grid-area:sidebar;
+    background:var(--verde-escuro);
+    color:#d9ece0;
+    display:flex;
+    flex-direction:column;
+    padding:18px 0;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 22px;
+    font-size:14px;
+    cursor:pointer;
+    color:#cfe6d9;
+    border-left:3px solid transparent;
+    transition:.15s;
+    user-select:none;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+  .nav-item.active{
+    background:rgba(255,255,255,0.1);
+    color:#fff;
+    border-left:3px solid #7ee2a8;
+    font-weight:600;
+  }
+  .nav-item svg{ width:16px; height:16px; flex-shrink:0; }
+  .sidebar-footer{
+    margin-top:auto;
+    border-top:1px solid rgba(255,255,255,0.12);
+    padding:16px 22px 6px;
+    font-size:12.5px;
+  }
+  .sidebar-footer .linha{ display:flex; justify-content:space-between; margin-bottom:10px; color:#a9cdba; }
+  .sidebar-footer .linha b{ display:block; color:#fff; font-size:13px; }
+  .sair{
+    margin-top:8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:#f3c6c6;
+    cursor:pointer;
+    font-size:13px;
+    padding:6px 0;
+  }
+  .sair:hover{ color:#fff; }
+  main{
+    grid-area:main;
+    padding:22px 28px 30px;
+  }
+  .card{
+    background:var(--branco);
+    border:1px solid var(--cinza-borda);
+    border-radius:10px;
+    box-shadow:var(--sombra-card);
+  }
+  .painel-topo{
+    display:grid;
+    grid-template-columns:1fr 250px;
+    gap:18px;
+    margin-bottom:22px;
+  }
+  .form-card{ padding:20px 22px; }
+  .form-card h3{
+    margin:0 0 16px;
+    font-size:13px;
+    letter-spacing:1.5px;
+    color:var(--verde-escuro);
+    font-weight:700;
+  }
+  .grid-inputs{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:14px;
+  }
+  .campo label{
+    display:block;
+    font-size:12px;
+    color:var(--cinza-texto);
+    margin-bottom:5px;
+    font-weight:600;
+  }
+  .campo input, .campo select{
+    width:100%;
+    padding:9px 10px;
+    border:1px solid var(--cinza-borda);
+    border-radius:6px;
+    font-size:13px;
+    background:#fafbfc;
+    color:#26313a;
+  }
+  .campo input:focus, .campo select:focus{
+    outline:none;
+    border-color:var(--verde-primario);
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(28,138,79,0.12);
+  }
+  .campo-obs{ grid-column:span 5; }
+  .aviso-sms{
+    display:none;
+    grid-column:span 5;
+    align-items:flex-start;
+    gap:10px;
+    background:var(--laranja-claro);
+    border:1px solid #f0c988;
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:12.5px;
+    line-height:1.5;
+    color:#7a5309;
+  }
+  .aviso-sms.mostrar{ display:flex; }
+  .aviso-sms b{ display:block; margin-bottom:2px; color:#5c3f07; }
+  .acoes-form{
+    margin-top:18px;
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    border:none;
+    border-radius:6px;
+    padding:11px 20px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:.15s;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primario{ background:var(--verde-primario); color:#fff; }
+  .btn-primario:hover{ background:#166b3d; }
+  .btn-secundario{ background:#fff; color:#4a5560; border:1px solid var(--cinza-borda); }
+  .btn-secundario:hover{ background:#f2f4f6; }
+  .resumo-card{ padding:18px 20px; }
+  .resumo-card h3{
+    margin:0 0 14px;
+    font-size:13px;
+    letter-spacing:1.5px;
+    color:var(--verde-escuro);
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .resumo-grid{ display:flex; flex-direction:column; gap:10px; }
+  .resumo-item{
+    border-radius:8px;
+    padding:12px 14px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .resumo-item .num{ font-size:24px; font-weight:800; line-height:1; }
+  .resumo-item .lbl{ font-size:11px; letter-spacing:1px; font-weight:700; margin-top:6px; }
+  .r-entradas{ background:var(--verde-claro); }
+  .r-entradas .num{ color:var(--verde-primario); }
+  .r-entradas .lbl{ color:#227a4c; }
+  .r-saidas{ background:var(--azul-claro); }
+  .r-saidas .num{ color:var(--azul); }
+  .r-saidas .lbl{ color:#2f6fb0; }
+  .r-aguardando{ background:var(--laranja-claro); }
+  .r-aguardando .num{ color:var(--laranja); }
+  .r-aguardando .lbl{ color:#b9700f; }
+  .tabela-card{ padding:0; overflow:hidden; }
+  .tabela-topo{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 22px;
+    border-bottom:1px solid var(--cinza-borda);
+  }
+  .tabela-topo h3{
+    margin:0;
+    font-size:14px;
+    color:#26313a;
+    font-weight:700;
+  }
+  .tabela-scroll{ overflow-x:auto; }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12.5px;
+    min-width:1050px;
+  }
+  thead th{
+    background:var(--verde-escuro);
+    color:#fff;
+    text-align:left;
+    padding:10px 12px;
+    font-weight:600;
+    white-space:nowrap;
+    font-size:11.5px;
+    letter-spacing:.4px;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--cinza-borda);
+    color:#3a444d;
+    white-space:nowrap;
+  }
+  tbody tr:hover{ background:#f7faf8; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .acoes-tabela{ display:flex; gap:6px; }
+  .icon-btn{
+    border:none;
+    width:30px;
+    height:30px;
+    border-radius:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    color:#fff;
+  }
+  .icon-btn svg{ width:15px; height:15px; }
+  .btn-saida{ background:var(--verde-primario); }
+  .btn-saida:hover{ background:#166b3d; }
+  .btn-saida:disabled{ background:#b9d9c4; cursor:not-allowed; }
+  .btn-excluir{ background:var(--vermelho); }
+  .btn-excluir:hover{ background:#b93636; }
+  .badge-saida{
+    display:inline-block;
+    color:#8b93a1;
+    font-style:italic;
+    font-size:12px;
+  }
+  .vazio{
+    text-align:center;
+    padding:40px 20px;
+    color:#9aa4ad;
+    font-size:13px;
+  }
+  footer{
+    grid-area:footer;
+    background:var(--verde-escuro);
+    color:#bcd9c9;
+    font-size:12px;
+    padding:10px 26px;
+    display:flex;
+    justify-content:space-between;
+  }
+  @page{
+    size: A4 landscape;
+    margin: 10mm 8mm;
+  }
+  @media print{
+    html, body{
+      width:100%;
+      margin:0;
+      padding:0;
+      background:#fff;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    aside, header .relogio, .acoes-form, .form-card, .painel-topo, footer,
+    thead th:last-child, tbody td:last-child{
+      display:none !important;
+    }
+    .app{ display:block; }
+    main{ padding:0; }
+    header{
+      padding:0 0 8px;
+      margin-bottom:10px;
+      border-bottom:2px solid var(--verde-escuro);
+    }
+    header .logo img{ height:30px; }
+    header .titulo h1{ font-size:15px; }
+    header .titulo p{ font-size:9px; }
+    .card{ box-shadow:none; border:none; }
+    .tabela-card{ box-shadow:none; border:none; }
+    .tabela-topo{ padding:0 0 6px; border-bottom:1px solid #333; }
+    .tabela-topo h3{ font-size:12px; }
+    .tabela-scroll{ overflow:visible; }
+    table{
+      width:100%;
+      min-width:0;
+      font-size:9px;
+      table-layout:auto;
+      page-break-inside:auto;
+    }
+    thead{ display:table-header-group; }
+    tr{ page-break-inside:avoid; page-break-after:auto; }
+    thead th{
+      background:var(--verde-escuro) !important;
+      color:#fff !important;
+      padding:5px 4px;
+      font-size:8.5px;
+      white-space:normal;
+      word-break:break-word;
+    }
+    tbody td{
+      padding:5px 4px;
+      font-size:8.5px;
+      white-space:normal;
+      word-break:break-word;
+    }
+  }
+  @media (max-width:1000px){
+    .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
+    aside{ display:none; }
+    .grid-inputs{ grid-template-columns:repeat(2,1fr); }
+    .campo-obs{ grid-column:span 2; }
+    .painel-topo{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo"><img src="logo_oceanica.png" alt="Oceânica"></div>
+    <div class="titulo">
+      <h1>CONTROLE DE ENTRADA E SAÍDA DE VEÍCULOS</h1>
+      <p>FORNECEDORES</p>
+      <p class="doc-code">RO-ADM-005 &nbsp;|&nbsp; PÁG: 1/1 &nbsp;|&nbsp; VER. 03</p>
+    </div>
+    <div class="relogio">
+      <div id="dataAtual">📅 --/--/----</div>
+      <div id="horaAtual">🕒 --:--:--</div>
+    </div>
+  </header>
+  <aside>
+    <div class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><path d="M14 2h6v6M10 14 20 4"/></svg>
+      Lançamentos
+    </div>
+    <div class="nav-item" id="navRelatorios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+      Relatórios
+    </div>
+    <div class="nav-item" onclick="exportar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      Exportar Excel
+    </div>
+    <div class="nav-item" onclick="imprimir()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><rect x="6" y="14" width="12" height="8"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg>
+      Imprimir
+    </div>
+    <div class="nav-item" id="navCadastros">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Cadastros
+    </div>
+    <div class="nav-item" id="navConfig">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configurações
+    </div>
+    <div class="nav-item" id="navSobre">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      Sobre
+    </div>
+    <div class="sidebar-footer">
+      <div class="linha"><span>👤 Usuário<b id="sidebarUsuario">PORTARIA</b></span></div>
+      <div class="linha"><span>🕓 Turno<b id="sidebarTurno">TARDE</b></span></div>
+      <div class="sair" id="sair">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Sair do Sistema
+      </div>
+    </div>
+  </aside>
+  <main>
+    <div class="painel-topo">
+      <div class="card form-card">
+        <h3>NOVO REGISTRO</h3>
+        <div class="grid-inputs">
+          <div class="campo">
+            <label>Placa do Veículo</label>
+            <input id="placa" placeholder="Ex.: ABC1D23">
+          </div>
+          <div class="campo">
+            <label>Modelo do Veículo</label>
+            <select id="modelo">
+              <option value="">Selecione</option>
+              <option>1 - Utilitário</option>
+              <option>2 - Toko</option>
+              <option>3 - Guindaste</option>
+              <option>4 - Munk</option>
+              <option>5 - P. Reta</option>
+              <option>6 - P. Baixa</option>
+              <option>7 - Truck</option>
+              <option>8 - Empilhadeira</option>
+              <option>9 - Caminhão</option>
+              <option>10 - Outros</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Finalidade</label>
+            <select id="finalidade">
+              <option value="">Selecione</option>
+              <option>1 - Coleta de material</option>
+              <option>2 - Entrega de material</option>
+              <option>3 - Coleta de Óleo</option>
+              <option>4 - Coleta de sucata</option>
+              <option>5 - Coleta de Resíduos</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Empresa</label>
+            <input id="empresa" placeholder="Informe a empresa">
+          </div>
+          <div class="campo">
+            <label>Motorista</label>
+            <input id="motorista" list="listaMotoristas" placeholder="Informe o motorista" autocomplete="off">
+            <datalist id="listaMotoristas"></datalist>
+          </div>
+          <div class="campo">
+            <label>CNH</label>
+            <input id="cnh" placeholder="Informe a CNH">
+          </div>
+          <div class="campo">
+            <label>Nota Fiscal / RT</label>
+            <input id="nota" placeholder="Informe a nota fiscal / RT">
+          </div>
+          <div class="campo campo-obs">
+            <label>Informações Adicionais</label>
+            <input id="obs" placeholder="Observações, serviço, destino, etc.">
+          </div>
+          <div class="aviso-sms" id="avisoSMS">
+            <span>⚠️</span>
+            <span>
+              <b>Atenção — Munck / Guindaste</b>
+              As inspeções nos veículos terceirizados, tipo Muncks e Guindastes, devem acontecer sempre antes do veículo adentrar a empresa. Devem ser evidenciadas no RO-SMS-031 - Inspeção de Veículos. Solicite a presença do pessoal do SMS.
+            </span>
+          </div>
+        </div>
+        <div class="acoes-form">
+          <button class="btn btn-primario" onclick="registrar()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
+            Registrar Entrada
+          </button>
+          <button class="btn btn-secundario" onclick="limpar()">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            Limpar Campos
+          </button>
+        </div>
+      </div>
+      <div class="card resumo-card">
+        <h3>📊 RESUMO DO DIA</h3>
+        <div class="resumo-grid">
+          <div class="resumo-item r-entradas">
+            <div class="num" id="numEntradas">0</div>
+            <div class="lbl">ENTRADAS</div>
+          </div>
+          <div class="resumo-item r-saidas">
+            <div class="num" id="numSaidas">0</div>
+            <div class="lbl">SAÍDAS</div>
+          </div>
+          <div class="resumo-item r-aguardando">
+            <div class="num" id="numAguardando">0</div>
+            <div class="lbl">AGUARDANDO SAÍDA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card tabela-card">
+      <div class="tabela-topo">
+        <h3 id="tituloRegistros">REGISTROS DO DIA</h3>
+      </div>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Hora Chegada</th>
+              <th>Placa do Veículo</th>
+              <th>Modelo do Veículo</th>
+              <th>Finalidade</th>
+              <th>Empresa</th>
+              <th>Motorista</th>
+              <th>CNH</th>
+              <th>Horário Entrada</th>
+              <th>Horário Saída</th>
+              <th>Nota Fiscal / RT</th>
+              <th>Informações Adicionais</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <span>Sistema de Controle de Entrada e Saída de Veículos - Oceânica Engenharia</span>
+    <span>Versão 2.0.0</span>
+  </footer>
+</div>
+
+<script>
+const API = window.location.origin;
+
+function getToken() { return localStorage.getItem('token'); }
+
+function getHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + getToken()
+  };
+}
+
+async function verificarAuth() {
+  const token = getToken();
+  if (!token) { window.location.href = 'login.html'; return false; }
+  try {
+    const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); window.location.href = 'login.html'; return false; }
+    const data = await res.json();
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    if (usuario.nome) { document.getElementById('sidebarUsuario').textContent = usuario.nome; }
+    if (usuario.turno) { document.getElementById('sidebarTurno').textContent = usuario.turno; }
+    return true;
+  } catch {
+    window.location.href = 'login.html'; return false;
+  }
+}
+
+const cadastroMotoristas = [
+  {motorista:"RICARDO CAVATI", cnh:"959.320.207-25", placa:"LRW2F92", empresa:"LIMPEZA PROFUNDA"},
+  {motorista:"JOAO PAULO LEITE DA SILVA", cnh:"264.586.978-56", placa:"RQP2F23", empresa:"VIX"},
+  {motorista:"CARLOS SEVERINO", cnh:"798.904.667-91", placa:"RKU8J82", empresa:"FILADELFIA"},
+  {motorista:"GUILHERME RIBEIRO", cnh:"206.599.317-02", placa:"SRX5G20", empresa:"FÊNIX DO BRASIL"},
+  {motorista:"LUCIANO DOS SANTOS", cnh:"057.451.987-45", placa:"RQR2B64", empresa:"FILADELFIA"},
+  {motorista:"CARLOS ALBERTO DE SOUZA", cnh:"955.254.677-04", placa:"LUD1906", empresa:"SUPERGASBRAS"},
+  {motorista:"PEDRO PAULO SILVA", cnh:"129.424.276-80", placa:"SRX5G20", empresa:"FÊNIX DO BRASIL"},
+  {motorista:"FLÁVIO DE AZEVEDO", cnh:"087.380.117-27", placa:"KYK3172", empresa:"RODOMAC"},
+  {motorista:"JEAN DA SILVA PERES", cnh:"112.824.157-94", placa:"KPE1932", empresa:"FILADELFIA"},
+  {motorista:"WANDERSON DE PAULA", cnh:"073.101.187-23", placa:"JQR5A35", empresa:"S.O.S"},
+  {motorista:"ANDERSON DA SILVA", cnh:"097.349.547-25", placa:"LLJ9A08", empresa:"TRANSFORMA"},
+  {motorista:"CRISTIANO GONÇALVES LINS", cnh:"051.498.747-28", placa:"KYK3172", empresa:"RODOMAC"},
+  {motorista:"DENILSON PECANHA PASSOS", cnh:"074.503.697-02", placa:"RKUTI22", empresa:"VIX"},
+  {motorista:"DAVI DA CONCEICAO SILVA", cnh:"097.299.017-83", placa:"QUC0J07", empresa:"JAMEF"},
+  {motorista:"JOSE ELIAS SOARES", cnh:"681.074.717-68", placa:"QRF9E51", empresa:"VIX"},
+  {motorista:"DANIEL GASPAR", cnh:"098.082.987-96", placa:"", empresa:"EFITRANS"},
+  {motorista:"CESAR LINO BAPTISTA JUNIOR", cnh:"088.796.297-46", placa:"RMY5J26", empresa:"LB SOLDAS"},
+  {motorista:"ALISON DE OLIVEIR DA SILVA", cnh:"133.921.527-65", placa:"LMA2C60", empresa:"FILADELFIA"},
+  {motorista:"MARCOS VENICIUS AZEREDO", cnh:"915.940.737-91", placa:"SRK2D09", empresa:"AEROSTEEL"},
+  {motorista:"ADRIELE ANTUNES", cnh:"171.517.797-55", placa:"LQM6B95", empresa:"GRUPO TROCA"},
+  {motorista:"ROBERTO CARLOS", cnh:"976.126.007-06", placa:"PTO0G19", empresa:"FILADELFIA"},
+  {motorista:"PAULO CEZAR", cnh:"709.650.087-62", placa:"TTZ82C41", empresa:"FILADELFIA"},
+  {motorista:"PATRICK CARVALHO", cnh:"014.732.826-38", placa:"RUI1J33", empresa:"FILADELFIA"},
+  {motorista:"ROBSON CARLOS", cnh:"36382071", placa:"RJF9E28", empresa:"FILADELFIA"}
+];
+
+(function preencherListaMotoristas(){
+  const dl = document.getElementById("listaMotoristas");
+  dl.innerHTML = cadastroMotoristas.map(c => `<option value="${c.motorista}">`).join("");
+})();
+
+document.getElementById("motorista").addEventListener("input", function(){
+  const nome = this.value.trim().toUpperCase();
+  const encontrado = cadastroMotoristas.find(c => c.motorista === nome);
+  if(encontrado){
+    if(encontrado.placa) placa.value = encontrado.placa;
+    if(encontrado.empresa) empresa.value = encontrado.empresa;
+    if(encontrado.cnh) cnh.value = encontrado.cnh;
+  }
+});
+
+document.getElementById("modelo").addEventListener("change", function(){
+  const critico = this.value.startsWith("3 -") || this.value.startsWith("4 -");
+  document.getElementById("avisoSMS").classList.toggle("mostrar", critico);
+});
+
+async function registrar(){
+  const payload = {
+    placa: placa.value.trim().toUpperCase(),
+    modelo: modelo.value,
+    finalidade: finalidade.value,
+    empresa: empresa.value.trim(),
+    motorista: motorista.value.trim(),
+    cnh: cnh.value.trim(),
+    nota: nota.value.trim(),
+    obs: obs.value.trim()
+  };
+  if (!payload.placa || !payload.empresa){
+    alert("Preencha ao menos Placa e Empresa.");
+    return;
+  }
+  try {
+    const res = await fetch(API + '/api/registros', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao registrar'); return; }
+    limparCampos();
+    atualizar();
+  } catch { alert('Erro de conexão com o servidor'); }
+}
+
+function limparCampos(){
+  ["placa","modelo","finalidade","empresa","motorista","cnh","nota","obs"].forEach(id=>{
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("avisoSMS").classList.remove("mostrar");
+  placa.focus();
+}
+
+async function marcarSaida(id){
+  try {
+    const res = await fetch(API + '/api/registros/' + id + '/saida', {
+      method: 'PUT', headers: getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao marcar saída'); return; }
+    atualizar();
+  } catch { alert('Erro de conexão com o servidor'); }
+}
+
+async function excluir(id){
+  if(!confirm("Excluir este registro?")) return;
+  try {
+    const res = await fetch(API + '/api/registros/' + id, {
+      method: 'DELETE', headers: getHeaders()
+    });
+    if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao excluir'); return; }
+    atualizar();
+  } catch { alert('Erro de conexão com o servidor'); }
+}
+
+function limpar(){
+  limparCampos();
+}
+
+async function atualizar(){
+  try {
+    const [resRegistros, resResumo] = await Promise.all([
+      fetch(API + '/api/registros', { headers: getHeaders() }),
+      fetch(API + '/api/resumo', { headers: getHeaders() })
+    ]);
+    if (!resRegistros.ok || !resResumo.ok) return;
+    const dados = await resRegistros.json();
+    const resumo = await resResumo.json();
+    document.getElementById("numEntradas").textContent = resumo.total || 0;
+    document.getElementById("numSaidas").textContent = resumo.saidas || 0;
+    document.getElementById("numAguardando").textContent = resumo.aguardando || 0;
+    const tabela = document.getElementById("tabela");
+    tabela.innerHTML = "";
+    if(dados.length === 0){
+      tabela.innerHTML = `<tr><td colspan="13" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
+      return;
+    }
+    const iconSaida = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
+    const iconExcluir = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
+    dados.forEach((d,i) => {
+      tabela.innerHTML += `
+      <tr>
+        <td>${i+1}</td>
+        <td>${d.chegada}</td>
+        <td><b>${d.placa}</b></td>
+        <td>${d.modelo || "—"}</td>
+        <td>${d.finalidade || "—"}</td>
+        <td>${d.empresa}</td>
+        <td>${d.motorista || "—"}</td>
+        <td>${d.cnh || "—"}</td>
+        <td>${d.entrada}</td>
+        <td>${d.saida ? d.saida : '<span class="badge-saida">—</span>'}</td>
+        <td>${d.nota || "—"}</td>
+        <td>${d.obs || "—"}</td>
+        <td>
+          <div class="acoes-tabela">
+            <button class="icon-btn btn-saida" title="Marcar saída" ${d.saida ? "disabled" : ""} onclick="marcarSaida(${d.id})">${iconSaida}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluir(${d.id})">${iconExcluir}</button>
+          </div>
+        </td>
+      </tr>`;
+    });
+  } catch { /* erro silencioso */ }
+}
+
+async function exportar(){
+  try {
+    const res = await fetch(API + '/api/registros/todos', { headers: getHeaders() });
+    if (!res.ok) return;
+    const dados = await res.json();
+    if(dados.length === 0){ alert("Não há registros para exportar."); return; }
+    let csv = "Item,Chegada,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,Nota,Obs,Data\n";
+    dados.forEach((d,i) => {
+      csv += `${i+1},${d.chegada},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${d.data_registro}\n`;
+    });
+    let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    let url = window.URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "relatorio_portaria_" + new Date().toLocaleDateString("pt-BR").replaceAll("/","-") + ".csv";
+    a.click();
+  } catch { alert('Erro ao exportar'); }
+}
+
+function imprimir(){ window.print(); }
+
+function atualizarRelogio(){
+  const agora = new Date();
+  document.getElementById("dataAtual").textContent = "📅 " + agora.toLocaleDateString("pt-BR");
+  document.getElementById("horaAtual").textContent = "🕒 " + agora.toLocaleTimeString("pt-BR");
+  document.getElementById("tituloRegistros").textContent =
+    "REGISTROS DO DIA - " + agora.toLocaleDateString("pt-BR");
+}
+
+document.getElementById("obs").addEventListener("keypress", e=>{
+  if(e.key === "Enter") registrar();
+});
+
+document.getElementById("sair").addEventListener("click", ()=>{
+  if(confirm("Deseja sair do sistema?")){
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = 'login.html';
+  }
+});
+
+["navRelatorios","navCadastros","navConfig","navSobre"].forEach(id=>{
+  document.getElementById(id).addEventListener("click", ()=> {
+    alert("Este módulo será disponibilizado em uma próxima versão do sistema.");
+  });
+});
+
+(async function init(){
+  if (!await verificarAuth()) return;
+  atualizarRelogio();
+  setInterval(atualizarRelogio, 1000);
+  atualizar();
+  setInterval(atualizar, 30000);
+})();
+</script>
+</body>
+</html>

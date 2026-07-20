@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oceânica | Login</title>
+<style>
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh;
+    font-family:'Segoe UI', Roboto, Arial, sans-serif;
+    background:linear-gradient(135deg, #0e4d2e 0%, #1c8a4f 100%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .login-card{
+    background:#fff; border-radius:16px; padding:48px 40px 40px;
+    width:400px; max-width:94%; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    text-align:center;
+  }
+  .login-card .logo{ margin-bottom:24px; }
+  .login-card .logo img{ height:48px; }
+  .login-card h1{
+    font-size:22px; color:#0e4d2e; margin:0 0 6px; font-weight:800;
+  }
+  .login-card p{
+    font-size:13px; color:#6b7a86; margin:0 0 28px;
+  }
+  .campo{
+    margin-bottom:18px; text-align:left;
+  }
+  .campo label{
+    display:block; font-size:12.5px; font-weight:600;
+    color:#4a5560; margin-bottom:5px;
+  }
+  .campo input{
+    width:100%; padding:11px 14px; border:1px solid #e3e7eb;
+    border-radius:8px; font-size:14px; background:#fafbfc;
+    transition:.15s;
+  }
+  .campo input:focus{
+    outline:none; border-color:#1c8a4f; background:#fff;
+    box-shadow:0 0 0 3px rgba(28,138,79,0.12);
+  }
+  .btn{
+    width:100%; border:none; border-radius:8px; padding:12px;
+    font-size:15px; font-weight:700; cursor:pointer; color:#fff;
+    background:#1c8a4f; transition:.15s; margin-top:6px;
+  }
+  .btn:hover{ background:#166b3d; }
+  .btn:active{ transform:translateY(1px); }
+  .erro{
+    background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+    padding:10px 14px; color:#b91c1c; font-size:13px; margin-bottom:16px;
+    display:none;
+  }
+  .carregando{ display:none; margin:12px 0; color:#6b7a86; font-size:13px; }
+  .footer-login{ margin-top:24px; font-size:12px; color:#9aa4ad; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <div class="logo">
+    <svg viewBox="0 0 48 48" width="56" height="56" fill="none">
+      <circle cx="24" cy="24" r="22" fill="#1c8a4f" opacity="0.15"/>
+      <path d="M14 30c0-4 4-8 10-8s10 4 10 8" stroke="#1c8a4f" stroke-width="2.2" stroke-linecap="round"/>
+      <circle cx="24" cy="16" r="5" stroke="#1c8a4f" stroke-width="2.2" stroke-linecap="round"/>
+      <path d="M24 38v-8M20 34h8" stroke="#1c8a4f" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </div>
+  <h1>Controle de Veículos</h1>
+  <p>Faça login para acessar o sistema</p>
+  <div class="erro" id="erroMsg"></div>
+  <form id="loginForm" onsubmit="return fazerLogin(event)">
+    <div class="campo">
+      <label>Usuário</label>
+      <input type="text" id="usuario" placeholder="Digite seu usuário" autocomplete="username" required autofocus>
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="btn" id="btnLogin">ENTRAR</button>
+    <div class="carregando" id="carregando">Autenticando...</div>
+  </form>
+  <div class="footer-login">Oceânica Engenharia © 2026</div>
+</div>
+
+<script>
+const API = window.location.origin;
+
+function mostrarErro(msg) {
+  const el = document.getElementById('erroMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+async function fazerLogin(e) {
+  e.preventDefault();
+  const usuario = document.getElementById('usuario').value.trim();
+  const senha = document.getElementById('senha').value;
+  const btn = document.getElementById('btnLogin');
+  const carregando = document.getElementById('carregando');
+
+  if (!usuario || !senha) {
+    mostrarErro('Preencha usuário e senha');
+    return false;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '...';
+  carregando.style.display = 'block';
+
+  try {
+    const res = await fetch(API + '/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      mostrarErro(data.erro || 'Erro ao autenticar');
+      btn.disabled = false;
+      btn.textContent = 'ENTRAR';
+      carregando.style.display = 'none';
+      return false;
+    }
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    window.location.href = 'index.html';
+  } catch (err) {
+    mostrarErro('Erro de conexão com o servidor');
+    btn.disabled = false;
+    btn.textContent = 'ENTRAR';
+    carregando.style.display = 'none';
+  }
+  return false;
+}
+</script>
+</body>
+</html>
