@@ -88,12 +88,11 @@ app.get('/api/registros/todos', authMiddleware, async (req, res) => {
 
 app.post('/api/registros', authMiddleware, async (req, res) => {
   try {
-    const { placa, modelo, finalidade, empresa, motorista, cnh, nota, obs } = req.body;
+    const { placa, modelo, finalidade, empresa, motorista, cnh, nota, obs, hora: clientHora } = req.body;
     if (!placa || !empresa) {
       return res.status(400).json({ erro: 'Placa e Empresa são obrigatórios' });
     }
-    const agora = new Date();
-    const hora = agora.toLocaleTimeString('pt-BR');
+    const hora = clientHora || new Date().toLocaleTimeString('pt-BR');
     const result = await pool.query(
       `INSERT INTO registros (usuario_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,

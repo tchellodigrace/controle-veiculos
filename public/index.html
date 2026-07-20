@@ -405,6 +405,33 @@
       word-break:break-word;
     }
   }
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+    z-index:1000; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.mostrar{ display:flex; }
+  .modal-content{
+    background:#fff; border-radius:12px; max-width:95vw; width:1200px;
+    max-height:90vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 24px; border-bottom:1px solid var(--cinza-borda);
+  }
+  .modal-header h2{ margin:0; font-size:18px; color:var(--verde-escuro); }
+  .modal-close{
+    background:none; border:none; font-size:28px; cursor:pointer; color:#8b93a1; line-height:1;
+  }
+  .modal-close:hover{ color:#26313a; }
+  .modal-body{ padding:18px 24px 24px; overflow-y:auto; flex:1; }
+  .filtros-relatorio{
+    display:flex; gap:14px; align-items:flex-end; margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .filtros-relatorio .campo{ flex:1; min-width:160px; }
+  .filtros-relatorio .campo label{ display:block; font-size:12px; color:var(--cinza-texto); margin-bottom:4px; font-weight:600; }
+  .filtros-relatorio .campo input{ width:100%; padding:8px 10px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
     aside{ display:none; }
@@ -594,6 +621,53 @@
   </footer>
 </div>
 
+<div class="modal-overlay" id="modalRelatorios">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📋 Relatórios</h2>
+      <button class="modal-close" onclick="fecharRelatorios()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="filtros-relatorio">
+        <div class="campo">
+          <label>Data Início</label>
+          <input type="date" id="filtroDataInicio">
+        </div>
+        <div class="campo">
+          <label>Data Fim</label>
+          <input type="date" id="filtroDataFim">
+        </div>
+        <button class="btn btn-primario" onclick="carregarRelatorio()">Filtrar</button>
+      </div>
+      <div class="tabela-scroll">
+        <table id="tabelaRelatorio">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Data</th>
+              <th>Chegada</th>
+              <th>Placa</th>
+              <th>Modelo</th>
+              <th>Finalidade</th>
+              <th>Empresa</th>
+              <th>Motorista</th>
+              <th>CNH</th>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>NF/RT</th>
+              <th>Obs</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaRelatorioBody"></tbody>
+        </table>
+      </div>
+      <div class="acoes-form" style="margin-top:12px">
+        <button class="btn btn-secundario" onclick="exportarRelatorio()">Exportar CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
 
@@ -677,7 +751,8 @@ async function registrar(){
     motorista: motorista.value.trim(),
     cnh: cnh.value.trim(),
     nota: nota.value.trim(),
-    obs: obs.value.trim()
+    obs: obs.value.trim(),
+    hora: new Date().toLocaleTimeString('pt-BR')
   };
   if (!payload.placa || !payload.empresa){
     alert("Preencha ao menos Placa e Empresa.");
@@ -813,11 +888,73 @@ document.getElementById("sair").addEventListener("click", ()=>{
   }
 });
 
-["navRelatorios","navCadastros","navConfig","navSobre"].forEach(id=>{
+document.getElementById("navRelatorios").addEventListener("click", abrirRelatorios);
+["navCadastros","navConfig","navSobre"].forEach(id=>{
   document.getElementById(id).addEventListener("click", ()=> {
     alert("Este módulo será disponibilizado em uma próxima versão do sistema.");
   });
 });
+
+function abrirRelatorios(){
+  const hoje = new Date();
+  const inicio = new Date(); inicio.setDate(hoje.getDate() - 30);
+  document.getElementById("filtroDataInicio").value = inicio.toISOString().slice(0,10);
+  document.getElementById("filtroDataFim").value = hoje.toISOString().slice(0,10);
+  document.getElementById("modalRelatorios").classList.add("mostrar");
+  carregarRelatorio();
+}
+function fecharRelatorios(){
+  document.getElementById("modalRelatorios").classList.remove("mostrar");
+}
+async function carregarRelatorio(){
+  const dataInicio = document.getElementById("filtroDataInicio").value;
+  const dataFim = document.getElementById("filtroDataFim").value;
+  if(!dataInicio || !dataFim) return;
+  try {
+    const res = await fetch(API + '/api/registros/todos', { headers: getHeaders() });
+    if(!res.ok) return;
+    const todos = await res.json();
+    const filtrados = todos.filter(d => d.data_registro >= dataInicio && d.data_registro <= dataFim);
+    const tbody = document.getElementById("tabelaRelatorioBody");
+    tbody.innerHTML = "";
+    if(filtrados.length === 0){
+      tbody.innerHTML = `<tr><td colspan="13" class="vazio">Nenhum registro no período.</td></tr>`;
+      return;
+    }
+    filtrados.forEach((d,i) => {
+      tbody.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td>${d.data_registro}</td>
+        <td>${d.chegada}</td>
+        <td><b>${d.placa}</b></td>
+        <td>${d.modelo || "—"}</td>
+        <td>${d.finalidade || "—"}</td>
+        <td>${d.empresa}</td>
+        <td>${d.motorista || "—"}</td>
+        <td>${d.cnh || "—"}</td>
+        <td>${d.entrada}</td>
+        <td>${d.saida || "—"}</td>
+        <td>${d.nota || "—"}</td>
+        <td>${d.obs || "—"}</td>
+      </tr>`;
+    });
+  } catch { alert('Erro ao carregar relatório'); }
+}
+function exportarRelatorio(){
+  const linhas = document.querySelectorAll("#tabelaRelatorioBody tr");
+  if(linhas.length === 0 || linhas[0].classList.contains("vazio")){ alert("Nada para exportar."); return; }
+  let csv = "Item,Data,Chegada,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,NF/RT,Obs\n";
+  linhas.forEach((tr,i) => {
+    const tds = tr.querySelectorAll("td");
+    if(tds.length < 13) return;
+    csv += `${tds[0].textContent},${tds[1].textContent},${tds[2].textContent},${tds[3].textContent},${tds[4].textContent},${tds[5].textContent},${tds[6].textContent},${tds[7].textContent},${tds[8].textContent},${tds[9].textContent},${tds[10].textContent},${tds[11].textContent},${tds[12].textContent}\n`;
+  });
+  let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+  let url = window.URL.createObjectURL(blob);
+  let a = document.createElement("a"); a.href = url;
+  a.download = "relatorio_" + new Date().toLocaleDateString("pt-BR").replaceAll("/","-") + ".csv";
+  a.click();
+}
 
 document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   document.querySelector(".app").classList.toggle("sidebar-collapsed");
