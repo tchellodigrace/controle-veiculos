@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pré-Cadastro de Carga - Portaria Offshore</title>
+
+    <!-- Tailwind CSS para visual moderno e responsivo no celular -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lib para gerar QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-gray-100 p-4 min-h-screen flex items-center justify-center">
+
+    <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-lg">
+        <h2 class="text-xl font-bold text-slate-800 mb-1 text-center">Pré-Agendamento de Acesso</h2>
+        <p class="text-xs text-gray-500 mb-6 text-center">Preencha os dados da carga antes de chegar à guarita</p>
+
+        <form id="preCadastroForm" onsubmit="gerarAgendamento(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase">Nome do Motorista</label>
+                <input type="text" id="motorista" required placeholder="Nome completo" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase">CPF / CNH</label>
+                    <input type="text" id="documento" required placeholder="000.000.000-00" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase">Placa do Veículo</label>
+                    <input type="text" id="placa" required placeholder="ABC-1234" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm uppercase">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase">Transportadora</label>
+                    <input type="text" id="empresa" required placeholder="Empresa de transporte" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase">Número da NF / RT</label>
+                    <input type="text" id="notaFiscal" required placeholder="NF 12345" class="w-full mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition duration-200">
+                GERAR AGENDAMENTO
+            </button>
+        </form>
+
+        <!-- Área de Exibição do QR Code após o envio -->
+        <div id="resultadoAgendamento" class="hidden mt-6 text-center border-t pt-4">
+            <h3 class="text-sm font-bold text-green-600">Agendamento Concluído!</h3>
+            <p class="text-xs text-gray-600 mt-1">Apresente este código na guarita de entrada:</p>
+            <div id="qrcode" class="flex justify-center my-4"></div>
+            <p id="codigoTexto" class="text-xs font-mono font-bold bg-gray-200 p-2 rounded text-slate-800"></p>
+        </div>
+    </div>
+
+    <script>
+        function gerarAgendamento(event) {
+            event.preventDefault();
+            
+            // Captura os dados preenchidos
+            const dados = {
+                motorista: document.getElementById('motorista').value,
+                documento: document.getElementById('documento').value,
+                placa: document.getElementById('placa').value.toUpperCase(),
+                empresa: document.getElementById('empresa').value,
+                notaFiscal: document.getElementById('notaFiscal').value,
+                dataAgendamento: new Date().toISOString()
+            };
+
+            // Transforma o objeto em texto JSON para o QR Code
+            const payload = JSON.stringify(dados);
+
+            // Limpa QR Code anterior
+            document.getElementById('qrcode').innerHTML = "";
+
+            // Gerar QR Code
+            new QRCode(document.getElementById("qrcode"), {
+                text: payload,
+                width: 160,
+                height: 160
+            });
+
+            document.getElementById('codigoTexto').innerText = `PLACA: ${dados.placa} | NF: ${dados.notaFiscal}`;
+            document.getElementById('preCadastroForm').classList.add('hidden');
+            document.getElementById('resultadoAgendamento').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
