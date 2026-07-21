@@ -1097,7 +1097,8 @@ async function exportar(){
     if(dados.length === 0){ alert("Não há registros para exportar."); return; }
     let csv = "Item,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,NF/RT,Obs,Data\n";
     dados.forEach((d,i) => {
-      csv += `${i+1},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${d.data_registro}\n`;
+      const dtCsv = d.data_registro ? d.data_registro.substring(0,10).split('-').reverse().join('/') : '';
+      csv += `${i+1},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${dtCsv}\n`;
     });
     let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     let url = window.URL.createObjectURL(blob);
@@ -1266,7 +1267,10 @@ async function carregarRelatorio(){
     const res = await fetch(API + '/api/registros/todos', { headers: getHeaders() });
     if(!res.ok) return;
     const todos = await res.json();
-    const filtrados = todos.filter(d => d.data_registro >= dataInicio && d.data_registro <= dataFim);
+    const filtrados = todos.filter(d => {
+      const dr = d.data_registro ? d.data_registro.substring(0,10) : '';
+      return dr >= dataInicio && dr <= dataFim;
+    });
     const tbody = document.getElementById("tabelaRelatorioBody");
     tbody.innerHTML = "";
     if(filtrados.length === 0){
@@ -1274,9 +1278,10 @@ async function carregarRelatorio(){
       return;
     }
     filtrados.forEach((d,i) => {
+      const dt = d.data_registro ? d.data_registro.substring(0,10).split('-').reverse().join('/') : '—';
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
-        <td>${d.data_registro}</td>
+        <td>${dt}</td>
         <td>${d.chegada}</td>
         <td><b>${d.placa}</b></td>
         <td>${d.modelo || "—"}</td>
