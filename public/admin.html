@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Admin - Controle de Portaria</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ background:#f0f2f5; font-family:'Segoe UI',system-ui,sans-serif; color:#1a1a2e; }
+  .topbar{
+    background:linear-gradient(135deg,#1a1a2e,#0f3460);
+    color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .topbar h1{ font-size:18px; font-weight:700; }
+  .topbar .user{ font-size:13px; opacity:.8; }
+  .topbar .sair{ background:none; border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
+  .topbar .sair:hover{ background:rgba(255,255,255,.1); }
+  .container{ max-width:1100px; margin:24px auto; padding:0 16px; }
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+  .stat-card{
+    background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+    border-left:4px solid #0f3460;
+  }
+  .stat-card .label{ font-size:12px; color:#8b93a1; margin-bottom:4px; }
+  .stat-card .valor{ font-size:28px; font-weight:700; color:#1a1a2e; }
+  .stat-card.verde{ border-left-color:#38a169; }
+  .stat-card.vermelho{ border-left-color:#e53e3e; }
+  .stat-card.azul{ border-left-color:#3182ce; }
+  .stat-card.roxo{ border-left-color:#805ad5; }
+  .section{ background:#fff; border-radius:12px; padding:20px; box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:20px; }
+  .section h2{ font-size:16px; margin-bottom:16px; color:#1a1a2e; display:flex; align-items:center; gap:8px; }
+  .section h2 .badge{ background:#e53e3e; color:#fff; font-size:11px; padding:2px 8px; border-radius:10px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th{ background:#f7f8fa; padding:10px 12px; text-align:left; font-weight:600; color:#4a5568; border-bottom:2px solid #e2e8f0; }
+  td{ padding:10px 12px; border-bottom:1px solid #edf2f7; }
+  tr:hover{ background:#f7fafc; }
+  .badge-ativo{ background:#c6f6d5; color:#276749; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+  .badge-inativo{ background:#fed7d7; color:#9b2c2c; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+  .badge-expirado{ background:#fefcbf; color:#975a16; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:600; }
+  .btn-acao{ padding:5px 10px; border:none; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; color:#fff; }
+  .btn-editar{ background:#3182ce; }
+  .btn-excluir{ background:#e53e3e; }
+  .btn-pagamento{ background:#38a169; }
+  .btn-novo{ background:#1a1a2e; color:#fff; padding:10px 20px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-novo:hover{ background:#0f3460; }
+  .acoes-col{ display:flex; gap:4px; }
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100;
+    align-items:center; justify-content:center;
+  }
+  .modal-overlay.mostrar{ display:flex; }
+  .modal-content{ background:#fff; border-radius:12px; width:100%; max-width:500px; max-height:90vh; overflow-y:auto; }
+  .modal-header{ padding:16px 20px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; }
+  .modal-header h3{ font-size:16px; }
+  .modal-close{ background:none; border:none; font-size:24px; cursor:pointer; color:#8b93a1; }
+  .modal-body{ padding:20px; }
+  .form-group{ margin-bottom:14px; }
+  .form-group label{ display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px; }
+  .form-group input,.form-group select{
+    width:100%; padding:9px 12px; border:1px solid #d1d5db;
+    border-radius:6px; font-size:13px; outline:none;
+  }
+  .form-group input:focus,.form-group select:focus{ border-color:#0f3460; }
+  .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .btn-salvar{ width:100%; padding:10px; border:none; border-radius:8px; background:#1a1a2e; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-salvar:hover{ background:#0f3460; }
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab{ padding:8px 16px; border:2px solid #d1d5db; background:#fff; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:#4a5568; }
+  .tab.active{ background:#1a1a2e; color:#fff; border-color:#1a1a2e; }
+  .vazio{ text-align:center; color:#8b93a1; padding:24px; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Painel Administrativo</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="user" id="adminNome">Admin</span>
+    <button class="sair" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card">
+      <div class="label">Total Clientes</div>
+      <div class="valor" id="statTotal">0</div>
+    </div>
+    <div class="stat-card verde">
+      <div class="label">Ativos</div>
+      <div class="valor" id="statAtivos">0</div>
+    </div>
+    <div class="stat-card vermelho">
+      <div class="label">Expirados</div>
+      <div class="valor" id="statExpirados">0</div>
+    </div>
+    <div class="stat-card azul">
+      <div class="label">Receita Mensal</div>
+      <div class="valor" id="statReceita">R$ 0</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="trocarAba(this,'abaClientes')">Clientes</button>
+    <button class="tab" onclick="trocarAba(this,'abaFaturamento')">Faturamento</button>
+  </div>
+
+  <div id="abaClientes">
+    <div class="section">
+      <h2>Clientes <span class="badge" id="badgeClientes"></span> <button class="btn-novo" style="margin-left:auto" onclick="abrirModalNovo()">+ Novo Cliente</button></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>CNPJ</th>
+              <th>Responsável</th>
+              <th>Plano</th>
+              <th>Valor</th>
+              <th>Expira</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaClientes"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioClientes" style="display:none">Nenhum cliente cadastrado</div>
+    </div>
+  </div>
+
+  <div id="abaFaturamento" style="display:none">
+    <div class="section">
+      <h2>Faturamento <button class="btn-novo" style="margin-left:auto" onclick="abrirModalPagamento()">+ Registrar Pagamento</button></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Empresa</th>
+              <th>Descrição</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaFaturamento"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioFaturamento" style="display:none">Nenhum pagamento registrado</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="tituloModal">Novo Cliente</h3>
+      <button class="modal-close" onclick="fecharModal('modalCliente')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form onsubmit="salvarCliente(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label>Empresa *</label>
+          <input type="text" id="fEmpresa" required placeholder="Nome da empresa">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>CNPJ</label>
+            <input type="text" id="fCnpj" placeholder="00.000.000/0000-00">
+          </div>
+          <div class="form-group">
+            <label>Responsável</label>
+            <input type="text" id="fResponsavel" placeholder="Nome do responsável">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="fEmail" placeholder="email@empresa.com">
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="text" id="fTelefone" placeholder="(00) 00000-0000">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Plano</label>
+            <select id="fPlano">
+              <option value="basico">Básico</option>
+              <option value="padrao">Padrão</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor Mensal (R$)</label>
+            <input type="number" id="fValor" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Data Expiração</label>
+            <input type="date" id="fExpiracao">
+          </div>
+          <div class="form-group">
+            <label>Domínio</label>
+            <input type="text" id="fDominio" placeholder="empresa.com.br">
+          </div>
+        </div>
+        <button type="submit" class="btn-salvar">Salvar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalPagamento">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Registrar Pagamento</h3>
+      <button class="modal-close" onclick="fecharModal('modalPagamento')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form onsubmit="salvarPagamento(event)">
+        <div class="form-group">
+          <label>Cliente *</label>
+          <select id="pCliente" required></select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valor (R$) *</label>
+            <input type="number" id="pValor" step="0.01" min="0" required placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="pData">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descrição</label>
+          <input type="text" id="pDescricao" placeholder="Ex.: Mensalidade Janeiro">
+        </div>
+        <button type="submit" class="btn-salvar">Registrar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+const token = localStorage.getItem('tokenAdmin');
+if(!token) window.location.href = '/admin-login.html';
+
+function getHeaders(){ return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }; }
+
+const admin = JSON.parse(localStorage.getItem('adminLogado') || '{}');
+if(admin.nome) document.getElementById('adminNome').textContent = admin.nome;
+
+function sair(){
+  localStorage.removeItem('tokenAdmin');
+  localStorage.removeItem('adminLogado');
+  window.location.href = '/admin-login.html';
+}
+
+function trocarAba(btn, id){
+  document.querySelectorAll('.tab').forEach(b => { b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('abaClientes').style.display = id === 'abaClientes' ? 'block' : 'none';
+  document.getElementById('abaFaturamento').style.display = id === 'abaFaturamento' ? 'block' : 'none';
+}
+
+function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
+function fecharModal(modal){ document.getElementById(modal).classList.remove('mostrar'); }
+
+function abrirModalNovo(){
+  document.getElementById('editId').value = '';
+  document.getElementById('tituloModal').textContent = 'Novo Cliente';
+  ['fEmpresa','fCnpj','fResponsavel','fEmail','fTelefone','fValor','fDominio'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fPlano').value = 'basico';
+  document.getElementById('fExpiracao').value = '';
+  abrirModal('modalCliente');
+}
+
+async function abrirModalEditar(id){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    const clientes = await res.json();
+    const c = clientes.find(x => x.id == id);
+    if(!c) return;
+    document.getElementById('editId').value = c.id;
+    document.getElementById('tituloModal').textContent = 'Editar Cliente';
+    document.getElementById('fEmpresa').value = c.empresa;
+    document.getElementById('fCnpj').value = c.cnpj;
+    document.getElementById('fResponsavel').value = c.responsavel;
+    document.getElementById('fEmail').value = c.email;
+    document.getElementById('fTelefone').value = c.telefone;
+    document.getElementById('fPlano').value = c.plano;
+    document.getElementById('fValor').value = c.valor_mensal;
+    document.getElementById('fExpiracao').value = c.data_expiracao ? c.data_expiracao.substring(0,10) : '';
+    document.getElementById('fDominio').value = c.dominio;
+    abrirModal('modalCliente');
+  } catch {}
+}
+
+async function salvarCliente(e){
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const payload = {
+    empresa: document.getElementById('fEmpresa').value.trim(),
+    cnpj: document.getElementById('fCnpj').value.trim(),
+    responsavel: document.getElementById('fResponsavel').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    telefone: document.getElementById('fTelefone').value.trim(),
+    plano: document.getElementById('fPlano').value,
+    valor_mensal: parseFloat(document.getElementById('fValor').value) || 0,
+    data_expiracao: document.getElementById('fExpiracao').value || null,
+    dominio: document.getElementById('fDominio').value.trim()
+  };
+  try {
+    const url = id ? API + '/api/admin/clientes/' + id : API + '/api/admin/clientes';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro'); return; }
+    fecharModal('modalCliente');
+    carregarDashboard();
+    carregarClientes();
+  } catch { alert('Erro ao salvar'); }
+}
+
+async function excluirCliente(id){
+  if(!confirm('Excluir este cliente?')) return;
+  try {
+    await fetch(API + '/api/admin/clientes/' + id, { method: 'DELETE', headers: getHeaders() });
+    carregarDashboard();
+    carregarClientes();
+  } catch {}
+}
+
+async function ativarDesativarCliente(id, ativo){
+  try {
+    await fetch(API + '/api/admin/clientes/' + id, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ativo })
+    });
+    carregarDashboard();
+    carregarClientes();
+  } catch {}
+}
+
+async function carregarDashboard(){
+  try {
+    const res = await fetch(API + '/api/admin/dashboard', { headers: getHeaders() });
+    if(!res.ok){ if(res.status === 401) sair(); return; }
+    const d = await res.json();
+    document.getElementById('statTotal').textContent = d.total_clientes;
+    document.getElementById('statAtivos').textContent = d.clientes_ativos;
+    document.getElementById('statExpirados').textContent = d.clientes_expirados;
+    document.getElementById('statReceita').textContent = 'R$ ' + d.receita_mensal.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  } catch {}
+}
+
+async function carregarClientes(){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const clientes = await res.json();
+    const tbody = document.getElementById('tabelaClientes');
+    const vazio = document.getElementById('vazioClientes');
+    document.getElementById('badgeClientes').textContent = clientes.length;
+    if(clientes.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    tbody.innerHTML = clientes.map(c => {
+      const expirado = c.data_expiracao && new Date(c.data_expiracao) < new Date();
+      let statusBadge = c.ativo ? '<span class="badge-ativo">Ativo</span>' : '<span class="badge-inativo">Inativo</span>';
+      if(expirado && c.ativo) statusBadge = '<span class="badge-expirado">Expirado</span>';
+      return `<tr>
+        <td><b>${c.empresa}</b></td>
+        <td>${c.cnpj || '—'}</td>
+        <td>${c.responsavel || '—'}</td>
+        <td>${c.plano}</td>
+        <td>R$ ${(c.valor_mensal || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+        <td>${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</td>
+        <td>${statusBadge}</td>
+        <td>
+          <div class="acoes-col">
+            <button class="btn-acao btn-editar" onclick="abrirModalEditar(${c.id})">Editar</button>
+            <button class="btn-acao" style="background:${c.ativo ? '#e53e3e' : '#38a169'}" onclick="ativarDesativarCliente(${c.id}, ${!c.ativo})">${c.ativo ? 'Desativar' : 'Ativar'}</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+async function carregarFaturamento(){
+  try {
+    const res = await fetch(API + '/api/admin/faturamento', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById('tabelaFaturamento');
+    const vazio = document.getElementById('vazioFaturamento');
+    if(dados.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    tbody.innerHTML = dados.map(d => `<tr>
+      <td>${new Date(d.data_pagamento).toLocaleDateString('pt-BR')}</td>
+      <td><b>${d.empresa || '—'}</b></td>
+      <td>${d.descricao || '—'}</td>
+      <td>R$ ${(d.valor || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+    </tr>`).join('');
+  } catch {}
+}
+
+async function abrirModalPagamento(){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    const clientes = await res.json();
+    const select = document.getElementById('pCliente');
+    select.innerHTML = '<option value="">Selecione</option>' + clientes.map(c => `<option value="${c.id}">${c.empresa}</option>`).join('');
+    document.getElementById('pValor').value = '';
+    document.getElementById('pData').value = new Date().toISOString().substring(0,10);
+    document.getElementById('pDescricao').value = '';
+    abrirModal('modalPagamento');
+  } catch {}
+}
+
+async function salvarPagamento(e){
+  e.preventDefault();
+  const payload = {
+    cliente_id: parseInt(document.getElementById('pCliente').value),
+    valor: parseFloat(document.getElementById('pValor').value),
+    data_pagamento: document.getElementById('pData').value,
+    descricao: document.getElementById('pDescricao').value.trim()
+  };
+  if(!payload.cliente_id || !payload.valor){ alert('Preencha cliente e valor'); return; }
+  try {
+    const res = await fetch(API + '/api/admin/faturamento', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro'); return; }
+    fecharModal('modalPagamento');
+    carregarFaturamento();
+    carregarDashboard();
+  } catch { alert('Erro ao registrar pagamento'); }
+}
+
+carregarDashboard();
+carregarClientes();
+carregarFaturamento();
+</script>
+</body>
+</html>

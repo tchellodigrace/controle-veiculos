@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - Controle de Portaria</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    min-height:100vh;
+    background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Segoe UI',system-ui,sans-serif;
+  }
+  .login-card{
+    background:#fff; border-radius:16px; padding:40px 36px;
+    width:100%; max-width:400px; box-shadow:0 20px 60px rgba(0,0,0,.3);
+    text-align:center;
+  }
+  .login-card h1{ font-size:22px; color:#1a1a2e; margin-bottom:4px; }
+  .login-card .sub{ font-size:13px; color:#8b93a1; margin-bottom:24px; }
+  .campo{ margin-bottom:16px; text-align:left; }
+  .campo label{ display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px; }
+  .campo input{
+    width:100%; padding:11px 14px; border:1px solid #d1d5db;
+    border-radius:8px; font-size:14px; outline:none; transition:.2s;
+  }
+  .campo input:focus{ border-color:#0f3460; box-shadow:0 0 0 3px rgba(15,52,96,.12); }
+  .btn{
+    width:100%; padding:12px; border:none; border-radius:8px;
+    background:#1a1a2e; color:#fff; font-size:15px; font-weight:700;
+    cursor:pointer; transition:background .2s;
+  }
+  .btn:hover{ background:#0f3460; }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+  .erro{ background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px; padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px; display:none; }
+  .info{ font-size:11px; color:#8b93a1; margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="login-card">
+  <h1>Painel Administrativo</h1>
+  <p class="sub">Controle de Vendas e Clientes</p>
+  <div class="erro" id="erro"></div>
+  <form onsubmit="fazerLogin(event)">
+    <div class="campo">
+      <label>Usuário</label>
+      <input type="text" id="usuario" placeholder="Usuário admin" required>
+    </div>
+    <div class="campo">
+      <label>Senha</label>
+      <input type="password" id="senha" placeholder="Sua senha" required>
+    </div>
+    <button type="submit" id="btn" class="btn">Entrar</button>
+  </form>
+  <p class="info">Acesso restrito aos administradores</p>
+</div>
+<script>
+const API = window.location.origin;
+if(localStorage.getItem('tokenAdmin')) window.location.href = '/admin.html';
+
+async function fazerLogin(e){
+  e.preventDefault();
+  const erro = document.getElementById('erro');
+  erro.style.display = 'none';
+  const usuario = document.getElementById('usuario').value.trim();
+  const senha = document.getElementById('senha').value;
+  if(!usuario || !senha){ erro.textContent = 'Preencha todos os campos'; erro.style.display = 'block'; return; }
+  const btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const res = await fetch(API + '/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    if(!res.ok){ const err = await res.json(); erro.textContent = err.erro || 'Erro ao entrar'; erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar'; return; }
+    const data = await res.json();
+    localStorage.setItem('tokenAdmin', data.token);
+    localStorage.setItem('adminLogado', JSON.stringify(data.admin));
+    window.location.href = '/admin.html';
+  } catch { erro.textContent = 'Erro de conexão'; erro.style.display = 'block'; btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+</script>
+</body>
+</html>

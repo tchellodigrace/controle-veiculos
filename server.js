@@ -625,6 +625,14 @@ app.get('/api/setup', async (req, res) => {
       await pool.query("UPDATE usuarios SET senha = $1 WHERE usuario = 'admin'", [senhaAdmin]);
     }
     const users = await pool.query('SELECT id, nome, usuario, ativo FROM usuarios');
+    const adminCount = await pool.query('SELECT COUNT(*)::int AS total FROM admin_users');
+    if (adminCount.rows[0].total === 0) {
+      const senhaSuper = await bcrypt.hash('admin123', 10);
+      await pool.query(
+        'INSERT INTO admin_users (nome, usuario, senha) VALUES ($1, $2, $3)',
+        ['SUPER ADMIN', 'superadmin', senhaSuper]
+      );
+    }
     res.json({ mensagem: 'OK', usuarios: users.rows });
   } catch (err) {
     console.error('Erro ao executar schema:', err);
@@ -863,9 +871,160 @@ app.put('/api/contas-visitantes/:id', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+app.get('/admin-login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'Rota não encontrada' });
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+function adminMiddleware(req, res, next) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ erro: 'Não autorizado' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded.admin) return res.status(401).json({ erro: 'Não autorizado' });
+    req.admin = decoded;
+    next();
+  } catch { return res.status(401).json({ erro: 'Token inválido' }); }
+}
+
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { usuario, senha } = req.body;
+    if (!usuario || !senha) return res.status(400).json({ erro: 'Usuário e senha são obrigatórios' });
+    const result = await pool.query('SELECT * FROM admin_users WHERE usuario = $1', [usuario.toLowerCase()]);
+    if (result.rows.length === 0) return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
+    const admin = result.rows[0];
+    const senhaValida = await bcrypt.compare(senha, admin.senha);
+    if (!senhaValida) return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
+    const token = jwt.sign({ id: admin.id, nome: admin.nome, admin: true }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token, admin: { id: admin.id, nome: admin.nome } });
+  } catch (err) {
+    console.error('Erro no login admin:', err);
+    res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+});
+
+app.get('/api/admin/clientes', adminMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM clientes ORDER BY criado_em DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar clientes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar clientes' });
+  }
+});
+
+app.post('/api/admin/clientes', adminMiddleware, async (req, res) => {
+  try {
+    const { empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio } = req.body;
+    if (!empresa) return res.status(400).json({ erro: 'Empresa é obrigatória' });
+    const result = await pool.query(
+      `INSERT INTO clientes (empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [empresa.toUpperCase(), cnpj||'', responsavel||'', email||'', telefone||'', plano||'basico', valor_mensal||0, data_expiracao||null, dominio||'']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar cliente:', err);
+    res.status(500).json({ erro: 'Erro ao criar cliente: ' + err.message });
+  }
+});
+
+app.put('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
+  try {
+    const { empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio, ativo } = req.body;
+    const updates = []; const params = [];
+    if (empresa !== undefined) { params.push(empresa.toUpperCase()); updates.push(`empresa = $${params.length}`); }
+    if (cnpj !== undefined) { params.push(cnpj); updates.push(`cnpj = $${params.length}`); }
+    if (responsavel !== undefined) { params.push(responsavel); updates.push(`responsavel = $${params.length}`); }
+    if (email !== undefined) { params.push(email); updates.push(`email = $${params.length}`); }
+    if (telefone !== undefined) { params.push(telefone); updates.push(`telefone = $${params.length}`); }
+    if (plano !== undefined) { params.push(plano); updates.push(`plano = $${params.length}`); }
+    if (valor_mensal !== undefined) { params.push(valor_mensal); updates.push(`valor_mensal = $${params.length}`); }
+    if (data_expiracao !== undefined) { params.push(data_expiracao); updates.push(`data_expiracao = $${params.length}`); }
+    if (dominio !== undefined) { params.push(dominio); updates.push(`dominio = $${params.length}`); }
+    if (ativo !== undefined) { params.push(ativo); updates.push(`ativo = $${params.length}`); }
+    if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
+    params.push(req.params.id);
+    await pool.query(`UPDATE clientes SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
+    res.json({ mensagem: 'Cliente atualizado' });
+  } catch (err) {
+    console.error('Erro ao atualizar cliente:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar cliente' });
+  }
+});
+
+app.delete('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM clientes WHERE id = $1', [req.params.id]);
+    res.json({ mensagem: 'Cliente excluído' });
+  } catch (err) {
+    console.error('Erro ao excluir cliente:', err);
+    res.status(500).json({ erro: 'Erro ao excluir cliente' });
+  }
+});
+
+app.get('/api/admin/dashboard', adminMiddleware, async (req, res) => {
+  try {
+    const clientes = await pool.query('SELECT COUNT(*)::int AS total FROM clientes');
+    const ativos = await pool.query("SELECT COUNT(*)::int AS total FROM clientes WHERE ativo = TRUE");
+    const expirados = await pool.query("SELECT COUNT(*)::int AS total FROM clientes WHERE data_expiracao < CURRENT_DATE AND ativo = TRUE");
+    const receita = await pool.query("SELECT COALESCE(SUM(valor_mensal), 0)::float AS total FROM clientes WHERE ativo = TRUE");
+    const faturamento = await pool.query("SELECT COALESCE(SUM(valor), 0)::float AS total FROM faturamento");
+    const recentes = await pool.query("SELECT * FROM faturamento ORDER BY data_pagamento DESC LIMIT 10");
+    const planos = await pool.query("SELECT plano, COUNT(*)::int AS total FROM clientes GROUP BY plano");
+    res.json({
+      total_clientes: clientes.rows[0].total,
+      clientes_ativos: ativos.rows[0].total,
+      clientes_expirados: expirados.rows[0].total,
+      receita_mensal: receita.rows[0].total,
+      faturamento_total: faturamento.rows[0].total,
+      faturamento_recente: recentes.rows,
+      distribuicao_planos: planos.rows
+    });
+  } catch (err) {
+    console.error('Erro no dashboard:', err);
+    res.status(500).json({ erro: 'Erro ao carregar dashboard' });
+  }
+});
+
+app.post('/api/admin/faturamento', adminMiddleware, async (req, res) => {
+  try {
+    const { cliente_id, valor, descricao, data_pagamento } = req.body;
+    if (!cliente_id || !valor) return res.status(400).json({ erro: 'Cliente e valor são obrigatórios' });
+    const result = await pool.query(
+      'INSERT INTO faturamento (cliente_id, valor, descricao, data_pagamento) VALUES ($1, $2, $3, $4) RETURNING *',
+      [cliente_id, valor, descricao||'', data_pagamento||new Date().toISOString().substring(0,10)]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao registrar faturamento:', err);
+    res.status(500).json({ erro: 'Erro ao registrar faturamento' });
+  }
+});
+
+app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT f.*, c.empresa FROM faturamento f 
+       LEFT JOIN clientes c ON f.cliente_id = c.id 
+       ORDER BY f.data_pagamento DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar faturamento:', err);
+    res.status(500).json({ erro: 'Erro ao buscar faturamento' });
+  }
 });
 
 async function iniciar() {
@@ -892,6 +1051,15 @@ async function iniciar() {
         ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
       );
       console.log('Usuários padrão criados (portaria/portaria123, admin/admin123)');
+    }
+    const adminCount = await pool.query('SELECT COUNT(*)::int AS total FROM admin_users');
+    if (adminCount.rows[0].total === 0) {
+      const senhaSuper = await bcrypt.hash('admin123', 10);
+      await pool.query(
+        'INSERT INTO admin_users (nome, usuario, senha) VALUES ($1, $2, $3)',
+        ['SUPER ADMIN', 'superadmin', senhaSuper]
+      );
+      console.log('Admin padrão criado (superadmin/admin123)');
     }
   } catch (err) {
     console.error('Erro ao conectar ao PostgreSQL:', err.message);
