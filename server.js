@@ -782,6 +782,27 @@ app.get('/api/admin/clientes/:id/usuarios', adminMiddleware, async (req, res) =>
   }
 });
 
+app.post('/api/admin/clientes/:id/usuarios', adminMiddleware, async (req, res) => {
+  try {
+    const { usuario, senha, nome } = req.body;
+    const cliente_id = req.params.id;
+    const cliRes = await pool.query('SELECT empresa FROM clientes WHERE id = $1', [cliente_id]);
+    if (cliRes.rows.length === 0) return res.status(404).json({ erro: 'Cliente não encontrado' });
+    const u = usuario || (cliRes.rows[0].empresa.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20) + '_portaria');
+    const s = senha || 'portaria123';
+    const n = nome || 'PORTARIA ' + cliRes.rows[0].empresa.toUpperCase();
+    const senhaHash = await bcrypt.hash(s, 10);
+    const result = await pool.query(
+      'INSERT INTO usuarios (cliente_id, nome, usuario, senha, senha_exibicao) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, usuario, senha_exibicao',
+      [cliente_id, n, u.toLowerCase(), senhaHash, s]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ erro: 'Usuário já existe' });
+    res.status(500).json({ erro: 'Erro ao criar usuário: ' + err.message });
+  }
+});
+
 app.get('/api/admin/dashboard', adminMiddleware, async (req, res) => {
   try {
     const clientes = await pool.query('SELECT COUNT(*)::int AS total FROM clientes');

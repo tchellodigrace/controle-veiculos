@@ -371,7 +371,10 @@ async function verDetalhes(id){
         <div style="margin-top:8px">${users.map(u => `<div style="font-size:12px;margin-bottom:4px"><b>${u.usuario}</b> / ${u.senha_exibicao || '***'} <span style="color:${u.ativo?'#38a169':'#e53e3e'};font-weight:600">${u.ativo?'Ativo':'Inativo'}</span></div>`).join('')}</div>
       </div>`;
     } else {
-      usersHtml = `<div style="background:#fff0f0;border-radius:8px;padding:14px;margin-bottom:14px;font-size:12px;color:#cc0000">Nenhum usuário portaria criado. Crie um no cadastro do cliente.</div>`;
+      usersHtml = `<div style="background:#fff0f0;border-radius:8px;padding:14px;margin-bottom:14px;font-size:12px;color:#cc0000;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>Nenhum usuário portaria criado.</span>
+        <button class="btn-acao btn-editar" onclick="criarUsuarioPortaria(${c.id})" id="btnCriarPortaria">Criar Agora</button>
+      </div>`;
     }
     document.getElementById('modalDetalheBody').innerHTML = `
       <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${c.empresa}</h3>
@@ -500,6 +503,21 @@ async function salvarPagamento(e){
 carregarDashboard();
 carregarClientes();
 carregarFaturamento();
+
+async function criarUsuarioPortaria(clienteId){
+  const btn = document.getElementById('btnCriarPortaria');
+  if(btn){ btn.textContent = 'Criando...'; btn.disabled = true; }
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + clienteId + '/usuarios', {
+      method: 'POST', headers: getHeaders(),
+      body: JSON.stringify({})
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } return; }
+    const data = await res.json();
+    alert('Usuário criado!\n\nLogin: ' + data.usuario + '\nSenha: portaria123\n\nAltere a senha depois em Cadastros > Usuários do sistema.');
+    fecharModal('modalDetalhe');
+  } catch { alert('Erro ao criar usuário'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } }
+}
 </script>
 </body>
 </html>
