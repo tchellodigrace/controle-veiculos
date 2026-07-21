@@ -136,6 +136,10 @@
         <input type="text" id="vPlaca" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
       <div class="campo">
+        <label>Nota Fiscal / RT</label>
+        <input type="text" id="vNota" placeholder="Informe a nota fiscal / RT">
+      </div>
+      <div class="campo">
         <label>Informações Adicionais</label>
         <input type="text" id="vObs" placeholder="Informações adicionais">
       </div>
@@ -269,6 +273,7 @@ async function enviar(e){
     empresa: visitanteLogado?.empresa || '',
     tipo,
     placa,
+    nota: document.getElementById("vNota").value.trim(),
     obs: document.getElementById("vObs").value.trim()
   };
   try {

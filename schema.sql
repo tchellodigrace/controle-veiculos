@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS visitantes (
   empresa VARCHAR(200) DEFAULT '',
   tipo VARCHAR(50) DEFAULT '',
   placa VARCHAR(20) DEFAULT '',
+  nota VARCHAR(100) DEFAULT '',
   entrada VARCHAR(10) NOT NULL,
   saida VARCHAR(10) DEFAULT '',
   data_registro DATE DEFAULT CURRENT_DATE,
@@ -122,6 +123,7 @@ CREATE TABLE IF NOT EXISTS pre_registros_visitantes (
   empresa VARCHAR(200) DEFAULT '',
   tipo VARCHAR(50) DEFAULT '',
   placa VARCHAR(20) DEFAULT '',
+  nota VARCHAR(100) DEFAULT '',
   obs TEXT DEFAULT '',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

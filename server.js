@@ -314,7 +314,7 @@ app.get('/api/visitantes', authMiddleware, async (req, res) => {
 
 app.post('/api/visitantes', authMiddleware, async (req, res) => {
   try {
-    const { nome, cpf, empresa, tipo, placa, hora: clientHora } = req.body;
+    const { nome, cpf, empresa, tipo, placa, nota, hora: clientHora } = req.body;
     if (!nome) {
       return res.status(400).json({ erro: 'Nome é obrigatório' });
     }
@@ -322,18 +322,19 @@ app.post('/api/visitantes', authMiddleware, async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, entrada)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), hora]
+        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', hora]
       );
     } catch (e) {
       try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS tipo VARCHAR(50) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS placa VARCHAR(20) DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE visitantes DROP COLUMN IF EXISTS setor_visitado"); } catch {}
       result = await pool.query(
-        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, entrada)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), hora]
+        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', hora]
       );
     }
     res.status(201).json(result.rows[0]);
@@ -702,7 +703,7 @@ app.post('/api/login-visitante', async (req, res) => {
 
 app.post('/api/pre-registro-visitante', async (req, res) => {
   try {
-    const { visitante_id, nome, cpf, empresa, tipo, placa, obs } = req.body;
+    const { visitante_id, nome, cpf, empresa, tipo, placa, nota, obs } = req.body;
     const finalNome = nome || '';
     if (!finalNome) {
       return res.status(400).json({ erro: 'Nome é obrigatório' });
@@ -710,9 +711,9 @@ app.post('/api/pre-registro-visitante', async (req, res) => {
     let result;
     try {
       result = await pool.query(
-        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, tipo, placa, obs)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), obs||'']
+        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, tipo, placa, nota, obs)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', obs||'']
       );
     } catch (e) {
       console.log('Fallback pre-registro visitante:', e.message);
@@ -724,11 +725,12 @@ app.post('/api/pre-registro-visitante', async (req, res) => {
       )`);
       try { await pool.query("ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS tipo VARCHAR(50) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS placa VARCHAR(20) DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE pre_registros_visitantes DROP COLUMN IF EXISTS setor_visitado"); } catch {}
       result = await pool.query(
-        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, tipo, placa, obs)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), obs||'']
+        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, tipo, placa, nota, obs)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', obs||'']
       );
     }
     res.status(201).json(result.rows[0]);
@@ -760,18 +762,19 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, async (r
     let visitante;
     try {
       visitante = await pool.query(
-        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, entrada, data_registro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [req.usuario.id, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', hora, hoje]
+        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada, data_registro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [req.usuario.id, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', hora, hoje]
       );
     } catch (e) {
       try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS tipo VARCHAR(50) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS placa VARCHAR(20) DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch {}
       try { await pool.query("ALTER TABLE visitantes DROP COLUMN IF EXISTS setor_visitado"); } catch {}
       visitante = await pool.query(
-        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, entrada, data_registro)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-        [req.usuario.id, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', hora, hoje]
+        `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada, data_registro)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [req.usuario.id, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', hora, hoje]
       );
     }
     await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
