@@ -1466,37 +1466,51 @@ let badgesVisitantesAnterior = 0;
 
 async function verificarBadges(){
   try {
-    const [resV, resVisit] = await Promise.all([
+    const [resPreV, resPreVisit, resContasM, resContasVisit] = await Promise.all([
       fetch(API + '/api/pre-registros', { headers: getHeaders() }),
-      fetch(API + '/api/pre-registros-visitantes', { headers: getHeaders() })
+      fetch(API + '/api/pre-registros-visitantes', { headers: getHeaders() }),
+      fetch(API + '/api/contas-motoristas', { headers: getHeaders() }),
+      fetch(API + '/api/contas-visitantes', { headers: getHeaders() })
     ]);
-    if(resV.ok){
-      const dados = await resV.json();
-      const badge = document.getElementById("badgeVeiculos");
-      if(dados.length > 0){
-        badge.textContent = dados.length;
-        badge.style.display = "inline";
-        if(dados.length > badgesVeiculosAnterior) badge.classList.add("pulse");
-        else badge.classList.remove("pulse");
-        badgesVeiculosAnterior = dados.length;
-      } else {
-        badge.style.display = "none";
-        badgesVeiculosAnterior = 0;
-      }
+    let totalV = 0;
+    let totalVisit = 0;
+    if(resPreV.ok){
+      const dados = await resPreV.json();
+      totalV += dados.length;
     }
-    if(resVisit.ok){
-      const dados = await resVisit.json();
-      const badge = document.getElementById("badgeVisitantes");
-      if(dados.length > 0){
-        badge.textContent = dados.length;
-        badge.style.display = "inline";
-        if(dados.length > badgesVisitantesAnterior) badge.classList.add("pulse");
-        else badge.classList.remove("pulse");
-        badgesVisitantesAnterior = dados.length;
-      } else {
-        badge.style.display = "none";
-        badgesVisitantesAnterior = 0;
-      }
+    if(resContasM.ok){
+      const contas = await resContasM.json();
+      totalV += contas.filter(c => !c.ativo).length;
+    }
+    const badgeV = document.getElementById("badgeVeiculos");
+    if(totalV > 0){
+      badgeV.textContent = totalV;
+      badgeV.style.display = "inline";
+      if(totalV > badgesVeiculosAnterior) badgeV.classList.add("pulse");
+      else badgeV.classList.remove("pulse");
+      badgesVeiculosAnterior = totalV;
+    } else {
+      badgeV.style.display = "none";
+      badgesVeiculosAnterior = 0;
+    }
+    if(resPreVisit.ok){
+      const dados = await resPreVisit.json();
+      totalVisit += dados.length;
+    }
+    if(resContasVisit.ok){
+      const contas = await resContasVisit.json();
+      totalVisit += contas.filter(c => !c.ativo).length;
+    }
+    const badgeVisit = document.getElementById("badgeVisitantes");
+    if(totalVisit > 0){
+      badgeVisit.textContent = totalVisit;
+      badgeVisit.style.display = "inline";
+      if(totalVisit > badgesVisitantesAnterior) badgeVisit.classList.add("pulse");
+      else badgeVisit.classList.remove("pulse");
+      badgesVisitantesAnterior = totalVisit;
+    } else {
+      badgeVisit.style.display = "none";
+      badgesVisitantesAnterior = 0;
     }
   } catch {}
 }
