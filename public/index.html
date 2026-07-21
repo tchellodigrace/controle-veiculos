@@ -991,7 +991,8 @@ async function atualizarPreRegistros(){
 async function confirmarPreRegistro(id){
   try {
     const res = await fetch(API + '/api/pre-registros/' + id + '/confirmar', {
-      method: 'POST', headers: getHeaders()
+      method: 'POST', headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR'), data: new Date().toLocaleDateString('en-CA') })
     });
     if(!res.ok){ alert("Erro ao confirmar"); return; }
     atualizarPreRegistros();

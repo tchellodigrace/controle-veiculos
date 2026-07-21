@@ -485,8 +485,8 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, async (req, res) =>
     const pre = await pool.query('SELECT * FROM pre_registros WHERE id = $1', [req.params.id]);
     if (pre.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     const d = pre.rows[0];
-    const hora = new Date().toLocaleTimeString('pt-BR');
-    const hoje = new Date().toLocaleDateString('en-CA');
+    const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
+    const hoje = req.body.data || new Date().toLocaleDateString('en-CA');
     const pos = await pool.query(
       `SELECT COALESCE(MAX(posicao), 0) + 1 AS prox FROM registros WHERE data_registro = $1`,
       [hoje]
