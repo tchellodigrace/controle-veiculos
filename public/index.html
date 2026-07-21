@@ -449,6 +449,7 @@
   .usuario-item small{ color:#8b93a1; font-size:11px; }
   .usuario-item em{ font-size:11px; color:var(--verde-escuro); }
   .usuario-status{ font-size:10px; background:#e0e3e7; padding:2px 8px; border-radius:10px; }
+  .senha-badge{ font-size:10px; background:#d1e7dd; color:#0f5132; padding:2px 8px; border-radius:10px; font-family:monospace; letter-spacing:0.5px; }
   .badge-admin{ background:var(--verde-escuro); color:#fff; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
@@ -1197,6 +1198,7 @@ async function carregarUsuarios(){
     div.innerHTML = usuarios.filter(u => !u.desativado).map(u => `
       <div class="usuario-item">
         <span>${u.nome} <small>(${u.usuario})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
+        <span class="senha-badge" title="Senha">${u.senha_exibicao || '—'}</span>
         <span class="usuario-status ${u.admin ? 'badge-admin' : ''}">${u.admin ? 'Admin' : 'Operador'}</span>
       </div>
     `).join("");
@@ -1221,6 +1223,7 @@ async function carregarContasMotoristas(){
       <div class="usuario-item">
         <span>${c.nome} <small>(${c.usuario})</small></span>
         <div style="display:flex;gap:6px;align-items:center">
+          <span class="senha-badge" title="Senha">${c.senha_exibicao || '—'}</span>
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
           <button class="btn-excluir" onclick="alternarContaMotorista(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '✕' : '✓'}</button>
         </div>

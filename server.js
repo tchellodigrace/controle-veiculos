@@ -246,7 +246,7 @@ app.get('/api/resumo', authMiddleware, async (req, res) => {
 
 app.get('/api/usuarios', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nome, usuario, ativo, criado_em FROM usuarios ORDER BY nome');
+    const result = await pool.query('SELECT id, nome, usuario, senha_exibicao, ativo, criado_em FROM usuarios ORDER BY nome');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
@@ -262,8 +262,8 @@ app.post('/api/usuarios', authMiddleware, async (req, res) => {
     }
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, usuario, senha) VALUES ($1, $2, $3) RETURNING id, nome, usuario',
-      [nome, usuario.toLowerCase(), senhaHash]
+      'INSERT INTO usuarios (nome, usuario, senha, senha_exibicao) VALUES ($1, $2, $3, $4) RETURNING id, nome, usuario, senha_exibicao',
+      [nome, usuario.toLowerCase(), senhaHash, senha]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -446,7 +446,7 @@ app.delete('/api/pre-registros/:id', authMiddleware, async (req, res) => {
 
 app.get('/api/contas-motoristas', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, usuario, nome, empresa, ativo, criado_em FROM contas_motoristas ORDER BY nome');
+    const result = await pool.query('SELECT id, usuario, nome, senha_exibicao, ativo, criado_em FROM contas_motoristas ORDER BY nome');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar contas:', err);
@@ -462,8 +462,8 @@ app.post('/api/contas-motoristas', authMiddleware, async (req, res) => {
     }
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO contas_motoristas (usuario, senha, nome) VALUES ($1, $2, $3) RETURNING id, usuario, nome',
-      [usuario.toLowerCase(), senhaHash, nome.toUpperCase()]
+      'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao) VALUES ($1, $2, $3, $4) RETURNING id, usuario, nome, senha_exibicao',
+      [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -502,6 +502,10 @@ app.get('/api/setup', async (req, res) => {
     }
     try { await pool.query("ALTER TABLE contas_motoristas DROP COLUMN IF EXISTS empresa"); } catch(e) {}
     try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch(e) {}
+    try { await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''"); } catch(e) {}
+    try { await pool.query("ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''"); } catch(e) {}
+    await pool.query("UPDATE usuarios SET senha_exibicao = 'portaria123' WHERE usuario = 'portaria' AND (senha_exibicao IS NULL OR senha_exibicao = '')");
+    await pool.query("UPDATE usuarios SET senha_exibicao = 'admin123' WHERE usuario = 'admin' AND (senha_exibicao IS NULL OR senha_exibicao = '')");
     const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
     if (userCount.rows[0].total === 0) {
       const senhaPortaria = await bcrypt.hash('portaria123', 10);
