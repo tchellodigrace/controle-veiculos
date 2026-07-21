@@ -16,21 +16,13 @@
     background:#fff; border-radius:16px; padding:32px 28px;
     width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.25);
   }
-  .card h1{
-    margin:0 0 4px; font-size:20px; color:#0a3622; text-align:center;
-  }
-  .card .sub{
-    margin:0 0 24px; font-size:13px; color:#8b93a1; text-align:center;
-  }
+  .card h1{ margin:0 0 4px; font-size:20px; color:#0a3622; text-align:center; }
+  .card .sub{ margin:0 0 24px; font-size:13px; color:#8b93a1; text-align:center; }
   .card .campo{ margin-bottom:14px; }
-  .card label{
-    display:block; font-size:12px; font-weight:600;
-    color:#4a5568; margin-bottom:4px;
-  }
+  .card label{ display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px; }
   .card input,.card select{
     width:100%; padding:10px 12px; border:1px solid #d1d5db;
-    border-radius:8px; font-size:14px; outline:none;
-    transition:border-color .2s;
+    border-radius:8px; font-size:14px; outline:none; transition:border-color .2s;
   }
   .card input:focus,.card select:focus{ border-color:#0a3622; box-shadow:0 0 0 3px rgba(10,54,34,.1); }
   .card button{
@@ -40,147 +32,204 @@
   }
   .card button:hover{ background:#145c3c; }
   .card button:disabled{ opacity:.6; cursor:not-allowed; }
-  .sucesso{
-    display:none; text-align:center; padding:24px 0;
-  }
-  .sucesso .icone{
-    font-size:48px; margin-bottom:12px;
-  }
+  .sucesso{ display:none; text-align:center; padding:24px 0; }
+  .sucesso .icone{ font-size:48px; margin-bottom:12px; }
   .sucesso h2{ margin:0 0 8px; color:#0a3622; }
   .sucesso p{ margin:0 0 20px; color:#4a5568; font-size:14px; }
   .erro-msg{
     background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px;
-    padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px;
-    display:none;
+    padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px; display:none;
   }
-  .logo{
-    text-align:center; margin-bottom:16px;
-  }
+  .logo{ text-align:center; margin-bottom:16px; }
   .logo img{ height:40px; }
+  .info{ font-size:11px; color:#8b93a1; text-align:center; margin-top:12px; }
+  .info b{ color:#0a3622; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .topbar .nome{ font-size:13px; color:#0a3622; font-weight:700; }
+  .topbar .sair{
+    font-size:11px; color:#cc0000; cursor:pointer; border:none; background:none;
+    text-decoration:underline; padding:0;
+  }
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo">
-    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBw8PDxUQDw8QFRUVExIQEA4QDxIQDxIVFRUWFhYXFRUYHygsHBolHRcVLTIhJTUsMS4uFyE1ODMtQyguLi0BCgoKDg0OGxAQGy0lICUtLS0vLS0tKy0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAMgAyAMBEQACEQEDEQH/xAAbAAEAAwEBAQEAAAAAAAAAAAAABQYHBAMBAv/EAD4QAAIBAwEFBgQBCgUFAAAAAAABAgMEEQUGEiExQQcTIlFhgTJxkaEjFDVCUnKSsdLRM0Njc4KCNGODwRX/xAAaAQEAAwEBAQEAAAAAAAAAAAAAAwQFAgEG/8QAJxEBAAICAQQCAgIDAQAAAAAAAAECAwQREiExQQUTIlFhFDJCcSP/2gAMAwEAAhEDEQA/ANxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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" alt="Oceânica Engenharia">
+
+  <div id="telaLogin">
+    <div class="logo">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBw8PDxUQDw8QFRUVExIQEA4QDxIQDxIVFRUWFhYXFRUYHygsHBolHRcVLTIhJTUsMS4uFyE1ODMtQyguLi0BCgoKDg0OGxAQGy0lICUtLS0vLS0tKy0rLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLf/AABEIAMgAyAMBEQACEQEDEQH/xAAbAAEAAwEBAQEAAAAAAAAAAAAABQYHBAMBAv/EAD4QAAIBAwEFBgQBCgUFAAAAAAABAgMEEQUGEiExQQcTIlFhgTJxkaEjFDVCUnKSsdLRM0Njc4KCNGODwRX/xAAaAQEAAwEBAQEAAAAAAAAAAAAAAwQFAgEG/8QAJxEBAAICAQQCAgIDAQAAAAAAAAECAwQREiExQQUTIlFhFDJCcSP/2gAMAwEAAhEDEQA/ANxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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" alt="Oceânica Engenharia">
+    </div>
+    <h1>Pré-Registro</h1>
+    <p class="sub">Acesse com sua conta de motorista</p>
+    <div class="erro-msg" id="erroLogin"></div>
+    <form id="formLogin" onsubmit="fazerLogin(event)">
+      <div class="campo">
+        <label>Usuário</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usuário" required>
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="Sua senha" required>
+      </div>
+      <button type="submit" id="btnLogin">Entrar</button>
+    </form>
   </div>
-  <h1>Pré-Registro</h1>
-  <p class="sub">Informe seus dados antes de chegar à portaria</p>
-  <div class="erro-msg" id="erroMsg"></div>
-  <form id="formPre" onsubmit="enviar(event)">
-    <div class="campo">
-      <label>Empresa *</label>
-      <input type="text" id="empresa" list="listaEmpresas" placeholder="Nome da empresa" required autocomplete="off">
-      <datalist id="listaEmpresas"></datalist>
+
+  <div id="telaForm" style="display:none">
+    <div class="topbar">
+      <span class="nome" id="nomeMotorista">---</span>
+      <button class="sair" onclick="sair()">Sair</button>
     </div>
-    <div class="campo">
-      <label>Nome do Motorista *</label>
-      <input type="text" id="motorista" placeholder="Nome completo" required>
-    </div>
-    <div class="campo">
-      <label>CPF / CNH</label>
-      <input type="text" id="cnh" placeholder="CPF ou CNH">
-    </div>
-    <div class="campo">
-      <label>Placa do Veículo *</label>
-      <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
-    </div>
-    <div class="campo">
-      <label>Modelo do Veículo</label>
-      <select id="modelo">
-        <option value="">Selecione</option>
-        <option>1 - Utilitário</option>
-        <option>2 - Toko</option>
-        <option>3 - Guindaste</option>
-        <option>4 - Munk</option>
-        <option>5 - P. Reta</option>
-        <option>6 - P. Baixa</option>
-        <option>7 - Truck</option>
-        <option>8 - Empilhadeira</option>
-        <option>9 - Caminhão</option>
-        <option>10 - Outros</option>
-      </select>
-    </div>
-    <div class="campo">
-      <label>Finalidade</label>
-      <select id="finalidade">
-        <option value="">Selecione</option>
-        <option>1 - Coleta de material</option>
-        <option>2 - Entrega de material</option>
-        <option>3 - Coleta de Óleo</option>
-        <option>4 - Coleta de sucata</option>
-        <option>5 - Coleta de Resíduos</option>
-      </select>
-    </div>
-    <div class="campo">
-      <label>Observações</label>
-      <input type="text" id="obs" placeholder="Informações adicionais">
-    </div>
-    <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
-  </form>
+    <h1>Pré-Registro</h1>
+    <p class="sub">Preencha os dados do veículo</p>
+    <div class="erro-msg" id="erroForm"></div>
+    <form id="formPre" onsubmit="enviar(event)">
+      <div class="campo">
+        <label>Placa do Veículo *</label>
+        <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
+      </div>
+      <div class="campo">
+        <label>Modelo do Veículo</label>
+        <select id="modelo">
+          <option value="">Selecione</option>
+          <option>1 - Utilitário</option>
+          <option>2 - Toko</option>
+          <option>3 - Guindaste</option>
+          <option>4 - Munk</option>
+          <option>5 - P. Reta</option>
+          <option>6 - P. Baixa</option>
+          <option>7 - Truck</option>
+          <option>8 - Empilhadeira</option>
+          <option>9 - Caminhão</option>
+          <option>10 - Outros</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Finalidade</label>
+        <select id="finalidade">
+          <option value="">Selecione</option>
+          <option>1 - Coleta de material</option>
+          <option>2 - Entrega de material</option>
+          <option>3 - Coleta de Óleo</option>
+          <option>4 - Coleta de sucata</option>
+          <option>5 - Coleta de Resíduos</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Observações</label>
+        <input type="text" id="obs" placeholder="Informações adicionais">
+      </div>
+      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+    </form>
+  </div>
+
   <div class="sucesso" id="sucesso">
     <div class="icone">✅</div>
     <h2>Pré-registro enviado!</h2>
     <p>Seus dados já foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
+    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
+
 </div>
 
 <script>
 const API = window.location.origin;
 
-document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
+let tokenMotorista = localStorage.getItem('tokenMotorista');
+let motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado') || 'null');
 
-async function carregarEmpresas(){
-  try {
-    const res = await fetch(API + '/api/empresas-lista-pre', { headers: { 'Accept': 'application/json' } });
-    if(!res.ok) return;
-    const lista = await res.json();
-    const dl = document.getElementById("listaEmpresas");
-    dl.innerHTML = lista.map(e => `<option value="${e.empresa}">`).join("");
-  } catch {}
+if(tokenMotorista && motoristaLogado){
+  mostrarTelaForm();
 }
-carregarEmpresas();
 
-function mostrarErro(msg){
-  const el = document.getElementById("erroMsg");
+function mostrarErro(id, msg){
+  const el = document.getElementById(id);
   el.textContent = msg;
   el.style.display = "block";
 }
-function ocultarErro(){ document.getElementById("erroMsg").style.display = "none"; }
+function ocultarErro(id){ document.getElementById(id).style.display = "none"; }
+
+async function fazerLogin(e){
+  e.preventDefault(); ocultarErro("erroLogin");
+  const usuario = document.getElementById("loginUsuario").value.trim();
+  const senha = document.getElementById("loginSenha").value;
+  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usuário e senha."); return; }
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true; btn.textContent = "Entrando...";
+  try {
+    const res = await fetch(API + '/api/login-motorista', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
+    const data = await res.json();
+    tokenMotorista = data.token;
+    motoristaLogado = data.motorista;
+    localStorage.setItem('tokenMotorista', tokenMotorista);
+    localStorage.setItem('motoristaLogado', JSON.stringify(motoristaLogado));
+    document.getElementById("formLogin").reset();
+    btn.disabled = false; btn.textContent = "Entrar";
+    mostrarTelaForm();
+  } catch { mostrarErro("erroLogin", "Erro de conexão"); btn.disabled = false; btn.textContent = "Entrar"; }
+}
+
+function mostrarTelaForm(){
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaForm").style.display = "block";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
+}
+
+function sair(){
+  tokenMotorista = null;
+  motoristaLogado = null;
+  localStorage.removeItem('tokenMotorista');
+  localStorage.removeItem('motoristaLogado');
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaForm").style.display = "none";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formLogin").reset();
+}
 
 async function enviar(e){
-  e.preventDefault(); ocultarErro();
+  e.preventDefault(); ocultarErro("erroForm");
+  const placa = document.getElementById("placa").value.trim().toUpperCase();
+  if(!placa){ mostrarErro("erroForm", "Informe a placa."); return; }
+  const btn = document.getElementById("btnEnviar");
+  btn.disabled = true; btn.textContent = "Enviando...";
   const payload = {
-    empresa: document.getElementById("empresa").value.trim().toUpperCase(),
-    motorista: document.getElementById("motorista").value.trim().toUpperCase(),
-    cnh: document.getElementById("cnh").value.trim(),
-    placa: document.getElementById("placa").value.trim().toUpperCase(),
+    empresa: motoristaLogado.empresa,
+    motorista: motoristaLogado.nome,
+    cnh: "",
+    placa,
     modelo: document.getElementById("modelo").value,
     finalidade: document.getElementById("finalidade").value,
     obs: document.getElementById("obs").value.trim()
   };
-  if(!payload.empresa || !payload.motorista || !payload.placa){ mostrarErro("Preencha empresa, motorista e placa."); return; }
-  const btn = document.getElementById("btnEnviar");
-  btn.disabled = true; btn.textContent = "Enviando...";
   try {
     const res = await fetch(API + '/api/pre-registro', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista },
       body: JSON.stringify(payload)
     });
-    if(!res.ok){ const err = await res.json(); mostrarErro(err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
     document.getElementById("formPre").style.display = "none";
     document.getElementById("sucesso").style.display = "block";
-  } catch { mostrarErro("Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
+    btn.disabled = false; btn.textContent = "Enviar Pré-Registro";
+  } catch { mostrarErro("erroForm", "Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
 }
+
 function resetar(){
+  document.getElementById("formPre").reset();
   document.getElementById("formPre").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
-  document.getElementById("formPre").reset();
   document.getElementById("btnEnviar").disabled = false;
   document.getElementById("btnEnviar").textContent = "Enviar Pré-Registro";
 }
+
+document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
 </script>
 </body>
 </html>

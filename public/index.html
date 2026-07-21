@@ -803,14 +803,36 @@
 </div>
 
 <div class="modal-overlay" id="modalCadastros">
-  <div class="modal-content" style="max-width:550px">
+  <div class="modal-content" style="max-width:600px">
     <div class="modal-header">
       <h2>📁 Cadastros</h2>
       <button class="modal-close" onclick="fecharCadastros()">&times;</button>
     </div>
     <div class="modal-body">
-      <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Usuários do Sistema</h3>
-      <div id="listaUsuarios" class="usuario-lista" style="margin-bottom:14px"></div>
+      <div class="tab-bar" style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="tab-btn active" onclick="trocarTab(this, 'tabUsuarios')" style="padding:8px 16px;border:2px solid var(--verde-escuro);background:var(--verde-escuro);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Usuários</button>
+        <button class="tab-btn" onclick="trocarTab(this, 'tabMotoristas')" style="padding:8px 16px;border:2px solid var(--cinza-borda);background:#fff;color:#4a5568;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Motoristas (Pré-Registro)</button>
+      </div>
+      <div id="tabUsuarios">
+        <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Usuários do Sistema</h3>
+        <div id="listaUsuarios" class="usuario-lista" style="margin-bottom:14px"></div>
+      </div>
+      <div id="tabMotoristas" style="display:none">
+        <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Contas de Motoristas</h3>
+        <div id="listaContas" class="usuario-lista" style="margin-bottom:14px"></div>
+        <div class="card" style="padding:14px;background:var(--cinza-fundo);border-radius:8px">
+          <h4 style="margin:0 0 10px;font-size:13px;color:#4a5568">Nova Conta de Motorista</h4>
+          <form onsubmit="criarContaMotorista(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <input type="text" id="cmNome" placeholder="Nome" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cmEmpresa" placeholder="Empresa" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cmUsuario" placeholder="Usuário (login)" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="password" id="cmSenha" placeholder="Senha" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+            </div>
+            <button type="submit" class="btn btn-primario" style="margin-top:10px;padding:8px 16px;font-size:12px">Criar Conta</button>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1173,10 +1195,65 @@ async function carregarUsuarios(){
     const div = document.getElementById("listaUsuarios");
     div.innerHTML = usuarios.filter(u => !u.desativado).map(u => `
       <div class="usuario-item">
-        <span>${u.nome} <small>(${u.email})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
+        <span>${u.nome} <small>(${u.usuario})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
         <span class="usuario-status ${u.admin ? 'badge-admin' : ''}">${u.admin ? 'Admin' : 'Operador'}</span>
       </div>
     `).join("");
+    carregarContasMotoristas();
+  } catch {}
+}
+function trocarTab(btn, tabId){
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.style.background = '#fff'; b.style.color = '#4a5568'; b.style.borderColor = '#d1d5db';
+  });
+  btn.style.background = 'var(--verde-escuro)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--verde-escuro)';
+  document.getElementById('tabUsuarios').style.display = tabId === 'tabUsuarios' ? 'block' : 'none';
+  document.getElementById('tabMotoristas').style.display = tabId === 'tabMotoristas' ? 'block' : 'none';
+}
+async function carregarContasMotoristas(){
+  try {
+    const res = await fetch(API + '/api/contas-motoristas', { headers: getHeaders() });
+    if(!res.ok) return;
+    const contas = await res.json();
+    const div = document.getElementById("listaContas");
+    div.innerHTML = contas.map(c => `
+      <div class="usuario-item">
+        <span>${c.nome} <small>(${c.usuario} | ${c.empresa})</small></span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
+          <button class="btn-excluir" onclick="alternarContaMotorista(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '✕' : '✓'}</button>
+        </div>
+      </div>
+    `).join("");
+  } catch {}
+}
+async function criarContaMotorista(e){
+  e.preventDefault();
+  const payload = {
+    usuario: document.getElementById("cmUsuario").value.trim(),
+    senha: document.getElementById("cmSenha").value,
+    nome: document.getElementById("cmNome").value.trim(),
+    empresa: document.getElementById("cmEmpresa").value.trim()
+  };
+  if(!payload.usuario || !payload.senha || !payload.nome || !payload.empresa){ alert("Preencha todos os campos"); return; }
+  try {
+    const res = await fetch(API + '/api/contas-motoristas', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || "Erro ao criar"); return; }
+    document.getElementById("cmNome").value = "";
+    document.getElementById("cmEmpresa").value = "";
+    document.getElementById("cmUsuario").value = "";
+    document.getElementById("cmSenha").value = "";
+    carregarContasMotoristas();
+  } catch { alert("Erro ao criar conta"); }
+}
+async function alternarContaMotorista(id, ativo){
+  try {
+    await fetch(API + '/api/contas-motoristas/' + id, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ativo })
+    });
+    carregarContasMotoristas();
   } catch {}
 }
 async function carregarRelatorio(){
