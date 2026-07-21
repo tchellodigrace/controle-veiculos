@@ -130,6 +130,13 @@
     border-left:3px solid #7ee2a8;
     font-weight:600;
   }
+  .nav-badge{
+    margin-left:auto; background:#e53e3e; color:#fff; font-size:11px; font-weight:700;
+    min-width:20px; height:20px; line-height:20px; text-align:center;
+    border-radius:10px; padding:0 5px;
+  }
+  .nav-badge.pulse{ animation:badgePulse 1s ease-in-out 3; }
+  @keyframes badgePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
   .nav-item svg{ width:16px; height:16px; flex-shrink:0; }
   .sidebar-footer{
     margin-top:auto;
@@ -480,10 +487,12 @@
     <div class="nav-item active" id="navVeiculos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><path d="M14 2h6v6M10 14 20 4"/></svg>
       Veículos
+      <span class="nav-badge" id="badgeVeiculos" style="display:none">0</span>
     </div>
     <div class="nav-item" id="navVisitantes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Visitantes
+      <span class="nav-badge" id="badgeVisitantes" style="display:none">0</span>
     </div>
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
@@ -1448,7 +1457,49 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   setInterval(atualizarVisitantes, 30000);
   setInterval(atualizarPreRegistros, 30000);
   atualizarPreRegistros();
+  verificarBadges();
+  setInterval(verificarBadges, 5000);
 })();
+
+let badgesVeiculosAnterior = 0;
+let badgesVisitantesAnterior = 0;
+
+async function verificarBadges(){
+  try {
+    const [resV, resVisit] = await Promise.all([
+      fetch(API + '/api/pre-registros', { headers: getHeaders() }),
+      fetch(API + '/api/pre-registros-visitantes', { headers: getHeaders() })
+    ]);
+    if(resV.ok){
+      const dados = await resV.json();
+      const badge = document.getElementById("badgeVeiculos");
+      if(dados.length > 0){
+        badge.textContent = dados.length;
+        badge.style.display = "inline";
+        if(dados.length > badgesVeiculosAnterior) badge.classList.add("pulse");
+        else badge.classList.remove("pulse");
+        badgesVeiculosAnterior = dados.length;
+      } else {
+        badge.style.display = "none";
+        badgesVeiculosAnterior = 0;
+      }
+    }
+    if(resVisit.ok){
+      const dados = await resVisit.json();
+      const badge = document.getElementById("badgeVisitantes");
+      if(dados.length > 0){
+        badge.textContent = dados.length;
+        badge.style.display = "inline";
+        if(dados.length > badgesVisitantesAnterior) badge.classList.add("pulse");
+        else badge.classList.remove("pulse");
+        badgesVisitantesAnterior = dados.length;
+      } else {
+        badge.style.display = "none";
+        badgesVisitantesAnterior = 0;
+      }
+    }
+  } catch {}
+}
 
 async function carregarDatalist(){
   try {
