@@ -1,9 +1,9 @@
-Ôªø<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pr√©-Registro</title>
+<title>PrÈ-Registro</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -61,15 +61,15 @@
 
   <div id="telaLogin">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px" id="logoImg">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     </div>
     <p class="sub" id="subLogin">Acesse com sua conta de motorista</p>
     <div class="erro-msg" id="erroLogin"></div>
     <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
       <div class="campo">
-        <label>Usu√°rio</label>
-        <input type="text" id="loginUsuario" placeholder="Seu usu√°rio" required>
+        <label>Usu·rio</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usu·rio" required>
       </div>
       <div class="campo">
         <label>Senha</label>
@@ -77,14 +77,14 @@
       </div>
       <button type="submit" id="btnLogin">Entrar</button>
     </form>
-    <p class="info">N√£o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
+    <p class="info">N„o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
   </div>
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px" id="logoImg2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     </div>
-    <h1 id="tituloCadastro">Pr√©-Registro</h1>
+    <h1 id="tituloCadastro">PrÈ-Registro</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
     <div class="erro-msg" id="erroCadastro"></div>
     <form id="formCadastro" onsubmit="criarConta(event)">
@@ -93,8 +93,8 @@
         <input type="text" id="cadNome" placeholder="Seu nome" required>
       </div>
       <div class="campo">
-        <label>Usu√°rio *</label>
-        <input type="text" id="cadUsuario" placeholder="Escolha um usu√°rio" required>
+        <label>Usu·rio *</label>
+        <input type="text" id="cadUsuario" placeholder="Escolha um usu·rio" required>
       </div>
       <div class="campo">
         <label>Senha *</label>
@@ -102,7 +102,7 @@
       </div>
       <button type="submit" id="btnCadastrar">Criar Conta</button>
     </form>
-    <p class="info">J√° tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
+    <p class="info">J· tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -110,9 +110,9 @@
       <span class="nome" id="nomeMotorista">---</span>
       <button class="sair" onclick="sair()">Sair</button>
     </div>
-    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:160px;height:auto;display:block;margin:0 auto 12px" id="logoImg3">
-    <h1>Pr√©-Registro</h1>
-    <p class="sub">Preencha os dados do ve√≠culo</p>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+    <h1>PrÈ-Registro</h1>
+    <p class="sub">Preencha os dados do veÌculo</p>
     <div class="erro-msg" id="erroForm"></div>
     <form id="formPre" onsubmit="enviar(event)">
       <div class="campo">
@@ -121,14 +121,14 @@
         <datalist id="listaEmpresas"></datalist>
       </div>
       <div class="campo">
-        <label>Placa do Ve√≠culo *</label>
+        <label>Placa do VeÌculo *</label>
         <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
       <div class="campo">
-        <label>Modelo do Ve√≠culo</label>
+        <label>Modelo do VeÌculo</label>
         <select id="modelo">
           <option value="">Selecione</option>
-          <option>1 - Utilit√°rio</option>
+          <option>1 - Utilit·rio</option>
           <option>2 - Toko</option>
           <option>3 - Guindaste</option>
           <option>4 - Munk</option>
@@ -136,7 +136,7 @@
           <option>6 - P. Baixa</option>
           <option>7 - Truck</option>
           <option>8 - Empilhadeira</option>
-          <option>9 - Caminh√£o</option>
+          <option>9 - Caminh„o</option>
           <option>10 - Outros</option>
         </select>
       </div>
@@ -146,32 +146,32 @@
           <option value="">Selecione</option>
           <option>1 - Coleta de material</option>
           <option>2 - Entrega de material</option>
-          <option>3 - Coleta de √ìleo</option>
+          <option>3 - Coleta de ”leo</option>
           <option>4 - Coleta de sucata</option>
-          <option>5 - Coleta de Res√≠duos</option>
+          <option>5 - Coleta de ResÌduos</option>
         </select>
       </div>
       <div class="campo">
         <label>CNH</label>
-        <input type="text" id="cnh" placeholder="N√∫mero da CNH">
+        <input type="text" id="cnh" placeholder="N˙mero da CNH">
       </div>
       <div class="campo">
         <label>Nota Fiscal / RT</label>
         <input type="text" id="nota" placeholder="Informe a nota fiscal / RT">
       </div>
       <div class="campo">
-        <label>Observa√ß√µes</label>
-        <input type="text" id="obs" placeholder="Informa√ß√µes adicionais">
+        <label>ObservaÁıes</label>
+        <input type="text" id="obs" placeholder="InformaÁıes adicionais">
       </div>
-      <button type="submit" id="btnEnviar">Enviar Pr√©-Registro</button>
+      <button type="submit" id="btnEnviar">Enviar PrÈ-Registro</button>
     </form>
   </div>
 
   <div class="sucesso" id="sucesso">
-    <div class="icone">‚úÖ</div>
-    <h2>Pr√©-registro enviado!</h2>
-    <p>Seus dados j√° foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
-    <button onclick="resetar()">Novo Pr√©-Registro</button>
+    <div class="icone">?</div>
+    <h2>PrÈ-registro enviado!</h2>
+    <p>Seus dados j· foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
+    <button onclick="resetar()">Novo PrÈ-Registro</button>
     <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
@@ -184,7 +184,7 @@ const CLIENTE_ID = params.get('cliente_id');
 const EMPRESA_URL = params.get('empresa') || '';
 
 if(!CLIENTE_ID){
-  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inv√°lido</h2><p style="color:#666">Este link n√£o √© v√°lido. Solicite o link correto √† portaria.</p></div>';
+  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inv·lido</h2><p style="color:#666">Este link n„o È v·lido. Solicite o link correto ‡ portaria.</p></div>';
 }
 
 let tokenMotorista = localStorage.getItem('tokenMotorista_' + CLIENTE_ID);
@@ -197,7 +197,7 @@ if(tokenMotorista && motoristaLogado){
 if(EMPRESA_URL){
   const nomeEmpresa = decodeURIComponent(EMPRESA_URL);
   document.getElementById('subLogin').textContent = nomeEmpresa;
-  document.getElementById('tituloCadastro').textContent = 'Pr√©-Registro - ' + nomeEmpresa;
+  document.getElementById('tituloCadastro').textContent = 'PrÈ-Registro - ' + nomeEmpresa;
 }
 
 function mostrarErro(id, msg){
@@ -242,14 +242,14 @@ async function criarConta(e){
     msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
     msg.style.display = "block";
     btn.disabled = false; btn.textContent = "Criar Conta";
-  } catch { mostrarErro("erroCadastro", "Erro de conex√£o"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+  } catch { mostrarErro("erroCadastro", "Erro de conex„o"); btn.disabled = false; btn.textContent = "Criar Conta"; }
 }
 
 async function fazerLogin(e){
   e.preventDefault(); ocultarErro("erroLogin");
   const usuario = document.getElementById("loginUsuario").value.trim();
   const senha = document.getElementById("loginSenha").value;
-  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usu√°rio e senha."); return; }
+  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usu·rio e senha."); return; }
   const btn = document.getElementById("btnLogin");
   btn.disabled = true; btn.textContent = "Entrando...";
   try {
@@ -267,7 +267,7 @@ async function fazerLogin(e){
     document.getElementById("formLogin").reset();
     btn.disabled = false; btn.textContent = "Entrar";
     mostrarTelaForm();
-  } catch { mostrarErro("erroLogin", "Erro de conex√£o"); btn.disabled = false; btn.textContent = "Entrar"; }
+  } catch { mostrarErro("erroLogin", "Erro de conex„o"); btn.disabled = false; btn.textContent = "Entrar"; }
 }
 
 function mostrarTelaForm(){
@@ -325,11 +325,11 @@ async function enviar(e){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pr√©-Registro"; return; }
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar PrÈ-Registro"; return; }
     document.getElementById("formPre").style.display = "none";
     document.getElementById("sucesso").style.display = "block";
-    btn.disabled = false; btn.textContent = "Enviar Pr√©-Registro";
-  } catch { mostrarErro("erroForm", "Erro de conex√£o"); btn.disabled = false; btn.textContent = "Enviar Pr√©-Registro"; }
+    btn.disabled = false; btn.textContent = "Enviar PrÈ-Registro";
+  } catch { mostrarErro("erroForm", "Erro de conex„o"); btn.disabled = false; btn.textContent = "Enviar PrÈ-Registro"; }
 }
 
 function resetar(){
@@ -337,7 +337,7 @@ function resetar(){
   document.getElementById("formPre").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("btnEnviar").disabled = false;
-  document.getElementById("btnEnviar").textContent = "Enviar Pr√©-Registro";
+  document.getElementById("btnEnviar").textContent = "Enviar PrÈ-Registro";
 }
 
 document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
