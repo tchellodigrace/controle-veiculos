@@ -272,6 +272,11 @@
   .r-aguardando .num{ color:var(--laranja); }
   .r-aguardando .lbl{ color:#b9700f; }
   .tabela-card{ padding:0; overflow:hidden; }
+  .pre-card{ border:2px solid #ffc107; margin-bottom:14px; }
+  .pre-card h3{ margin:0; padding:12px 16px; background:#fff8e1; color:#856404; font-size:13px; }
+  .pre-card .tabela-scroll{ max-height:250px; }
+  .btn-confirmar{ background:var(--verde-primario); color:#fff; border:none; border-radius:6px; padding:5px 10px; cursor:pointer; font-size:11px; font-weight:600; }
+  .btn-confirmar:hover{ background:#166b3d; }
   .tabela-topo{
     display:flex;
     align-items:center;
@@ -589,6 +594,26 @@
           </div>
         </div>
       </div>
+      <div class="card pre-card" id="preCard" style="display:none">
+        <h3>📋 PRÉ-REGISTROS PENDENTES</h3>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Motorista</th>
+                <th>Empresa</th>
+                <th>Placa</th>
+                <th>Modelo</th>
+                <th>Finalidade</th>
+                <th>CNH</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaPre"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="card tabela-card">
         <div class="tabela-topo">
           <h3 id="tituloRegistros">REGISTROS DO DIA</h3>
@@ -598,6 +623,7 @@
             <thead>
               <tr>
                 <th>#</th>
+                <th>Pos.</th>
                 <th>Chegada</th>
                 <th>Placa</th>
                 <th>Modelo</th>
@@ -906,6 +932,54 @@ async function registrar(){
   } catch { alert('Erro de conexão com o servidor'); }
 }
 
+async function atualizarPreRegistros(){
+  try {
+    const res = await fetch(API + '/api/pre-registros', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const card = document.getElementById("preCard");
+    if(dados.length === 0){ card.style.display = "none"; return; }
+    card.style.display = "block";
+    const tbody = document.getElementById("tabelaPre");
+    tbody.innerHTML = "";
+    dados.forEach((d,i) => {
+      tbody.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td><b>${d.motorista}</b></td>
+        <td>${d.empresa}</td>
+        <td>${d.placa}</td>
+        <td>${d.modelo || "—"}</td>
+        <td>${d.finalidade || "—"}</td>
+        <td>${d.cnh || "—"}</td>
+        <td class="acoes">
+          <button class="btn-confirmar" onclick="confirmarPreRegistro(${d.id})" title="Confirmar chegada">✓ Confirmar</button>
+          <button class="btn-excluir" onclick="excluirPreRegistro(${d.id})" title="Excluir">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  } catch {}
+}
+
+async function confirmarPreRegistro(id){
+  try {
+    const res = await fetch(API + '/api/pre-registros/' + id + '/confirmar', {
+      method: 'POST', headers: getHeaders()
+    });
+    if(!res.ok){ alert("Erro ao confirmar"); return; }
+    atualizarPreRegistros();
+    atualizar();
+  } catch { alert("Erro ao confirmar"); }
+}
+
+async function excluirPreRegistro(id){
+  if(!confirm("Excluir este pré-registro?")) return;
+  try {
+    const res = await fetch(API + '/api/pre-registros/' + id, { method: 'DELETE', headers: getHeaders() });
+    if(!res.ok){ alert("Erro ao excluir"); return; }
+    atualizarPreRegistros();
+  } catch { alert("Erro ao excluir"); }
+}
+
 function limparCampos(){
   ["placa","modelo","finalidade","empresa","motorista","cnh","nota","obs"].forEach(id=>{
     document.getElementById(id).value = "";
@@ -955,7 +1029,7 @@ async function atualizar(){
     const tabela = document.getElementById("tabela");
     tabela.innerHTML = "";
     if(dados.length === 0){
-      tabela.innerHTML = `<tr><td colspan="13" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
+      tabela.innerHTML = `<tr><td colspan="14" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
       return;
     }
     const iconSaida = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
@@ -964,6 +1038,7 @@ async function atualizar(){
       tabela.innerHTML += `
       <tr>
         <td>${i+1}</td>
+        <td><b>${d.posicao || "—"}</b></td>
         <td>${d.chegada}</td>
         <td><b>${d.placa}</b></td>
         <td>${d.modelo || "—"}</td>
@@ -1174,6 +1249,8 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   atualizar();
   setInterval(atualizar, 30000);
   setInterval(atualizarVisitantes, 30000);
+  setInterval(atualizarPreRegistros, 30000);
+  atualizarPreRegistros();
 })();
 
 async function carregarDatalist(){

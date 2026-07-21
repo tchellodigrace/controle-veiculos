@@ -182,6 +182,19 @@ app.get('/api/empresas-lista', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/api/empresas-lista-pre', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT DISTINCT empresa FROM registros
+       WHERE empresa != '' ORDER BY empresa ASC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar empresas:', err);
+    res.status(500).json({ erro: 'Erro ao listar empresas' });
+  }
+});
+
 app.get('/api/visitantes-lista', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
@@ -337,6 +350,72 @@ app.delete('/api/visitantes/:id', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Erro ao excluir visitante:', err);
     res.status(500).json({ erro: 'Erro ao excluir visitante' });
+  }
+});
+
+app.post('/api/pre-registro', async (req, res) => {
+  try {
+    const { empresa, motorista, cnh, placa, modelo, finalidade, obs } = req.body;
+    if (!empresa || !motorista || !placa) {
+      return res.status(400).json({ erro: 'Empresa, motorista e placa são obrigatórios' });
+    }
+    const result = await pool.query(
+      `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, obs)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [empresa.toUpperCase(), motorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', obs||'']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro no pre-registro:', err);
+    res.status(500).json({ erro: 'Erro ao realizar pré-registro' });
+  }
+});
+
+app.get('/api/pre-registros', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM pre_registros ORDER BY id ASC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar pre-registros:', err);
+    res.status(500).json({ erro: 'Erro ao buscar pré-registros' });
+  }
+});
+
+app.post('/api/pre-registros/:id/confirmar', authMiddleware, async (req, res) => {
+  try {
+    const pre = await pool.query('SELECT * FROM pre_registros WHERE id = $1', [req.params.id]);
+    if (pre.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
+    const d = pre.rows[0];
+    const hora = new Date().toLocaleTimeString('pt-BR');
+    const hoje = new Date().toLocaleDateString('en-CA');
+    const pos = await pool.query(
+      `SELECT COALESCE(MAX(posicao), 0) + 1 AS prox FROM registros WHERE data_registro = $1`,
+      [hoje]
+    );
+    const posicao = pos.rows[0].prox;
+    const registro = await pool.query(
+      `INSERT INTO registros (usuario_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [req.usuario.id, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, '', d.obs, hoje, posicao]
+    );
+    await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
+    res.status(201).json(registro.rows[0]);
+  } catch (err) {
+    console.error('Erro ao confirmar pre-registro:', err);
+    res.status(500).json({ erro: 'Erro ao confirmar pré-registro' });
+  }
+});
+
+app.delete('/api/pre-registros/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM pre_registros WHERE id = $1 RETURNING *', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
+    res.json({ mensagem: 'Pré-registro excluído' });
+  } catch (err) {
+    console.error('Erro ao excluir pre-registro:', err);
+    res.status(500).json({ erro: 'Erro ao excluir pré-registro' });
   }
 });
 
