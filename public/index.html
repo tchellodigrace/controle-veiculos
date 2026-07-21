@@ -788,6 +788,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalSobre">
+  <div class="modal-content" style="max-width:450px">
+    <div class="modal-header">
+      <h2>ℹ️ Sobre</h2>
+      <button class="modal-close" onclick="fecharSobre()">&times;</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <p style="font-size:16px;font-weight:700;color:var(--verde-escuro);margin:0 0 4px">Sistema de Controle</p>
+      <p style="font-size:13px;color:#8b93a1;margin:0 0 16px">Oceânica Engenharia</p>
+      <hr style="margin:12px 0">
+      <p style="font-size:12px;color:var(--cinza-texto);margin:4px 0">Versão 2.1.0</p>
+      <p style="font-size:12px;color:var(--cinza-texto);margin:4px 0">Controle de Entrada e Saída de Veículos e Visitantes</p>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
 let usuarioLogado = null;
@@ -1014,11 +1030,7 @@ document.getElementById("sair").addEventListener("click", ()=>{
 document.getElementById("navRelatorios").addEventListener("click", abrirRelatorios);
 document.getElementById("navConfig").addEventListener("click", abrirConfig);
 document.getElementById("navCadastros").addEventListener("click", abrirCadastros);
-["navSobre"].forEach(id=>{
-  document.getElementById(id).addEventListener("click", ()=> {
-    alert("Este módulo será disponibilizado em uma próxima versão do sistema.");
-  });
-});
+document.getElementById("navSobre").addEventListener("click", abrirSobre);
 
 function abrirRelatorios(){
   const hoje = new Date();
@@ -1046,6 +1058,12 @@ function abrirCadastros(){
 }
 function fecharCadastros(){
   document.getElementById("modalCadastros").classList.remove("mostrar");
+}
+function abrirSobre(){
+  document.getElementById("modalSobre").classList.add("mostrar");
+}
+function fecharSobre(){
+  document.getElementById("modalSobre").classList.remove("mostrar");
 }
 async function salvarConfig(e){
   e.preventDefault();
