@@ -423,7 +423,10 @@ app.get('/api/setup', async (req, res) => {
   try {
     const fs = require('fs');
     const sql = fs.readFileSync('./schema.sql', 'utf8');
-    await pool.query(sql);
+    const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+    for (const stmt of statements) {
+      try { await pool.query(stmt); } catch(e) { console.log('Aviso setup:', e.message); }
+    }
     const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
     if (userCount.rows[0].total === 0) {
       const senhaPortaria = await bcrypt.hash('portaria123', 10);
@@ -433,10 +436,10 @@ app.get('/api/setup', async (req, res) => {
         ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
       );
     }
-    res.json({ mensagem: 'Banco de dados inicializado com sucesso. Usuários: portaria/portaria123 e admin/admin123' });
+    res.json({ mensagem: 'OK! Usuários: portaria/portaria123 e admin/admin123' });
   } catch (err) {
     console.error('Erro ao executar schema:', err);
-    res.status(500).json({ erro: 'Erro ao inicializar banco de dados: ' + err.message });
+    res.status(500).json({ erro: 'Erro ao inicializar banco: ' + err.message });
   }
 });
 
@@ -452,7 +455,10 @@ async function iniciar() {
     try {
       const fs = require('fs');
       const sql = fs.readFileSync('./schema.sql', 'utf8');
-      await pool.query(sql);
+      const statements = sql.split(';').map(s => s.trim()).filter(s => s.length > 0);
+      for (const stmt of statements) {
+        try { await pool.query(stmt); } catch(e) { console.log('Aviso schema:', e.message); }
+      }
       console.log('Schema verificado/criado');
     } catch (err) {
       console.log('Aviso: schema.sql não encontrado ou erro ao executar:', err.message);
