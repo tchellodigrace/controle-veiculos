@@ -355,16 +355,16 @@ app.delete('/api/visitantes/:id', authMiddleware, async (req, res) => {
 
 app.post('/api/pre-registro', async (req, res) => {
   try {
-    const { empresa, motorista, cnh, placa, modelo, finalidade, obs } = req.body;
+    const { empresa, motorista, cnh, placa, modelo, finalidade, nota, obs } = req.body;
     const finalEmpresa = empresa || '';
     const finalMotorista = motorista || '';
     if (!finalEmpresa || !finalMotorista || !placa) {
       return res.status(400).json({ erro: 'Empresa, motorista e placa são obrigatórios' });
     }
     const result = await pool.query(
-      `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, obs)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [finalEmpresa.toUpperCase(), finalMotorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', obs||'']
+      `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, nota, obs)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [finalEmpresa.toUpperCase(), finalMotorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', nota||'', obs||'']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -423,7 +423,7 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, async (req, res) =>
     const registro = await pool.query(
       `INSERT INTO registros (usuario_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [req.usuario.id, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, '', d.obs, hoje, posicao]
+      [req.usuario.id, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, d.nota || '', d.obs, hoje, posicao]
     );
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     res.status(201).json(registro.rows[0]);

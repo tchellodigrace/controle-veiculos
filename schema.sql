@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS pre_registros (
   placa VARCHAR(20) NOT NULL,
   modelo VARCHAR(100) DEFAULT '',
   finalidade VARCHAR(100) DEFAULT '',
+  nota VARCHAR(100) DEFAULT '',
   obs TEXT DEFAULT '',
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

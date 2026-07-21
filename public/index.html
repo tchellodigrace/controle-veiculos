@@ -608,6 +608,7 @@
                 <th>Modelo</th>
                 <th>Finalidade</th>
                 <th>CNH</th>
+                <th>Nota/RT</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -977,6 +978,7 @@ async function atualizarPreRegistros(){
         <td>${d.modelo || "—"}</td>
         <td>${d.finalidade || "—"}</td>
         <td>${d.cnh || "—"}</td>
+        <td>${d.nota || "—"}</td>
         <td class="acoes">
           <button class="btn-confirmar" onclick="confirmarPreRegistro(${d.id})" title="Confirmar chegada">✓ Confirmar</button>
           <button class="btn-excluir" onclick="excluirPreRegistro(${d.id})" title="Excluir">🗑️</button>
