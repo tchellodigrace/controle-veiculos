@@ -683,8 +683,16 @@
               <input id="vEmpresa" placeholder="Empresa onde trabalha">
             </div>
             <div class="campo">
-              <label>Setor Visitado</label>
-              <input id="vSetor" placeholder="Ex.: Administrativo, SMS, etc.">
+              <label>Tipo</label>
+              <select id="vTipo">
+                <option value="">Selecione</option>
+                <option>Entrega</option>
+                <option>Coleta</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Placa</label>
+              <input id="vPlaca" placeholder="Placa do veículo" style="text-transform:uppercase">
             </div>
           </div>
           <div class="acoes-form">
@@ -709,9 +717,10 @@
               <tr>
                 <th>#</th>
                 <th>Nome</th>
-                <th>CPF</th>
                 <th>Empresa</th>
-                <th>Setor Visitado</th>
+                <th>Tipo</th>
+                <th>Placa</th>
+                <th>Obs</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -731,7 +740,8 @@
                 <th>Nome</th>
                 <th>CPF</th>
                 <th>Empresa</th>
-                <th>Setor Visitado</th>
+                <th>Tipo</th>
+                <th>Placa</th>
                 <th>Entrada</th>
                 <th>Saída</th>
                 <th>Ações</th>
@@ -1500,7 +1510,7 @@ async function carregarDatalistVisitantes(){
     if(!res.ok) return;
     const lista = await res.json();
     const dl = document.getElementById("listaVisitantes");
-    dl.innerHTML = lista.map(v => `<option value="${v.nome}" data-cpf="${v.cpf}" data-empresa="${v.empresa}" data-setor="${v.setor_visitado}">`).join("");
+    dl.innerHTML = lista.map(v => `<option value="${v.nome}" data-cpf="${v.cpf}" data-empresa="${v.empresa}">`).join("");
   } catch {}
 }
 function autoPreencherVisitanteNome(){
@@ -1510,7 +1520,6 @@ function autoPreencherVisitanteNome(){
   if(opt){
     if(opt.dataset.cpf) document.getElementById("vCpf").value = opt.dataset.cpf;
     if(opt.dataset.empresa) document.getElementById("vEmpresa").value = opt.dataset.empresa;
-    if(opt.dataset.setor) document.getElementById("vSetor").value = opt.dataset.setor;
   } else {
     autoPreencherVisitante("nome", nome);
   }
@@ -1535,7 +1544,6 @@ async function autoPreencherVisitante(tipo, valor){
     if(row.nome) document.getElementById("vNome").value = row.nome;
     if(row.cpf) document.getElementById("vCpf").value = row.cpf;
     if(row.empresa) document.getElementById("vEmpresa").value = row.empresa;
-    if(row.setor_visitado) document.getElementById("vSetor").value = row.setor_visitado;
   } catch {}
 }
 
@@ -1571,9 +1579,10 @@ async function atualizarPreRegistrosVisitantes(){
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
         <td><b>${d.nome}</b></td>
-        <td>${d.cpf || "—"}</td>
         <td>${d.empresa || "—"}</td>
-        <td>${d.setor_visitado || "—"}</td>
+        <td>${d.tipo || "—"}</td>
+        <td><b>${d.placa || "—"}</b></td>
+        <td>${d.obs || "—"}</td>
         <td class="acoes">
           <button class="btn-confirmar" onclick="confirmarPreRegistroVisitante(${d.id})" title="Confirmar chegada">✓ Confirmar</button>
           <button class="btn-excluir" onclick="excluirPreRegistroVisitante(${d.id})" title="Excluir">🗑️</button>
@@ -1613,7 +1622,8 @@ async function registrarVisitante(){
     nome,
     cpf: document.getElementById("vCpf").value.trim(),
     empresa: document.getElementById("vEmpresa").value.trim(),
-    setor_visitado: document.getElementById("vSetor").value.trim(),
+    tipo: document.getElementById("vTipo").value,
+    placa: document.getElementById("vPlaca").value.trim().toUpperCase(),
     hora: new Date().toLocaleTimeString('pt-BR')
   };
   try {
@@ -1629,7 +1639,8 @@ function limparVisitante(){
   document.getElementById("vNome").value = "";
   document.getElementById("vCpf").value = "";
   document.getElementById("vEmpresa").value = "";
-  document.getElementById("vSetor").value = "";
+  document.getElementById("vTipo").value = "";
+  document.getElementById("vPlaca").value = "";
   document.getElementById("vNome").focus();
 }
 async function atualizarVisitantes(){
@@ -1645,7 +1656,8 @@ async function atualizarVisitantes(){
         <td><b>${d.nome}</b></td>
         <td>${d.cpf || "—"}</td>
         <td>${d.empresa || "—"}</td>
-        <td>${d.setor_visitado || "—"}</td>
+        <td>${d.tipo || "—"}</td>
+        <td><b>${d.placa || "—"}</b></td>
         <td>${d.entrada}</td>
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
         <td class="acoes">

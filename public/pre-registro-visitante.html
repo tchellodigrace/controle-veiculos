@@ -124,23 +124,19 @@
     <div class="erro-msg" id="erroForm"></div>
     <form id="formPre" onsubmit="enviar(event)">
       <div class="campo">
-        <label>Nome completo *</label>
-        <input type="text" id="vNome" placeholder="Nome do visitante" required>
+        <label>Tipo *</label>
+        <select id="vTipo" required>
+          <option value="">Selecione</option>
+          <option>Entrega</option>
+          <option>Coleta</option>
+        </select>
       </div>
       <div class="campo">
-        <label>CPF</label>
-        <input type="text" id="vCpf" placeholder="CPF do visitante">
+        <label>Placa do Veículo *</label>
+        <input type="text" id="vPlaca" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
       <div class="campo">
-        <label>Empresa</label>
-        <input type="text" id="vEmpresa" placeholder="Empresa do visitante">
-      </div>
-      <div class="campo">
-        <label>Setor Visitado *</label>
-        <input type="text" id="vSetor" placeholder="Setor que será visitado" required>
-      </div>
-      <div class="campo">
-        <label>Observações</label>
+        <label>Informações Adicionais</label>
         <input type="text" id="vObs" placeholder="Informações adicionais">
       </div>
       <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
@@ -245,9 +241,6 @@ function mostrarTelaForm(){
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeVisitante").textContent = visitanteLogado?.nome || "Visitante";
-  if(visitanteLogado?.nome) document.getElementById("vNome").value = visitanteLogado.nome;
-  if(visitanteLogado?.cpf) document.getElementById("vCpf").value = visitanteLogado.cpf;
-  if(visitanteLogado?.empresa) document.getElementById("vEmpresa").value = visitanteLogado.empresa;
 }
 
 function sair(){
@@ -263,18 +256,19 @@ function sair(){
 
 async function enviar(e){
   e.preventDefault(); ocultarErro("erroForm");
-  const nome = document.getElementById("vNome").value.trim();
-  const setor = document.getElementById("vSetor").value.trim();
-  if(!nome){ mostrarErro("erroForm", "Informe o nome do visitante."); return; }
-  if(!setor){ mostrarErro("erroForm", "Informe o setor visitado."); return; }
+  const tipo = document.getElementById("vTipo").value;
+  const placa = document.getElementById("vPlaca").value.trim().toUpperCase();
+  if(!tipo){ mostrarErro("erroForm", "Informe o tipo (Entrega ou Coleta)."); return; }
+  if(!placa){ mostrarErro("erroForm", "Informe a placa do veículo."); return; }
   const btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   const payload = {
     visitante_id: visitanteLogado?.id,
-    nome,
-    cpf: document.getElementById("vCpf").value.trim(),
-    empresa: document.getElementById("vEmpresa").value.trim(),
-    setor_visitado: setor,
+    nome: visitanteLogado?.nome || '',
+    cpf: visitanteLogado?.cpf || '',
+    empresa: visitanteLogado?.empresa || '',
+    tipo,
+    placa,
     obs: document.getElementById("vObs").value.trim()
   };
   try {
