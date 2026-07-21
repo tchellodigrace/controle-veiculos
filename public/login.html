@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Oceânica | Login</title>
+<title>Controle de Portaria | Login</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -122,6 +122,7 @@ async function fazerLogin(e) {
     }
     localStorage.setItem('token', data.token);
     localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    if(data.empresa) localStorage.setItem('empresa', data.empresa);
     window.location.href = 'index.html';
   } catch (err) {
     mostrarErro('Erro de conexão com o servidor');

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pré-Registro - Oceânica</title>
+<title>Pré-Registro</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -61,9 +61,9 @@
 
   <div id="telaLogin">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px" id="logoImg">
     </div>
-    <p class="sub">Acesse com sua conta de motorista</p>
+    <p class="sub" id="subLogin">Acesse com sua conta de motorista</p>
     <div class="erro-msg" id="erroLogin"></div>
     <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
@@ -82,9 +82,9 @@
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px" id="logoImg2">
     </div>
-    <h1>Pré-Registro</h1>
+    <h1 id="tituloCadastro">Pré-Registro</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
     <div class="erro-msg" id="erroCadastro"></div>
     <form id="formCadastro" onsubmit="criarConta(event)">
@@ -110,7 +110,7 @@
       <span class="nome" id="nomeMotorista">---</span>
       <button class="sair" onclick="sair()">Sair</button>
     </div>
-    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:160px;height:auto;display:block;margin:0 auto 12px">
+    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:160px;height:auto;display:block;margin:0 auto 12px" id="logoImg3">
     <h1>Pré-Registro</h1>
     <p class="sub">Preencha os dados do veículo</p>
     <div class="erro-msg" id="erroForm"></div>
@@ -179,12 +179,25 @@
 
 <script>
 const API = window.location.origin;
+const params = new URLSearchParams(window.location.search);
+const CLIENTE_ID = params.get('cliente_id');
+const EMPRESA_URL = params.get('empresa') || '';
 
-let tokenMotorista = localStorage.getItem('tokenMotorista');
-let motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado') || 'null');
+if(!CLIENTE_ID){
+  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inválido</h2><p style="color:#666">Este link não é válido. Solicite o link correto à portaria.</p></div>';
+}
+
+let tokenMotorista = localStorage.getItem('tokenMotorista_' + CLIENTE_ID);
+let motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado_' + CLIENTE_ID) || 'null');
 
 if(tokenMotorista && motoristaLogado){
   mostrarTelaForm();
+}
+
+if(EMPRESA_URL){
+  const nomeEmpresa = decodeURIComponent(EMPRESA_URL);
+  document.getElementById('subLogin').textContent = nomeEmpresa;
+  document.getElementById('tituloCadastro').textContent = 'Pré-Registro - ' + nomeEmpresa;
 }
 
 function mostrarErro(id, msg){
@@ -219,7 +232,7 @@ async function criarConta(e){
     const res = await fetch(API + '/api/cadastro-motorista', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, usuario, senha })
+      body: JSON.stringify({ cliente_id: parseInt(CLIENTE_ID), nome, usuario, senha })
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
     document.getElementById("formCadastro").reset();
@@ -243,14 +256,14 @@ async function fazerLogin(e){
     const res = await fetch(API + '/api/login-motorista', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, senha })
+      body: JSON.stringify({ usuario, senha, cliente_id: parseInt(CLIENTE_ID) })
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
     const data = await res.json();
     tokenMotorista = data.token;
     motoristaLogado = data.motorista;
-    localStorage.setItem('tokenMotorista', tokenMotorista);
-    localStorage.setItem('motoristaLogado', JSON.stringify(motoristaLogado));
+    localStorage.setItem('tokenMotorista_' + CLIENTE_ID, tokenMotorista);
+    localStorage.setItem('motoristaLogado_' + CLIENTE_ID, JSON.stringify(motoristaLogado));
     document.getElementById("formLogin").reset();
     btn.disabled = false; btn.textContent = "Entrar";
     mostrarTelaForm();
@@ -268,7 +281,7 @@ function mostrarTelaForm(){
 
 async function carregarEmpresas(){
   try {
-    const res = await fetch(API + '/api/empresas-lista-pre');
+    const res = await fetch(API + '/api/empresas-lista-pre?cliente_id=' + CLIENTE_ID);
     if(!res.ok) return;
     const lista = await res.json();
     const dl = document.getElementById("listaEmpresas");
@@ -279,8 +292,8 @@ async function carregarEmpresas(){
 function sair(){
   tokenMotorista = null;
   motoristaLogado = null;
-  localStorage.removeItem('tokenMotorista');
-  localStorage.removeItem('motoristaLogado');
+  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
+  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
   document.getElementById("telaLogin").style.display = "block";
   document.getElementById("telaForm").style.display = "none";
   document.getElementById("sucesso").style.display = "none";
@@ -296,6 +309,7 @@ async function enviar(e){
   const btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   const payload = {
+    cliente_id: parseInt(CLIENTE_ID),
     empresa,
     motorista: motoristaLogado.nome,
     cnh: document.getElementById("cnh").value.trim(),
@@ -308,7 +322,7 @@ async function enviar(e){
   try {
     const res = await fetch(API + '/api/pre-registro', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }

@@ -245,6 +245,16 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalDetalhe">
+  <div class="modal-content" style="max-width:550px">
+    <div class="modal-header">
+      <h3>Detalhes do Cliente</h3>
+      <button class="modal-close" onclick="fecharModal('modalDetalhe')">&times;</button>
+    </div>
+    <div class="modal-body" id="modalDetalheBody"></div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
 const token = localStorage.getItem('tokenAdmin');
@@ -327,11 +337,56 @@ async function salvarCliente(e){
 }
 
 async function excluirCliente(id){
-  if(!confirm('Excluir este cliente?')) return;
+  if(!confirm('Excluir este cliente e todos seus dados?')) return;
   try {
     await fetch(API + '/api/admin/clientes/' + id, { method: 'DELETE', headers: getHeaders() });
     carregarDashboard();
     carregarClientes();
+  } catch {}
+}
+
+async function verDetalhes(id){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    const clientes = await res.json();
+    const c = clientes.find(x => x.id == id);
+    if(!c) return;
+    const baseUrl = window.location.origin;
+    const linksHtml = `
+      <div style="background:#f7f8fa;border-radius:8px;padding:14px;margin-bottom:14px">
+        <b style="font-size:12px;color:#1a1a2e">Links de Acesso</b>
+        <div style="margin-top:8px;font-size:12px;word-break:break-all">
+          <div style="margin-bottom:6px"><b>Portaria:</b> <a href="${baseUrl}" target="_blank" style="color:#3182ce">${baseUrl}</a></div>
+          <div style="margin-bottom:6px"><b>Pré-Registro Motorista:</b> <a href="${baseUrl}/pre-registro.html?cliente_id=${c.id}&empresa=${encodeURIComponent(c.empresa)}" target="_blank" style="color:#3182ce">${baseUrl}/pre-registro.html?cliente_id=${c.id}&empresa=${encodeURIComponent(c.empresa)}</a></div>
+          <div><b>Pré-Registro Visitante:</b> <a href="${baseUrl}/pre-registro-visitante.html?cliente_id=${c.id}&empresa=${encodeURIComponent(c.empresa)}" target="_blank" style="color:#3182ce">${baseUrl}/pre-registro-visitante.html?cliente_id=${c.id}&empresa=${encodeURIComponent(c.empresa)}</a></div>
+        </div>
+      </div>
+    `;
+    const usersRes = await fetch(API + '/api/admin/clientes/' + id + '/usuarios', { headers: getHeaders() });
+    const users = await usersRes.json();
+    let usersHtml = '';
+    if(users.length > 0){
+      usersHtml = `<div style="background:#f7f8fa;border-radius:8px;padding:14px;margin-bottom:14px">
+        <b style="font-size:12px;color:#1a1a2e">Usuários da Portaria</b>
+        <div style="margin-top:8px">${users.map(u => `<div style="font-size:12px;margin-bottom:4px"><b>${u.usuario}</b> / ${u.senha_exibicao || '***'} <span style="color:${u.ativo?'#38a169':'#e53e3e'};font-weight:600">${u.ativo?'Ativo':'Inativo'}</span></div>`).join('')}</div>
+      </div>`;
+    } else {
+      usersHtml = `<div style="background:#fff0f0;border-radius:8px;padding:14px;margin-bottom:14px;font-size:12px;color:#cc0000">Nenhum usuário portaria criado. Crie um no cadastro do cliente.</div>`;
+    }
+    document.getElementById('modalDetalheBody').innerHTML = `
+      <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${c.empresa}</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">
+        <div><b>CNPJ:</b> ${c.cnpj || '—'}</div>
+        <div><b>Responsável:</b> ${c.responsavel || '—'}</div>
+        <div><b>Plano:</b> ${c.plano}</div>
+        <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/mês</div>
+        <div><b>Expira:</b> ${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>Status:</b> ${c.ativo ? 'Ativo' : 'Inativo'}</div>
+      </div>
+      ${linksHtml}
+      ${usersHtml}
+    `;
+    document.getElementById('modalDetalhe').classList.add('mostrar');
   } catch {}
 }
 
@@ -381,6 +436,7 @@ async function carregarClientes(){
         <td>${statusBadge}</td>
         <td>
           <div class="acoes-col">
+            <button class="btn-acao" style="background:#805ad5" onclick="verDetalhes(${c.id})">Detalhes</button>
             <button class="btn-acao btn-editar" onclick="abrirModalEditar(${c.id})">Editar</button>
             <button class="btn-acao" style="background:${c.ativo ? '#e53e3e' : '#38a169'}" onclick="ativarDesativarCliente(${c.id}, ${!c.ativo})">${c.ativo ? 'Desativar' : 'Ativar'}</button>
           </div>

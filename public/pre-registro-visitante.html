@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pré-Registro Visitante - Oceânica</title>
+<title>Pré-Registro Visitante</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -61,9 +61,9 @@
 
   <div id="telaLogin">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
     </div>
-    <p class="sub">Acesse com sua conta de visitante</p>
+    <p class="sub" id="subLogin">Acesse com sua conta de visitante</p>
     <div class="erro-msg" id="erroLogin"></div>
     <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
@@ -82,9 +82,9 @@
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
-      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
     </div>
-    <h1>Pré-Registro Visitante</h1>
+    <h1 id="tituloCadastro">Pré-Registro Visitante</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
     <div class="erro-msg" id="erroCadastro"></div>
     <form id="formCadastro" onsubmit="criarConta(event)">
@@ -118,7 +118,7 @@
       <span class="nome" id="nomeVisitante">---</span>
       <button class="sair" onclick="sair()">Sair</button>
     </div>
-    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:160px;height:auto;display:block;margin:0 auto 12px">
+    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Logo" style="max-width:160px;height:auto;display:block;margin:0 auto 12px">
     <h1>Pré-Registro Visitante</h1>
     <p class="sub">Preencha os dados da visita</p>
     <div class="erro-msg" id="erroForm"></div>
@@ -159,12 +159,24 @@
 
 <script>
 const API = window.location.origin;
+const params = new URLSearchParams(window.location.search);
+const CLIENTE_ID = params.get('cliente_id');
+const EMPRESA_URL = params.get('empresa') || '';
 
-let tokenVisitante = localStorage.getItem('tokenVisitante');
-let visitanteLogado = JSON.parse(localStorage.getItem('visitanteLogado') || 'null');
+if(!CLIENTE_ID){
+  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inválido</h2><p style="color:#666">Este link não é válido. Solicite o link correto à portaria.</p></div>';
+}
+
+let tokenVisitante = localStorage.getItem('tokenVisitante_' + CLIENTE_ID);
+let visitanteLogado = JSON.parse(localStorage.getItem('visitanteLogado_' + CLIENTE_ID) || 'null');
 
 if(tokenVisitante && visitanteLogado){
   mostrarTelaForm();
+}
+
+if(EMPRESA_URL){
+  document.getElementById('subLogin').textContent = decodeURIComponent(EMPRESA_URL);
+  document.getElementById('tituloCadastro').textContent = 'Pré-Registro Visitante - ' + decodeURIComponent(EMPRESA_URL);
 }
 
 function mostrarErro(id, msg){
@@ -201,7 +213,7 @@ async function criarConta(e){
     const res = await fetch(API + '/api/cadastro-visitante', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, cpf, empresa, usuario, senha })
+      body: JSON.stringify({ cliente_id: parseInt(CLIENTE_ID), nome, cpf, empresa, usuario, senha })
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
     document.getElementById("formCadastro").reset();
@@ -225,14 +237,14 @@ async function fazerLogin(e){
     const res = await fetch(API + '/api/login-visitante', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, senha })
+      body: JSON.stringify({ usuario, senha, cliente_id: parseInt(CLIENTE_ID) })
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
     const data = await res.json();
     tokenVisitante = data.token;
     visitanteLogado = data.visitante;
-    localStorage.setItem('tokenVisitante', tokenVisitante);
-    localStorage.setItem('visitanteLogado', JSON.stringify(visitanteLogado));
+    localStorage.setItem('tokenVisitante_' + CLIENTE_ID, tokenVisitante);
+    localStorage.setItem('visitanteLogado_' + CLIENTE_ID, JSON.stringify(visitanteLogado));
     document.getElementById("formLogin").reset();
     btn.disabled = false; btn.textContent = "Entrar";
     mostrarTelaForm();
@@ -250,8 +262,8 @@ function mostrarTelaForm(){
 function sair(){
   tokenVisitante = null;
   visitanteLogado = null;
-  localStorage.removeItem('tokenVisitante');
-  localStorage.removeItem('visitanteLogado');
+  localStorage.removeItem('tokenVisitante_' + CLIENTE_ID);
+  localStorage.removeItem('visitanteLogado_' + CLIENTE_ID);
   document.getElementById("telaLogin").style.display = "block";
   document.getElementById("telaForm").style.display = "none";
   document.getElementById("sucesso").style.display = "none";
@@ -267,6 +279,7 @@ async function enviar(e){
   const btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   const payload = {
+    cliente_id: parseInt(CLIENTE_ID),
     visitante_id: visitanteLogado?.id,
     nome: visitanteLogado?.nome || '',
     cpf: visitanteLogado?.cpf || '',
@@ -279,7 +292,7 @@ async function enviar(e){
   try {
     const res = await fetch(API + '/api/pre-registro-visitante', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenVisitante },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
