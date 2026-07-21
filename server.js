@@ -246,7 +246,15 @@ app.get('/api/resumo', authMiddleware, async (req, res) => {
 
 app.get('/api/usuarios', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nome, usuario, senha_exibicao, ativo, criado_em FROM usuarios ORDER BY nome');
+    let result;
+    try {
+      result = await pool.query('SELECT id, nome, usuario, senha_exibicao, ativo, criado_em FROM usuarios ORDER BY nome');
+    } catch (e) {
+      if (e.message && e.message.includes('senha_exibicao')) {
+        await pool.query("ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''");
+        result = await pool.query('SELECT id, nome, usuario, senha_exibicao, ativo, criado_em FROM usuarios ORDER BY nome');
+      } else { throw e; }
+    }
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar usuários:', err);
@@ -446,7 +454,15 @@ app.delete('/api/pre-registros/:id', authMiddleware, async (req, res) => {
 
 app.get('/api/contas-motoristas', authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, usuario, nome, senha_exibicao, ativo, criado_em FROM contas_motoristas ORDER BY nome');
+    let result;
+    try {
+      result = await pool.query('SELECT id, usuario, nome, senha_exibicao, ativo, criado_em FROM contas_motoristas ORDER BY nome');
+    } catch (e) {
+      if (e.message && e.message.includes('senha_exibicao')) {
+        await pool.query("ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''");
+        result = await pool.query('SELECT id, usuario, nome, senha_exibicao, ativo, criado_em FROM contas_motoristas ORDER BY nome');
+      } else { throw e; }
+    }
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar contas:', err);
@@ -461,17 +477,28 @@ app.post('/api/contas-motoristas', authMiddleware, async (req, res) => {
       return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
     }
     const senhaHash = await bcrypt.hash(senha, 10);
-    const result = await pool.query(
-      'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao) VALUES ($1, $2, $3, $4) RETURNING id, usuario, nome, senha_exibicao',
-      [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
-    );
+    let result;
+    try {
+      result = await pool.query(
+        'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao) VALUES ($1, $2, $3, $4) RETURNING id, usuario, nome, senha_exibicao',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
+      );
+    } catch (e) {
+      if (e.message && e.message.includes('empresa')) {
+        await pool.query("ALTER TABLE contas_motoristas DROP COLUMN IF EXISTS empresa");
+        result = await pool.query(
+          'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao) VALUES ($1, $2, $3, $4) RETURNING id, usuario, nome, senha_exibicao',
+          [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
+        );
+      } else { throw e; }
+    }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     if (err.code === '23505') {
       return res.status(400).json({ erro: 'Usuário já existe' });
     }
     console.error('Erro ao criar conta motorista:', err);
-    res.status(500).json({ erro: 'Erro ao criar conta' });
+    res.status(500).json({ erro: 'Erro ao criar conta: ' + err.message });
   }
 });
 
