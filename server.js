@@ -392,14 +392,30 @@ app.post('/api/cadastro-motorista', async (req, res) => {
       return res.status(400).json({ erro: 'Usuário já existe' });
     }
     const senhaHash = await bcrypt.hash(senha, 10);
-    const result = await pool.query(
-      'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao, ativo) VALUES ($1, $2, $3, $4, FALSE) RETURNING id, usuario, nome',
-      [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
-    );
+    let result;
+    try {
+      result = await pool.query(
+        'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao, ativo) VALUES ($1, $2, $3, $4, FALSE) RETURNING id, usuario, nome',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
+      );
+    } catch (e) {
+      console.log('Tentando fallback cadastro motorista:', e.message);
+      try {
+        await pool.query("ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''");
+      } catch {}
+      try {
+        await pool.query("ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE");
+      } catch {}
+      result = await pool.query(
+        'INSERT INTO contas_motoristas (usuario, senha, nome) VALUES ($1, $2, $3) RETURNING id, usuario, nome',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase()]
+      );
+      await pool.query('UPDATE contas_motoristas SET ativo = FALSE WHERE id = $1', [result.rows[0].id]);
+    }
     res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
   } catch (err) {
     console.error('Erro ao cadastrar motorista:', err);
-    res.status(500).json({ erro: 'Erro ao criar conta' });
+    res.status(500).json({ erro: 'Erro ao criar conta: ' + err.message });
   }
 });
 
