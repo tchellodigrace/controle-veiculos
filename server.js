@@ -881,11 +881,6 @@ app.get('/admin-login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
 });
 
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'Rota não encontrada' });
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
 function adminMiddleware(req, res, next) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ erro: 'Não autorizado' });
@@ -1025,6 +1020,21 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
     console.error('Erro ao buscar faturamento:', err);
     res.status(500).json({ erro: 'Erro ao buscar faturamento' });
   }
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+app.get('/admin-login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'Rota não encontrada' });
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
 async function iniciar() {
