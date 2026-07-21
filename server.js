@@ -424,10 +424,19 @@ app.get('/api/setup', async (req, res) => {
     const fs = require('fs');
     const sql = fs.readFileSync('./schema.sql', 'utf8');
     await pool.query(sql);
-    res.json({ mensagem: 'Banco de dados inicializado com sucesso' });
+    const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
+    if (userCount.rows[0].total === 0) {
+      const senhaPortaria = await bcrypt.hash('portaria123', 10);
+      const senhaAdmin = await bcrypt.hash('admin123', 10);
+      await pool.query(
+        'INSERT INTO usuarios (nome, usuario, senha) VALUES ($1, $2, $3), ($4, $5, $6)',
+        ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
+      );
+    }
+    res.json({ mensagem: 'Banco de dados inicializado com sucesso. Usuários: portaria/portaria123 e admin/admin123' });
   } catch (err) {
     console.error('Erro ao executar schema:', err);
-    res.status(500).json({ erro: 'Erro ao inicializar banco de dados' });
+    res.status(500).json({ erro: 'Erro ao inicializar banco de dados: ' + err.message });
   }
 });
 
