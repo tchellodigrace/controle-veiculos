@@ -85,6 +85,11 @@
     <div class="erro-msg" id="erroForm"></div>
     <form id="formPre" onsubmit="enviar(event)">
       <div class="campo">
+        <label>Empresa *</label>
+        <input type="text" id="empresa" list="listaEmpresas" placeholder="Nome da empresa" required>
+        <datalist id="listaEmpresas"></datalist>
+      </div>
+      <div class="campo">
         <label>Placa do Veículo *</label>
         <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
@@ -188,6 +193,17 @@ function mostrarTelaForm(){
   document.getElementById("telaForm").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
+  carregarEmpresas();
+}
+
+async function carregarEmpresas(){
+  try {
+    const res = await fetch(API + '/api/empresas-lista-pre');
+    if(!res.ok) return;
+    const lista = await res.json();
+    const dl = document.getElementById("listaEmpresas");
+    dl.innerHTML = lista.map(e => `<option value="${e.empresa}">`).join("");
+  } catch {}
 }
 
 function sair(){
@@ -203,12 +219,14 @@ function sair(){
 
 async function enviar(e){
   e.preventDefault(); ocultarErro("erroForm");
+  const empresa = document.getElementById("empresa").value.trim().toUpperCase();
   const placa = document.getElementById("placa").value.trim().toUpperCase();
+  if(!empresa){ mostrarErro("erroForm", "Informe a empresa."); return; }
   if(!placa){ mostrarErro("erroForm", "Informe a placa."); return; }
   const btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   const payload = {
-    empresa: motoristaLogado.empresa,
+    empresa,
     motorista: motoristaLogado.nome,
     cnh: document.getElementById("cnh").value.trim(),
     placa,

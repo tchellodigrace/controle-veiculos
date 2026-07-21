@@ -388,8 +388,8 @@ app.post('/api/login-motorista', async (req, res) => {
     if (!senhaValida) {
       return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
     }
-    const token = jwt.sign({ id: conta.id, nome: conta.nome, empresa: conta.empresa }, JWT_SECRET, { expiresIn: '12h' });
-    res.json({ token, motorista: { id: conta.id, nome: conta.nome, empresa: conta.empresa } });
+    const token = jwt.sign({ id: conta.id, nome: conta.nome }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token, motorista: { id: conta.id, nome: conta.nome } });
   } catch (err) {
     console.error('Erro no login motorista:', err);
     res.status(500).json({ erro: 'Erro ao fazer login' });
@@ -456,14 +456,14 @@ app.get('/api/contas-motoristas', authMiddleware, async (req, res) => {
 
 app.post('/api/contas-motoristas', authMiddleware, async (req, res) => {
   try {
-    const { usuario, senha, nome, empresa } = req.body;
-    if (!usuario || !senha || !nome || !empresa) {
-      return res.status(400).json({ erro: 'Usuário, senha, nome e empresa são obrigatórios' });
+    const { usuario, senha, nome } = req.body;
+    if (!usuario || !senha || !nome) {
+      return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
     }
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO contas_motoristas (usuario, senha, nome, empresa) VALUES ($1, $2, $3, $4) RETURNING id, usuario, nome, empresa',
-      [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), empresa.toUpperCase()]
+      'INSERT INTO contas_motoristas (usuario, senha, nome) VALUES ($1, $2, $3) RETURNING id, usuario, nome',
+      [usuario.toLowerCase(), senhaHash, nome.toUpperCase()]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -477,11 +477,10 @@ app.post('/api/contas-motoristas', authMiddleware, async (req, res) => {
 
 app.put('/api/contas-motoristas/:id', authMiddleware, async (req, res) => {
   try {
-    const { nome, empresa, ativo } = req.body;
+    const { nome, ativo } = req.body;
     const updates = [];
     const params = [];
     if (nome) { params.push(nome.toUpperCase()); updates.push(`nome = $${params.length}`); }
-    if (empresa !== undefined) { params.push(empresa.toUpperCase()); updates.push(`empresa = $${params.length}`); }
     if (ativo !== undefined) { params.push(ativo); updates.push(`ativo = $${params.length}`); }
     if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
     params.push(req.params.id);
@@ -501,6 +500,8 @@ app.get('/api/setup', async (req, res) => {
     for (const stmt of statements) {
       try { await pool.query(stmt); } catch(e) { console.log('Aviso setup:', e.message); }
     }
+    try { await pool.query("ALTER TABLE contas_motoristas DROP COLUMN IF EXISTS empresa"); } catch(e) {}
+    try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch(e) {}
     const userCount = await pool.query('SELECT COUNT(*)::int AS total FROM usuarios');
     if (userCount.rows[0].total === 0) {
       const senhaPortaria = await bcrypt.hash('portaria123', 10);
