@@ -381,6 +381,28 @@ app.post('/api/pre-registro', async (req, res) => {
   }
 });
 
+app.post('/api/cadastro-motorista', async (req, res) => {
+  try {
+    const { nome, usuario, senha } = req.body;
+    if (!nome || !usuario || !senha) {
+      return res.status(400).json({ erro: 'Nome, usuário e senha são obrigatórios' });
+    }
+    const existe = await pool.query('SELECT id FROM contas_motoristas WHERE usuario = $1', [usuario.toLowerCase()]);
+    if (existe.rows.length > 0) {
+      return res.status(400).json({ erro: 'Usuário já existe' });
+    }
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const result = await pool.query(
+      'INSERT INTO contas_motoristas (usuario, senha, nome, senha_exibicao, ativo) VALUES ($1, $2, $3, $4, FALSE) RETURNING id, usuario, nome',
+      [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), senha]
+    );
+    res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao cadastrar motorista:', err);
+    res.status(500).json({ erro: 'Erro ao criar conta' });
+  }
+});
+
 app.post('/api/login-motorista', async (req, res) => {
   try {
     const { usuario, senha } = req.body;

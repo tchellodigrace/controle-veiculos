@@ -44,6 +44,10 @@
   .logo img{ height:40px; }
   .info{ font-size:11px; color:#8b93a1; text-align:center; margin-top:12px; }
   .info b{ color:#0a3622; }
+  .sucesso-msg{
+    background:#d4edda; border:1px solid #28a745; border-radius:8px;
+    padding:10px 14px; font-size:13px; color:#155724; margin-bottom:14px; text-align:center;
+  }
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .topbar .nome{ font-size:13px; color:#0a3622; font-weight:700; }
   .topbar .sair{
@@ -62,6 +66,7 @@
     <h1>Pré-Registro</h1>
     <p class="sub">Acesse com sua conta de motorista</p>
     <div class="erro-msg" id="erroLogin"></div>
+    <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
       <div class="campo">
         <label>Usuário</label>
@@ -73,6 +78,32 @@
       </div>
       <button type="submit" id="btnLogin">Entrar</button>
     </form>
+    <p class="info">Não tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
+  </div>
+
+  <div id="telaCadastro" style="display:none">
+    <div class="logo">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+    </div>
+    <h1>Criar Conta</h1>
+    <p class="sub">Preencha seus dados para se cadastrar</p>
+    <div class="erro-msg" id="erroCadastro"></div>
+    <form id="formCadastro" onsubmit="criarConta(event)">
+      <div class="campo">
+        <label>Nome completo *</label>
+        <input type="text" id="cadNome" placeholder="Seu nome" required>
+      </div>
+      <div class="campo">
+        <label>Usuário *</label>
+        <input type="text" id="cadUsuario" placeholder="Escolha um usuário" required>
+      </div>
+      <div class="campo">
+        <label>Senha *</label>
+        <input type="password" id="cadSenha" placeholder="Escolha uma senha" required>
+      </div>
+      <button type="submit" id="btnCadastrar">Criar Conta</button>
+    </form>
+    <p class="info">Já tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -163,6 +194,44 @@ function mostrarErro(id, msg){
   el.style.display = "block";
 }
 function ocultarErro(id){ document.getElementById(id).style.display = "none"; }
+
+function mostrarTelaCadastro(e){
+  if(e) e.preventDefault();
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaCadastro").style.display = "block";
+  ocultarErro("erroCadastro");
+}
+function mostrarTelaLogin(e){
+  if(e) e.preventDefault();
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaCadastro").style.display = "none";
+  ocultarErro("erroLogin");
+}
+
+async function criarConta(e){
+  e.preventDefault(); ocultarErro("erroCadastro");
+  const nome = document.getElementById("cadNome").value.trim();
+  const usuario = document.getElementById("cadUsuario").value.trim();
+  const senha = document.getElementById("cadSenha").value;
+  if(!nome || !usuario || !senha){ mostrarErro("erroCadastro", "Preencha todos os campos."); return; }
+  const btn = document.getElementById("btnCadastrar");
+  btn.disabled = true; btn.textContent = "Criando conta...";
+  try {
+    const res = await fetch(API + '/api/cadastro-motorista', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, usuario, senha })
+    });
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
+    document.getElementById("formCadastro").reset();
+    document.getElementById("telaCadastro").style.display = "none";
+    document.getElementById("telaLogin").style.display = "block";
+    const msg = document.getElementById("msgSucesso");
+    msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
+    msg.style.display = "block";
+    btn.disabled = false; btn.textContent = "Criar Conta";
+  } catch { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+}
 
 async function fazerLogin(e){
   e.preventDefault(); ocultarErro("erroLogin");
