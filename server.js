@@ -435,6 +435,11 @@ app.get('/api/setup', async (req, res) => {
         'INSERT INTO usuarios (nome, usuario, senha) VALUES ($1, $2, $3), ($4, $5, $6)',
         ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
       );
+    } else {
+      const senhaPortaria = await bcrypt.hash('portaria123', 10);
+      const senhaAdmin = await bcrypt.hash('admin123', 10);
+      await pool.query("UPDATE usuarios SET senha = $1 WHERE usuario = 'portaria'", [senhaPortaria]);
+      await pool.query("UPDATE usuarios SET senha = $1 WHERE usuario = 'admin'", [senhaAdmin]);
     }
     const users = await pool.query('SELECT id, nome, usuario, ativo FROM usuarios');
     res.json({ mensagem: 'OK', usuarios: users.rows });
