@@ -436,10 +436,21 @@ app.get('/api/setup', async (req, res) => {
         ['PORTARIA', 'portaria', senhaPortaria, 'ADMIN', 'admin', senhaAdmin]
       );
     }
-    res.json({ mensagem: 'OK! Usuários: portaria/portaria123 e admin/admin123' });
+    const users = await pool.query('SELECT id, nome, usuario, ativo FROM usuarios');
+    res.json({ mensagem: 'OK', usuarios: users.rows });
   } catch (err) {
     console.error('Erro ao executar schema:', err);
     res.status(500).json({ erro: 'Erro ao inicializar banco: ' + err.message });
+  }
+});
+
+app.get('/api/check-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, nome, usuario, ativo FROM usuarios');
+    const tables = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`);
+    res.json({ usuarios: result.rows, tabelas: tables.rows.map(t => t.tablename) });
+  } catch (err) {
+    res.status(500).json({ erro: err.message });
   }
 });
 
