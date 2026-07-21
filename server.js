@@ -369,15 +369,41 @@ app.post('/api/pre-registro', async (req, res) => {
     if (!finalEmpresa || !finalMotorista || !placa) {
       return res.status(400).json({ erro: 'Empresa, motorista e placa são obrigatórios' });
     }
-    const result = await pool.query(
-      `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, nota, obs)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [finalEmpresa.toUpperCase(), finalMotorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', nota||'', obs||'']
-    );
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, nota, obs)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [finalEmpresa.toUpperCase(), finalMotorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', nota||'', obs||'']
+      );
+    } catch (e) {
+      console.log('Fallback pre-registro:', e.message);
+      await pool.query(`CREATE TABLE IF NOT EXISTS pre_registros (
+        id SERIAL PRIMARY KEY,
+        empresa VARCHAR(200) NOT NULL,
+        motorista VARCHAR(200) NOT NULL,
+        cnh VARCHAR(50) DEFAULT '',
+        placa VARCHAR(20) NOT NULL,
+        modelo VARCHAR(100) DEFAULT '',
+        finalidade VARCHAR(100) DEFAULT '',
+        nota VARCHAR(100) DEFAULT '',
+        obs TEXT DEFAULT '',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+      try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS obs TEXT DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS modelo VARCHAR(100) DEFAULT ''"); } catch {}
+      try { await pool.query("ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS finalidade VARCHAR(100) DEFAULT ''"); } catch {}
+      result = await pool.query(
+        `INSERT INTO pre_registros (empresa, motorista, cnh, placa, modelo, finalidade, nota, obs)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+        [finalEmpresa.toUpperCase(), finalMotorista.toUpperCase(), cnh||'', placa.toUpperCase(), modelo||'', finalidade||'', nota||'', obs||'']
+      );
+    }
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Erro no pre-registro:', err);
-    res.status(500).json({ erro: 'Erro ao realizar pré-registro' });
+    res.status(500).json({ erro: 'Erro ao realizar pré-registro: ' + err.message });
   }
 });
 
