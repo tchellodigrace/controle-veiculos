@@ -699,6 +699,26 @@
           </div>
         </div>
       </div>
+      <div class="card tabela-card" id="preCardVisitantes" style="display:none">
+        <div class="tabela-topo">
+          <h3>📋 PRÉ-REGISTROS DE VISITANTES PENDENTES</h3>
+        </div>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Empresa</th>
+                <th>Setor Visitado</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaPreVisitantes"></tbody>
+          </table>
+        </div>
+      </div>
       <div class="card tabela-card">
         <div class="tabela-topo">
           <h3 id="tituloVisitantes">VISITANTES DO DIA</h3>
@@ -814,6 +834,7 @@
       <div class="tab-bar" style="display:flex;gap:8px;margin-bottom:16px">
         <button class="tab-btn active" onclick="trocarTab(this, 'tabUsuarios')" style="padding:8px 16px;border:2px solid var(--verde-escuro);background:var(--verde-escuro);color:#fff;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Usuários</button>
         <button class="tab-btn" onclick="trocarTab(this, 'tabMotoristas')" style="padding:8px 16px;border:2px solid var(--cinza-borda);background:#fff;color:#4a5568;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Motoristas (Pré-Registro)</button>
+        <button class="tab-btn" onclick="trocarTab(this, 'tabVisitantes')" style="padding:8px 16px;border:2px solid var(--cinza-borda);background:#fff;color:#4a5568;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">Visitantes (Pré-Registro)</button>
       </div>
       <div id="tabUsuarios">
         <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Usuários do Sistema</h3>
@@ -829,6 +850,23 @@
               <input type="text" id="cmNome" placeholder="Nome" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
               <input type="text" id="cmUsuario" placeholder="Usuário (login)" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
               <input type="password" id="cmSenha" placeholder="Senha" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+            </div>
+            <button type="submit" class="btn btn-primario" style="margin-top:10px;padding:8px 16px;font-size:12px">Criar Conta</button>
+          </form>
+        </div>
+      </div>
+      <div id="tabVisitantes" style="display:none">
+        <h3 style="font-size:14px;color:var(--verde-escuro);margin:0 0 10px">Contas de Visitantes</h3>
+        <div id="listaContasVisitantes" class="usuario-lista" style="margin-bottom:14px"></div>
+        <div class="card" style="padding:14px;background:var(--cinza-fundo);border-radius:8px">
+          <h4 style="margin:0 0 10px;font-size:13px;color:#4a5568">Nova Conta de Visitante</h4>
+          <form onsubmit="criarContaVisitante(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <input type="text" id="cvNome" placeholder="Nome" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cvUsuario" placeholder="Usuário (login)" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="password" id="cvSenha" placeholder="Senha" required style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cvCpf" placeholder="CPF" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cvEmpresa" placeholder="Empresa" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
             </div>
             <button type="submit" class="btn btn-primario" style="margin-top:10px;padding:8px 16px;font-size:12px">Criar Conta</button>
           </form>
@@ -1159,6 +1197,8 @@ function fecharConfig(){
 }
 function abrirCadastros(){
   carregarUsuarios();
+  carregarContasMotoristas();
+  carregarContasVisitantes();
   document.getElementById("modalCadastros").classList.add("mostrar");
 }
 function fecharCadastros(){
@@ -1214,6 +1254,9 @@ function trocarTab(btn, tabId){
   btn.style.background = 'var(--verde-escuro)'; btn.style.color = '#fff'; btn.style.borderColor = 'var(--verde-escuro)';
   document.getElementById('tabUsuarios').style.display = tabId === 'tabUsuarios' ? 'block' : 'none';
   document.getElementById('tabMotoristas').style.display = tabId === 'tabMotoristas' ? 'block' : 'none';
+  document.getElementById('tabVisitantes').style.display = tabId === 'tabVisitantes' ? 'block' : 'none';
+  if(tabId === 'tabMotoristas') carregarContasMotoristas();
+  if(tabId === 'tabVisitantes') carregarContasVisitantes();
 }
 async function carregarContasMotoristas(){
   try {
@@ -1258,6 +1301,55 @@ async function alternarContaMotorista(id, ativo){
       method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ativo })
     });
     carregarContasMotoristas();
+  } catch {}
+}
+async function carregarContasVisitantes(){
+  try {
+    const res = await fetch(API + '/api/contas-visitantes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const contas = await res.json();
+    const div = document.getElementById("listaContasVisitantes");
+    div.innerHTML = contas.map(c => `
+      <div class="usuario-item">
+        <span>${c.nome} <small>(${c.usuario})</small></span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="senha-badge" title="Senha">${c.senha_exibicao || '—'}</span>
+          <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
+          <button class="btn-excluir" onclick="alternarContaVisitante(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '✕' : '✓'}</button>
+        </div>
+      </div>
+    `).join("");
+  } catch {}
+}
+async function criarContaVisitante(e){
+  e.preventDefault();
+  const payload = {
+    usuario: document.getElementById("cvUsuario").value.trim(),
+    senha: document.getElementById("cvSenha").value,
+    nome: document.getElementById("cvNome").value.trim(),
+    cpf: document.getElementById("cvCpf").value.trim(),
+    empresa: document.getElementById("cvEmpresa").value.trim()
+  };
+  if(!payload.usuario || !payload.senha || !payload.nome){ alert("Preencha todos os campos"); return; }
+  try {
+    const res = await fetch(API + '/api/contas-visitantes', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || "Erro ao criar"); return; }
+    document.getElementById("cvNome").value = "";
+    document.getElementById("cvUsuario").value = "";
+    document.getElementById("cvSenha").value = "";
+    document.getElementById("cvCpf").value = "";
+    document.getElementById("cvEmpresa").value = "";
+    carregarContasVisitantes();
+  } catch { alert("Erro ao criar conta"); }
+}
+async function alternarContaVisitante(id, ativo){
+  try {
+    await fetch(API + '/api/contas-visitantes/' + id, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ ativo })
+    });
+    carregarContasVisitantes();
   } catch {}
 }
 async function carregarRelatorio(){
@@ -1462,6 +1554,54 @@ function mostrarVisitantes(){
   localStorage.setItem("activeView", "visitantes");
   document.getElementById("vNome").focus();
   atualizarVisitantes();
+  atualizarPreRegistrosVisitantes();
+}
+
+async function atualizarPreRegistrosVisitantes(){
+  try {
+    const res = await fetch(API + '/api/pre-registros-visitantes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const card = document.getElementById("preCardVisitantes");
+    if(dados.length === 0){ card.style.display = "none"; return; }
+    card.style.display = "block";
+    const tbody = document.getElementById("tabelaPreVisitantes");
+    tbody.innerHTML = "";
+    dados.forEach((d,i) => {
+      tbody.innerHTML += `<tr>
+        <td>${i+1}</td>
+        <td><b>${d.nome}</b></td>
+        <td>${d.cpf || "—"}</td>
+        <td>${d.empresa || "—"}</td>
+        <td>${d.setor_visitado || "—"}</td>
+        <td class="acoes">
+          <button class="btn-confirmar" onclick="confirmarPreRegistroVisitante(${d.id})" title="Confirmar chegada">✓ Confirmar</button>
+          <button class="btn-excluir" onclick="excluirPreRegistroVisitante(${d.id})" title="Excluir">🗑️</button>
+        </td>
+      </tr>`;
+    });
+  } catch {}
+}
+
+async function confirmarPreRegistroVisitante(id){
+  try {
+    const res = await fetch(API + '/api/pre-registros-visitantes/' + id + '/confirmar', {
+      method: 'POST', headers: { ...getHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR'), data: new Date().toLocaleDateString('en-CA') })
+    });
+    if(!res.ok){ alert("Erro ao confirmar"); return; }
+    atualizarPreRegistrosVisitantes();
+    atualizarVisitantes();
+  } catch { alert("Erro ao confirmar"); }
+}
+
+async function excluirPreRegistroVisitante(id){
+  if(!confirm("Excluir este pré-registro?")) return;
+  try {
+    const res = await fetch(API + '/api/pre-registros-visitantes/' + id, { method: 'DELETE', headers: getHeaders() });
+    if(!res.ok){ alert("Erro ao excluir"); return; }
+    atualizarPreRegistrosVisitantes();
+  } catch { alert("Erro ao excluir"); }
 }
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pré-Registro Visitante - Oceânica</title>
+<style>
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh;
+    background:linear-gradient(135deg,#0a3622 0%,#145c3c 100%);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Segoe UI',system-ui,sans-serif; padding:16px;
+  }
+  .card{
+    background:#fff; border-radius:16px; padding:32px 28px;
+    width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.25);
+  }
+  .card h1{ margin:0 0 4px; font-size:20px; color:#0a3622; text-align:center; }
+  .card .sub{ margin:0 0 24px; font-size:13px; color:#8b93a1; text-align:center; }
+  .card .campo{ margin-bottom:14px; }
+  .card label{ display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px; }
+  .card input,.card select{
+    width:100%; padding:10px 12px; border:1px solid #d1d5db;
+    border-radius:8px; font-size:14px; outline:none; transition:border-color .2s;
+  }
+  .card input:focus,.card select:focus{ border-color:#0a3622; box-shadow:0 0 0 3px rgba(10,54,34,.1); }
+  .card button{
+    width:100%; padding:12px; border:none; border-radius:8px;
+    background:#0a3622; color:#fff; font-size:15px; font-weight:700;
+    cursor:pointer; transition:background .2s;
+  }
+  .card button:hover{ background:#145c3c; }
+  .card button:disabled{ opacity:.6; cursor:not-allowed; }
+  .sucesso{ display:none; text-align:center; padding:24px 0; }
+  .sucesso .icone{ font-size:48px; margin-bottom:12px; }
+  .sucesso h2{ margin:0 0 8px; color:#0a3622; }
+  .sucesso p{ margin:0 0 20px; color:#4a5568; font-size:14px; }
+  .erro-msg{
+    background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px;
+    padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px; display:none;
+  }
+  .logo{ text-align:center; margin-bottom:16px; }
+  .logo img{ height:40px; }
+  .info{ font-size:11px; color:#8b93a1; text-align:center; margin-top:12px; }
+  .info b{ color:#0a3622; }
+  .sucesso-msg{
+    background:#d4edda; border:1px solid #28a745; border-radius:8px;
+    padding:10px 14px; font-size:13px; color:#155724; margin-bottom:14px; text-align:center;
+  }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .topbar .nome{ font-size:13px; color:#0a3622; font-weight:700; }
+  .topbar .sair{
+    font-size:11px; color:#cc0000; cursor:pointer; border:none; background:none;
+    text-decoration:underline; padding:0;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div id="telaLogin">
+    <div class="logo">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+    </div>
+    <p class="sub">Acesse com sua conta de visitante</p>
+    <div class="erro-msg" id="erroLogin"></div>
+    <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
+    <form id="formLogin" onsubmit="fazerLogin(event)">
+      <div class="campo">
+        <label>Usuário</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usuário" required>
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="Sua senha" required>
+      </div>
+      <button type="submit" id="btnLogin">Entrar</button>
+    </form>
+    <p class="info">Não tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
+  </div>
+
+  <div id="telaCadastro" style="display:none">
+    <div class="logo">
+      <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:180px;height:auto;display:block;margin:0 auto 12px">
+    </div>
+    <h1>Pré-Registro Visitante</h1>
+    <p class="sub">Preencha seus dados para se cadastrar</p>
+    <div class="erro-msg" id="erroCadastro"></div>
+    <form id="formCadastro" onsubmit="criarConta(event)">
+      <div class="campo">
+        <label>Nome completo *</label>
+        <input type="text" id="cadNome" placeholder="Seu nome" required>
+      </div>
+      <div class="campo">
+        <label>CPF</label>
+        <input type="text" id="cadCpf" placeholder="Seu CPF">
+      </div>
+      <div class="campo">
+        <label>Empresa</label>
+        <input type="text" id="cadEmpresa" placeholder="Sua empresa">
+      </div>
+      <div class="campo">
+        <label>Usuário *</label>
+        <input type="text" id="cadUsuario" placeholder="Escolha um usuário" required>
+      </div>
+      <div class="campo">
+        <label>Senha *</label>
+        <input type="password" id="cadSenha" placeholder="Escolha uma senha" required>
+      </div>
+      <button type="submit" id="btnCadastrar">Criar Conta</button>
+    </form>
+    <p class="info">Já tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
+  </div>
+
+  <div id="telaForm" style="display:none">
+    <div class="topbar">
+      <span class="nome" id="nomeVisitante">---</span>
+      <button class="sair" onclick="sair()">Sair</button>
+    </div>
+    <img src="https://i.ibb.co/6RrZLmsr/logo-oceanica.png" alt="Oceânica" style="max-width:160px;height:auto;display:block;margin:0 auto 12px">
+    <h1>Pré-Registro Visitante</h1>
+    <p class="sub">Preencha os dados da visita</p>
+    <div class="erro-msg" id="erroForm"></div>
+    <form id="formPre" onsubmit="enviar(event)">
+      <div class="campo">
+        <label>Nome completo *</label>
+        <input type="text" id="vNome" placeholder="Nome do visitante" required>
+      </div>
+      <div class="campo">
+        <label>CPF</label>
+        <input type="text" id="vCpf" placeholder="CPF do visitante">
+      </div>
+      <div class="campo">
+        <label>Empresa</label>
+        <input type="text" id="vEmpresa" placeholder="Empresa do visitante">
+      </div>
+      <div class="campo">
+        <label>Setor Visitado *</label>
+        <input type="text" id="vSetor" placeholder="Setor que será visitado" required>
+      </div>
+      <div class="campo">
+        <label>Observações</label>
+        <input type="text" id="vObs" placeholder="Informações adicionais">
+      </div>
+      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+    </form>
+  </div>
+
+  <div class="sucesso" id="sucesso">
+    <div class="icone">✅</div>
+    <h2>Pré-registro enviado!</h2>
+    <p>Seus dados foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
+    <button onclick="resetar()">Novo Pré-Registro</button>
+    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
+  </div>
+
+</div>
+
+<script>
+const API = window.location.origin;
+
+let tokenVisitante = localStorage.getItem('tokenVisitante');
+let visitanteLogado = JSON.parse(localStorage.getItem('visitanteLogado') || 'null');
+
+if(tokenVisitante && visitanteLogado){
+  mostrarTelaForm();
+}
+
+function mostrarErro(id, msg){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function ocultarErro(id){ document.getElementById(id).style.display = "none"; }
+
+function mostrarTelaCadastro(e){
+  if(e) e.preventDefault();
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaCadastro").style.display = "block";
+  ocultarErro("erroCadastro");
+}
+function mostrarTelaLogin(e){
+  if(e) e.preventDefault();
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaCadastro").style.display = "none";
+  ocultarErro("erroLogin");
+}
+
+async function criarConta(e){
+  e.preventDefault(); ocultarErro("erroCadastro");
+  const nome = document.getElementById("cadNome").value.trim();
+  const cpf = document.getElementById("cadCpf").value.trim();
+  const empresa = document.getElementById("cadEmpresa").value.trim();
+  const usuario = document.getElementById("cadUsuario").value.trim();
+  const senha = document.getElementById("cadSenha").value;
+  if(!nome || !usuario || !senha){ mostrarErro("erroCadastro", "Preencha nome, usuário e senha."); return; }
+  const btn = document.getElementById("btnCadastrar");
+  btn.disabled = true; btn.textContent = "Criando conta...";
+  try {
+    const res = await fetch(API + '/api/cadastro-visitante', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, cpf, empresa, usuario, senha })
+    });
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
+    document.getElementById("formCadastro").reset();
+    document.getElementById("telaCadastro").style.display = "none";
+    document.getElementById("telaLogin").style.display = "block";
+    const msg = document.getElementById("msgSucesso");
+    msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
+    msg.style.display = "block";
+    btn.disabled = false; btn.textContent = "Criar Conta";
+  } catch { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+}
+
+async function fazerLogin(e){
+  e.preventDefault(); ocultarErro("erroLogin");
+  const usuario = document.getElementById("loginUsuario").value.trim();
+  const senha = document.getElementById("loginSenha").value;
+  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usuário e senha."); return; }
+  const btn = document.getElementById("btnLogin");
+  btn.disabled = true; btn.textContent = "Entrando...";
+  try {
+    const res = await fetch(API + '/api/login-visitante', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usuario, senha })
+    });
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
+    const data = await res.json();
+    tokenVisitante = data.token;
+    visitanteLogado = data.visitante;
+    localStorage.setItem('tokenVisitante', tokenVisitante);
+    localStorage.setItem('visitanteLogado', JSON.stringify(visitanteLogado));
+    document.getElementById("formLogin").reset();
+    btn.disabled = false; btn.textContent = "Entrar";
+    mostrarTelaForm();
+  } catch { mostrarErro("erroLogin", "Erro de conexão"); btn.disabled = false; btn.textContent = "Entrar"; }
+}
+
+function mostrarTelaForm(){
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaForm").style.display = "block";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formPre").style.display = "block";
+  document.getElementById("nomeVisitante").textContent = visitanteLogado?.nome || "Visitante";
+  if(visitanteLogado?.nome) document.getElementById("vNome").value = visitanteLogado.nome;
+  if(visitanteLogado?.cpf) document.getElementById("vCpf").value = visitanteLogado.cpf;
+  if(visitanteLogado?.empresa) document.getElementById("vEmpresa").value = visitanteLogado.empresa;
+}
+
+function sair(){
+  tokenVisitante = null;
+  visitanteLogado = null;
+  localStorage.removeItem('tokenVisitante');
+  localStorage.removeItem('visitanteLogado');
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaForm").style.display = "none";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formLogin").reset();
+}
+
+async function enviar(e){
+  e.preventDefault(); ocultarErro("erroForm");
+  const nome = document.getElementById("vNome").value.trim();
+  const setor = document.getElementById("vSetor").value.trim();
+  if(!nome){ mostrarErro("erroForm", "Informe o nome do visitante."); return; }
+  if(!setor){ mostrarErro("erroForm", "Informe o setor visitado."); return; }
+  const btn = document.getElementById("btnEnviar");
+  btn.disabled = true; btn.textContent = "Enviando...";
+  const payload = {
+    visitante_id: visitanteLogado?.id,
+    nome,
+    cpf: document.getElementById("vCpf").value.trim(),
+    empresa: document.getElementById("vEmpresa").value.trim(),
+    setor_visitado: setor,
+    obs: document.getElementById("vObs").value.trim()
+  };
+  try {
+    const res = await fetch(API + '/api/pre-registro-visitante', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenVisitante },
+      body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
+    document.getElementById("formPre").style.display = "none";
+    document.getElementById("sucesso").style.display = "block";
+    btn.disabled = false; btn.textContent = "Enviar Pré-Registro";
+  } catch { mostrarErro("erroForm", "Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
+}
+
+function resetar(){
+  document.getElementById("formPre").reset();
+  document.getElementById("formPre").style.display = "block";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("btnEnviar").disabled = false;
+  document.getElementById("btnEnviar").textContent = "Enviar Pré-Registro";
+}
+</script>
+</body>
+</html>

@@ -629,6 +629,210 @@ app.get('/api/check-db', async (req, res) => {
   }
 });
 
+app.post('/api/cadastro-visitante', async (req, res) => {
+  try {
+    const { nome, usuario, senha, cpf, empresa } = req.body;
+    if (!nome || !usuario || !senha) {
+      return res.status(400).json({ erro: 'Nome, usuário e senha são obrigatórios' });
+    }
+    const existe = await pool.query('SELECT id FROM contas_visitantes WHERE usuario = $1', [usuario.toLowerCase()]);
+    if (existe.rows.length > 0) {
+      return res.status(400).json({ erro: 'Usuário já existe' });
+    }
+    const senhaHash = await bcrypt.hash(senha, 10);
+    let result;
+    try {
+      result = await pool.query(
+        'INSERT INTO contas_visitantes (usuario, senha, nome, cpf, empresa, senha_exibicao, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'', senha]
+      );
+    } catch (e) {
+      console.log('Fallback cadastro visitante:', e.message);
+      await pool.query(`CREATE TABLE IF NOT EXISTS contas_visitantes (
+        id SERIAL PRIMARY KEY, usuario VARCHAR(50) UNIQUE NOT NULL, senha VARCHAR(255) NOT NULL,
+        nome VARCHAR(200) NOT NULL, cpf VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '',
+        senha_exibicao VARCHAR(100) DEFAULT '', ativo BOOLEAN DEFAULT TRUE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+      result = await pool.query(
+        'INSERT INTO contas_visitantes (usuario, senha, nome, cpf, empresa, senha_exibicao, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'', senha]
+      );
+    }
+    res.status(201).json({ mensagem: 'Conta criada. Aguarde ativação da portaria.', visitante: result.rows[0] });
+  } catch (err) {
+    console.error('Erro ao cadastrar visitante:', err);
+    res.status(500).json({ erro: 'Erro ao criar conta: ' + err.message });
+  }
+});
+
+app.post('/api/login-visitante', async (req, res) => {
+  try {
+    const { usuario, senha } = req.body;
+    if (!usuario || !senha) {
+      return res.status(400).json({ erro: 'Usuário e senha são obrigatórios' });
+    }
+    const result = await pool.query('SELECT * FROM contas_visitantes WHERE usuario = $1 AND ativo = TRUE', [usuario.toLowerCase()]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
+    }
+    const conta = result.rows[0];
+    const senhaValida = await bcrypt.compare(senha, conta.senha);
+    if (!senhaValida) {
+      return res.status(401).json({ erro: 'Usuário ou senha inválidos' });
+    }
+    const token = jwt.sign({ id: conta.id, nome: conta.nome }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token, visitante: { id: conta.id, nome: conta.nome, cpf: conta.cpf, empresa: conta.empresa } });
+  } catch (err) {
+    console.error('Erro no login visitante:', err);
+    res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+});
+
+app.post('/api/pre-registro-visitante', async (req, res) => {
+  try {
+    const { visitante_id, nome, cpf, empresa, setor_visitado, obs } = req.body;
+    const finalNome = nome || '';
+    if (!finalNome) {
+      return res.status(400).json({ erro: 'Nome é obrigatório' });
+    }
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, setor_visitado, obs)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', setor_visitado||'', obs||'']
+      );
+    } catch (e) {
+      console.log('Fallback pre-registro visitante:', e.message);
+      await pool.query(`CREATE TABLE IF NOT EXISTS pre_registros_visitantes (
+        id SERIAL PRIMARY KEY, visitante_id INTEGER, nome VARCHAR(200) NOT NULL,
+        cpf VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '',
+        setor_visitado VARCHAR(200) DEFAULT '', obs TEXT DEFAULT '',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )`);
+      result = await pool.query(
+        `INSERT INTO pre_registros_visitantes (visitante_id, nome, cpf, empresa, setor_visitado, obs)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [visitante_id || null, finalNome.toUpperCase(), cpf||'', empresa||'', setor_visitado||'', obs||'']
+      );
+    }
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro no pre-registro visitante:', err);
+    res.status(500).json({ erro: 'Erro ao realizar pré-registro: ' + err.message });
+  }
+});
+
+app.get('/api/pre-registros-visitantes', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM pre_registros_visitantes ORDER BY id ASC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar pre-registros visitantes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar pré-registros de visitantes' });
+  }
+});
+
+app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, async (req, res) => {
+  try {
+    const pre = await pool.query('SELECT * FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
+    if (pre.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
+    const d = pre.rows[0];
+    const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
+    const hoje = req.body.data || new Date().toLocaleDateString('en-CA');
+    const visitante = await pool.query(
+      `INSERT INTO visitantes (usuario_id, nome, cpf, empresa, setor_visitado, entrada, data_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [req.usuario.id, d.nome, d.cpf, d.empresa, d.setor_visitado, hora, hoje]
+    );
+    await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
+    res.status(201).json(visitante.rows[0]);
+  } catch (err) {
+    console.error('Erro ao confirmar pre-registro visitante:', err);
+    res.status(500).json({ erro: 'Erro ao confirmar pré-registro de visitante: ' + err.message });
+  }
+});
+
+app.delete('/api/pre-registros-visitantes/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1 RETURNING *', [req.params.id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
+    res.json({ mensagem: 'Pré-registro excluído' });
+  } catch (err) {
+    console.error('Erro ao excluir pre-registro visitante:', err);
+    res.status(500).json({ erro: 'Erro ao excluir pré-registro' });
+  }
+});
+
+app.post('/api/contas-visitantes', authMiddleware, async (req, res) => {
+  try {
+    const { usuario, senha, nome, cpf, empresa } = req.body;
+    if (!usuario || !senha || !nome) {
+      return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
+    }
+    const senhaHash = await bcrypt.hash(senha, 10);
+    let result;
+    try {
+      result = await pool.query(
+        'INSERT INTO contas_visitantes (usuario, senha, nome, cpf, empresa, senha_exibicao) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, usuario, nome',
+        [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'', senha]
+      );
+    } catch (e) {
+      if (e.message && e.message.includes('senha_exibicao')) {
+        await pool.query("ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''");
+        result = await pool.query(
+          'INSERT INTO contas_visitantes (usuario, senha, nome, cpf, empresa, senha_exibicao) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, usuario, nome',
+          [usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'', senha]
+        );
+      } else { throw e; }
+    }
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(400).json({ erro: 'Usuário já existe' });
+    }
+    console.error('Erro ao criar conta visitante:', err);
+    res.status(500).json({ erro: 'Erro ao criar conta: ' + err.message });
+  }
+});
+
+app.get('/api/contas-visitantes', authMiddleware, async (req, res) => {
+  try {
+    let result;
+    try {
+      result = await pool.query('SELECT id, usuario, nome, cpf, empresa, senha_exibicao, ativo, criado_em FROM contas_visitantes ORDER BY nome');
+    } catch (e) {
+      if (e.message && e.message.includes('senha_exibicao')) {
+        await pool.query("ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS senha_exibicao VARCHAR(100) DEFAULT ''");
+        result = await pool.query('SELECT id, usuario, nome, cpf, empresa, senha_exibicao, ativo, criado_em FROM contas_visitantes ORDER BY nome');
+      } else { throw e; }
+    }
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar contas visitantes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar contas' });
+  }
+});
+
+app.put('/api/contas-visitantes/:id', authMiddleware, async (req, res) => {
+  try {
+    const { nome, ativo } = req.body;
+    const updates = [];
+    const params = [];
+    if (nome) { params.push(nome.toUpperCase()); updates.push(`nome = $${params.length}`); }
+    if (ativo !== undefined) { params.push(ativo); updates.push(`ativo = $${params.length}`); }
+    if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
+    params.push(req.params.id);
+    await pool.query(`UPDATE contas_visitantes SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
+    res.json({ mensagem: 'Conta atualizada' });
+  } catch (err) {
+    console.error('Erro ao atualizar conta visitante:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar conta' });
+  }
+});
+
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'Rota não encontrada' });
   res.sendFile(path.join(__dirname, 'public', 'login.html'));

@@ -100,3 +100,26 @@ CREATE TABLE IF NOT EXISTS contas_motoristas (
   ativo BOOLEAN DEFAULT TRUE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS contas_visitantes (
+  id SERIAL PRIMARY KEY,
+  usuario VARCHAR(50) UNIQUE NOT NULL,
+  senha VARCHAR(255) NOT NULL,
+  nome VARCHAR(200) NOT NULL,
+  cpf VARCHAR(20) DEFAULT '',
+  empresa VARCHAR(200) DEFAULT '',
+  senha_exibicao VARCHAR(100) DEFAULT '',
+  ativo BOOLEAN DEFAULT TRUE,
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS pre_registros_visitantes (
+  id SERIAL PRIMARY KEY,
+  visitante_id INTEGER REFERENCES contas_visitantes(id),
+  nome VARCHAR(200) NOT NULL,
+  cpf VARCHAR(20) DEFAULT '',
+  empresa VARCHAR(200) DEFAULT '',
+  setor_visitado VARCHAR(200) DEFAULT '',
+  obs TEXT DEFAULT '',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
