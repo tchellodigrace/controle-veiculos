@@ -860,28 +860,39 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
 app.get('/fix-users', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
   try {
-    const users = await pool.query('SELECT id, nome, usuario, cliente_id FROM usuarios ORDER BY id');
-    const clientes = await pool.query('SELECT id, empresa FROM clientes ORDER BY id');
-    let log = '<h2>Diagnostico de Usuarios</h2>';
-    log += '<h3>Clientes:</h3><pre>' + JSON.stringify(clientes.rows, null, 2) + '</pre>';
-    log += '<h3>Usuarios:</h3><pre>' + JSON.stringify(users.rows, null, 2) + '</pre>';
-
-    const autoUsers = await pool.query(`SELECT u.id, u.usuario, u.cliente_id, c.empresa 
-      FROM usuarios u LEFT JOIN clientes c ON u.cliente_id = c.id 
-      WHERE u.usuario LIKE '%_portaria' AND u.nome LIKE 'PORTARIA%'`);
-    log += '<h3>Usuarios auto-criados:</h3><pre>' + JSON.stringify(autoUsers.rows, null, 2) + '</pre>';
-
-    const duplicates = await pool.query(`SELECT cliente_id, COUNT(*) as total FROM usuarios WHERE nome LIKE 'PORTARIA%' GROUP BY cliente_id HAVING COUNT(*) > 1`);
-    if (duplicates.rows.length > 0) {
-      log += '<h3 style="color:red">Problema encontrado - clientes com multiplos usuarios portaria:</h3><pre>' + JSON.stringify(duplicates.rows, null, 2) + '</pre>';
-    } else {
-      log += '<h3 style="color:green">Nenhum duplicado encontrado</h3>';
+    if (req.query.run === '1') {
+      const cli = await pool.connect();
+      try {
+        await cli.query('BEGIN');
+        const maxId = (await cli.query('SELECT COALESCE(MAX(id),0) as m FROM clientes')).rows[0].m;
+        const newId = maxId + 1;
+        await cli.query("UPDATE clientes SET id = $1 WHERE empresa = 'ARCAINFOVIDEO'", [newId]);
+        await cli.query("UPDATE usuarios SET cliente_id = $1 WHERE usuario = 'arcainfovideo_portaria'", [newId]);
+        const allTables = ['registros','visitantes','pre_registros','pre_registros_visitantes','contas_motoristas','contas_visitantes'];
+        for (const t of allTables) {
+          await cli.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = $2 AND cliente_id IN (SELECT id FROM clientes WHERE empresa = 'ARCAINFOVIDEO')`, [newId, 1]);
+        }
+        await cli.query("SELECT setval('clientes_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM clientes))");
+        await cli.query('COMMIT');
+        res.redirect('/fix-users?key=arcatech-bk-2026');
+      } catch(e) { await cli.query('ROLLBACK'); throw e; }
+      finally { cli.release(); }
+      return;
     }
-
+    const clientes = await pool.query('SELECT id, empresa FROM clientes ORDER BY id');
+    const users = await pool.query('SELECT id, nome, usuario, cliente_id FROM usuarios ORDER BY id');
+    let log = '<h2>Correcao de IDs Duplicados</h2>';
+    log += '<pre>' + JSON.stringify(clientes.rows, null, 2) + '</pre>';
+    log += '<pre>' + JSON.stringify(users.rows, null, 2) + '</pre>';
+    const dupes = (await pool.query('SELECT id, COUNT(*) as c FROM clientes GROUP BY id HAVING COUNT(*)>1')).rows;
+    if (dupes.length > 0) {
+      log += '<p style="color:red">IDs duplicados!</p>';
+      log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">CORRIGIR AGORA</a>';
+    } else {
+      log += '<p style="color:green">Tudo OK!</p>';
+    }
     res.send(log);
-  } catch (err) {
-    res.status(500).send('Erro: ' + err.message);
-  }
+  } catch (err) { res.status(500).send('Erro: ' + err.message); }
 });
 
 app.get('/p/:cliente_id', async (req, res) => {
