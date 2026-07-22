@@ -706,6 +706,56 @@ app.get('/api/auditoria', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/api/mural', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM mural WHERE cliente_id = $1 ORDER BY prioridade DESC, criado_em DESC',
+      [req.usuario.cliente_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar mural' });
+  }
+});
+
+app.post('/api/mural', authMiddleware, async (req, res) => {
+  try {
+    const { titulo, texto, prioridade } = req.body;
+    if (!titulo) return res.status(400).json({ erro: 'Titulo e obrigatorio' });
+    const result = await pool.query(
+      'INSERT INTO mural (cliente_id, titulo, texto, prioridade) VALUES ($1,$2,$3,$4) RETURNING *',
+      [req.usuario.cliente_id, titulo, texto || '', prioridade || 'normal']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao criar post' });
+  }
+});
+
+app.put('/api/mural/:id', authMiddleware, async (req, res) => {
+  try {
+    const { titulo, texto, prioridade } = req.body;
+    const result = await pool.query(
+      'UPDATE mural SET titulo = COALESCE($1, titulo), texto = COALESCE($2, texto), prioridade = COALESCE($3, prioridade), atualizado_em = NOW() WHERE id = $4 AND cliente_id = $5 RETURNING *',
+      [titulo || null, texto || null, prioridade || null, req.params.id, req.usuario.cliente_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Post nao encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao atualizar post' });
+  }
+});
+
+app.delete('/api/mural/:id', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM mural WHERE id = $1 AND cliente_id = $2 RETURNING id', [req.params.id, req.usuario.cliente_id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Post nao encontrado' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao excluir post' });
+  }
+});
+
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
@@ -1125,7 +1175,8 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', status VARCHAR(20) DEFAULT 'aberto', prioridade VARCHAR(20) DEFAULT 'media', resposta TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS historico_clientes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')",
-      "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+      "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS mural (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, texto TEXT DEFAULT '', prioridade VARCHAR(20) DEFAULT 'normal', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

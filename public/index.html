@@ -484,6 +484,10 @@
     </div>
   </header>
   <aside>
+    <div class="nav-item" id="navMural" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;font-weight:700;margin-bottom:4px;border-radius:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      IMPORTANTE - LEIA
+    </div>
     <div class="nav-item active" id="navVeiculos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><path d="M14 2h6v6M10 14 20 4"/></svg>
       Veículos
@@ -778,6 +782,16 @@
       </div>
     </div>
   </main>
+  <div id="viewMural" style="display:none">
+    <div class="tabela-card card">
+      <div class="tabela-topo">
+        <h3 style="color:#e53e3e">IMPORTANTE - LEIA</h3>
+        <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#e53e3e">+ Novo Aviso</button>
+      </div>
+      <div id="listaMural" style="padding:16px"></div>
+      <div class="vazio" id="vazioMural" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum aviso no mural</div>
+    </div>
+  </div>
   <div id="viewAuditoria" style="display:none">
     <div class="tabela-card card">
       <div class="tabela-topo">
@@ -806,6 +820,34 @@
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
     <span>Versão 2.0.0</span>
   </footer>
+</div>
+
+<div class="modal-overlay" id="modalMural">
+  <div class="modal-content">
+    <div class="modal-header" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff">
+      <h2>Novo Aviso</h2>
+      <button class="modal-close" onclick="fecharModal('modalMural')" style="color:#fff">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="muralEditId">
+      <div class="campo">
+        <label>Titulo *</label>
+        <input id="muralTitulo" placeholder="Ex.: Reuniao as 14h">
+      </div>
+      <div class="campo">
+        <label>Prioridade</label>
+        <select id="muralPrioridade">
+          <option value="normal">Normal</option>
+          <option value="urgente">Urgente</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label>Mensagem</label>
+        <textarea id="muralTexto" rows="5" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:13px" placeholder="Escreva a informacao importante aqui..."></textarea>
+      </div>
+      <button class="btn btn-primario" style="width:100%;background:#e53e3e" onclick="salvarMural()">Publicar</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="modalRelatorios">
@@ -1495,6 +1537,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
   if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
+  if(localStorage.getItem("activeView") === "mural") mostrarMural();
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
   atualizar();
@@ -1667,18 +1710,22 @@ function mostrarVeiculos(){
   document.getElementById("navVeiculos").classList.add("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "veiculos");
 }
 function mostrarVisitantes(){
   document.getElementById("navVisitantes").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "visitantes");
   document.getElementById("vNome").focus();
   atualizarVisitantes();
@@ -1688,11 +1735,91 @@ function mostrarAuditoria(){
   document.getElementById("navAuditoria").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAuditoria").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "auditoria");
   carregarAuditoria();
+}
+function mostrarMural(){
+  document.getElementById("navMural").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("viewMural").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
+  localStorage.setItem("activeView", "mural");
+  carregarMural();
+}
+async function carregarMural(){
+  try {
+    const res = await fetch(API + '/api/mural', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const el = document.getElementById("listaMural");
+    const vazio = document.getElementById("vazioMural");
+    if(dados.length === 0){ el.innerHTML = ""; vazio.style.display = "block"; return; }
+    vazio.style.display = "none";
+    el.innerHTML = dados.map(d => {
+      const isUrgente = d.prioridade === 'urgente';
+      const bgColor = isUrgente ? '#fff5f5' : '#fff';
+      const borderColor = isUrgente ? '#e53e3e' : '#4FB0C6';
+      const badge = isUrgente ? '<span style="background:#e53e3e;color:#fff;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:8px">URGENTE</span>' : '';
+      return `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:16px;margin-bottom:12px;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:15px;font-weight:700;color:#1a1a2e">${d.titulo}${badge}</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="editarMural(${d.id},'${d.titulo.replace(/'/g,"\\'")}','${(d.texto||'').replace(/'/g,"\\'").replace(/\n/g,"\\n")}','${d.prioridade}')" style="background:#3182ce;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Editar</button>
+            <button onclick="excluirMural(${d.id})" style="background:#e53e3e;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Excluir</button>
+          </div>
+        </div>
+        <div style="font-size:13px;color:#4a5568;white-space:pre-wrap;line-height:1.6">${d.texto || ''}</div>
+        <div style="font-size:10px;color:#a0aec0;margin-top:8px">${new Date(d.criado_em).toLocaleString('pt-BR')}</div>
+      </div>`;
+    }).join('');
+  } catch {}
+}
+function abrirModalMural(){
+  document.getElementById("muralEditId").value = '';
+  document.getElementById("muralTitulo").value = '';
+  document.getElementById("muralTexto").value = '';
+  document.getElementById("muralPrioridade").value = 'normal';
+  abrirModal('modalMural');
+}
+function editarMural(id, titulo, texto, prioridade){
+  document.getElementById("muralEditId").value = id;
+  document.getElementById("muralTitulo").value = titulo;
+  document.getElementById("muralTexto").value = texto.replace(/\\n/g, "\n");
+  document.getElementById("muralPrioridade").value = prioridade;
+  abrirModal('modalMural');
+}
+async function salvarMural(){
+  const id = document.getElementById("muralEditId").value;
+  const payload = {
+    titulo: document.getElementById("muralTitulo").value.trim(),
+    texto: document.getElementById("muralTexto").value.trim(),
+    prioridade: document.getElementById("muralPrioridade").value
+  };
+  if(!payload.titulo){ alert('Informe o titulo'); return; }
+  try {
+    const url = id ? API + '/api/mural/' + id : API + '/api/mural';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+    if(!res.ok){ alert('Erro ao salvar'); return; }
+    fecharModal('modalMural');
+    carregarMural();
+  } catch { alert('Erro ao salvar'); }
+}
+async function excluirMural(id){
+  if(!confirm('Excluir este aviso?')) return;
+  try {
+    await fetch(API + '/api/mural/' + id, { method: 'DELETE', headers: getHeaders() });
+    carregarMural();
+  } catch {}
 }
 async function carregarAuditoria(){
   try {
@@ -1770,6 +1897,7 @@ async function excluirPreRegistroVisitante(id){
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
 document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
+document.getElementById("navMural").addEventListener("click", mostrarMural);
 
 async function registrarVisitante(){
   const nome = document.getElementById("vNome").value.trim();
