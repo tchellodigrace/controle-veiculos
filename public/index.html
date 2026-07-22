@@ -539,6 +539,7 @@
     </div>
     <div class="sidebar-footer">
       <div class="linha"><span>&#x1F464; Usuário<b id="sidebarUsuario">PORTARIA</b></span></div>
+      <div class="linha"><span>Empresa: <b id="sidebarEmpresa">---</b></span></div>
       <div class="sair" id="sair">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
         Sair do Sistema
@@ -1045,13 +1046,17 @@ async function verificarAuth() {
         usuarioLogado = data.usuario;
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         if (usuario.nome) {
-          document.getElementById('sidebarUsuario').textContent = usuario.nome;
-          document.getElementById('usuarioLogado').textContent = "Operador: " + usuario.nome;
+          const el1 = document.getElementById('sidebarUsuario');
+          const el2 = document.getElementById('usuarioLogado');
+          if (el1) el1.textContent = usuario.nome;
+          if (el2) el2.textContent = "Operador: " + usuario.nome;
         }
         const empresa = localStorage.getItem('empresa') || '';
         if(empresa){
-          document.getElementById('sidebarEmpresa').textContent = empresa;
-          document.getElementById('footerEmpresa').textContent = 'Sistema de Controle de Portaria - ' + empresa;
+          const el3 = document.getElementById('sidebarEmpresa');
+          const el4 = document.getElementById('footerEmpresa');
+          if (el3) el3.textContent = empresa;
+          if (el4) el4.textContent = 'Sistema de Controle de Portaria - ' + empresa;
           document.title = empresa + ' | Controle de Portaria';
         }
         return true;
