@@ -105,9 +105,9 @@ app.post('/api/registros', authMiddleware, async (req, res) => {
       [cid]
     );
     const result = await pool.query(
-      `INSERT INTO registros (cliente_id, usuario_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [cid, req.usuario.id, hora, placa.toUpperCase(), modelo||'', finalidade||'', empresa, motorista||'', cnh||'', hora, nota||'', obs||'', pos.rows[0].prox]
+      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, posicao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [cid, hora, placa.toUpperCase(), modelo||'', finalidade||'', empresa, motorista||'', cnh||'', hora, nota||'', obs||'', pos.rows[0].prox]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -441,9 +441,9 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, async (req, res) =>
     );
     const posicao = pos.rows[0].prox;
     const registro = await pool.query(
-      `INSERT INTO registros (cliente_id, usuario_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-      [cid, req.usuario.id, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, d.nota || '', d.obs, hoje, posicao]
+      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [cid, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, d.nota || '', d.obs, hoje, posicao]
     );
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     res.status(201).json(registro.rows[0]);
@@ -587,9 +587,9 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, async (r
     const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
     const hoje = req.body.data || new Date().toLocaleDateString('en-CA');
     const visitante = await pool.query(
-      `INSERT INTO visitantes (cliente_id, usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada, data_registro)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
-      [cid, req.usuario.id, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', hora, hoje]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, entrada, data_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [cid, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', hora, hoje]
     );
     await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
     res.status(201).json(visitante.rows[0]);
