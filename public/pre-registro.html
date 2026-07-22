@@ -8,7 +8,7 @@
   *{ box-sizing:border-box; }
   body{
     margin:0; min-height:100vh;
-    background:linear-gradient(135deg,#0a3622 0%,#145c3c 100%);
+    background:linear-gradient(135deg,#2a6f7e 0%,#4FB0C6 100%);
     display:flex; align-items:center; justify-content:center;
     font-family:'Segoe UI',system-ui,sans-serif; padding:16px;
   }
@@ -16,7 +16,7 @@
     background:#fff; border-radius:16px; padding:32px 28px;
     width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.25);
   }
-  .card h1{ margin:0 0 4px; font-size:20px; color:#0a3622; text-align:center; }
+  .card h1{ margin:0 0 4px; font-size:20px; color:#2a6f7e; text-align:center; }
   .card .sub{ margin:0 0 24px; font-size:13px; color:#8b93a1; text-align:center; }
   .card .campo{ margin-bottom:14px; }
   .card label{ display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px; }
@@ -24,17 +24,17 @@
     width:100%; padding:10px 12px; border:1px solid #d1d5db;
     border-radius:8px; font-size:14px; outline:none; transition:border-color .2s;
   }
-  .card input:focus,.card select:focus{ border-color:#0a3622; box-shadow:0 0 0 3px rgba(10,54,34,.1); }
+  .card input:focus,.card select:focus{ border-color:#2a6f7e; box-shadow:0 0 0 3px rgba(79,176,198,.1); }
   .card button{
     width:100%; padding:12px; border:none; border-radius:8px;
-    background:#0a3622; color:#fff; font-size:15px; font-weight:700;
+    background:#2a6f7e; color:#fff; font-size:15px; font-weight:700;
     cursor:pointer; transition:background .2s;
   }
-  .card button:hover{ background:#145c3c; }
+  .card button:hover{ background:#4FB0C6; }
   .card button:disabled{ opacity:.6; cursor:not-allowed; }
   .sucesso{ display:none; text-align:center; padding:24px 0; }
   .sucesso .icone{ font-size:48px; margin-bottom:12px; }
-  .sucesso h2{ margin:0 0 8px; color:#0a3622; }
+  .sucesso h2{ margin:0 0 8px; color:#2a6f7e; }
   .sucesso p{ margin:0 0 20px; color:#4a5568; font-size:14px; }
   .erro-msg{
     background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px;
@@ -42,13 +42,13 @@
   }
   .logo{ text-align:center; margin-bottom:16px; }
   .info{ font-size:11px; color:#8b93a1; text-align:center; margin-top:12px; }
-  .info b{ color:#0a3622; }
+  .info b{ color:#2a6f7e; }
   .sucesso-msg{
-    background:#d4edda; border:1px solid #28a745; border-radius:8px;
+    background:#d4edda; border:1px solid #4FB0C6; border-radius:8px;
     padding:10px 14px; font-size:13px; color:#155724; margin-bottom:14px; text-align:center;
   }
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
-  .topbar .nome{ font-size:13px; color:#0a3622; font-weight:700; }
+  .topbar .nome{ font-size:13px; color:#2a6f7e; font-weight:700; }
   .topbar .sair{
     font-size:11px; color:#cc0000; cursor:pointer; border:none; background:none;
     text-decoration:underline; padding:0;
@@ -60,7 +60,7 @@
 
   <div id="telaLogin">
     <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     </div>
     <p class="sub" id="subLogin">Acesse com sua conta de motorista</p>
     <div class="erro-msg" id="erroLogin"></div>
@@ -76,12 +76,12 @@
       </div>
       <button type="submit" id="btnLogin">Entrar</button>
     </form>
-    <p class="info">N&#227;o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
+    <p class="info">N&#227;o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#2a6f7e;font-weight:700">Criar conta</a></p>
   </div>
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     </div>
     <h1 id="tituloCadastro">Pr&#233;-Registro</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
@@ -101,7 +101,7 @@
       </div>
       <button type="submit" id="btnCadastrar">Criar Conta</button>
     </form>
-    <p class="info">J&#225; tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
+    <p class="info">J&#225; tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#2a6f7e;font-weight:700">Voltar ao login</a></p>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -109,7 +109,7 @@
       <span class="nome" id="nomeMotorista">---</span>
       <button class="sair" onclick="sair()">Sair</button>
     </div>
-    <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     <h1>Pr&#233;-Registro</h1>
     <p class="sub">Preencha os dados do ve&#237;culo</p>
     <div class="erro-msg" id="erroForm"></div>
