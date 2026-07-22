@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 const pool = require('./db');
 const path = require('path');
 
@@ -854,6 +855,57 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar faturamento:', err);
     res.status(500).json({ erro: 'Erro ao buscar faturamento' });
+  }
+});
+
+app.get('/migrate-neon', async (req, res) => {
+  if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
+  const neonUrl = 'postgresql://neondb_owner:npg_Ceh3uS9cRKTD@ep-wandering-field-aw8vjnza-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  const neon = new Pool({ connectionString: neonUrl, ssl: { rejectUnauthorized: false } });
+  try {
+    const tables = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name");
+    let log = '<h2>Migracao para Neon</h2>';
+    for (const t of tables.rows) {
+      const tn = t.table_name;
+      log += '<p><b>' + tn + '</b>... ';
+      const data = await pool.query('SELECT * FROM ' + tn);
+      if (data.rows.length === 0) { log += '0 registros (pulando)</p>'; continue; }
+      await neon.query('DROP TABLE IF EXISTS ' + tn + ' CASCADE');
+      const cols = data.rows[0];
+      const colDefs = [];
+      const createRes = await pool.query(`
+        SELECT column_name, data_type, column_default, is_nullable
+        FROM information_schema.columns WHERE table_name='${tn}' AND table_schema='public' ORDER BY ordinal_position
+      `);
+      for (const col of createRes.rows) {
+        let def = '';
+        if (col.column_default) def = ' DEFAULT ' + col.column_default;
+        const nullable = col.is_nullable === 'YES' ? '' : ' NOT NULL';
+        colDefs.push(col.column_name + ' ' + col.data_type + def + nullable);
+      }
+      await neon.query('CREATE TABLE ' + tn + ' (' + colDefs.join(', ') + ')');
+      let inserted = 0;
+      for (const r of data.rows) {
+        const cols = Object.keys(r);
+        const vals = cols.map(c => {
+          const v = r[c];
+          if (v === null) return 'NULL';
+          if (typeof v === 'number') return v;
+          if (typeof v === 'boolean') return v;
+          if (typeof v === 'object') return "'" + JSON.stringify(v).replace(/'/g, "''") + "'";
+          return "'" + String(v).replace(/'/g, "''") + "'";
+        });
+        await neon.query('INSERT INTO ' + tn + ' (' + cols.join(',') + ') VALUES (' + vals.join(',') + ')');
+        inserted++;
+      }
+      log += inserted + ' registros migrados</p>';
+    }
+    await neon.end();
+    log += '<h3 style="color:green">Migracao concluida!</h3>';
+    res.send(log);
+  } catch (err) {
+    await neon.end();
+    res.status(500).send('<h2>Erro</h2><pre>' + err.message + '</pre>');
   }
 });
 
