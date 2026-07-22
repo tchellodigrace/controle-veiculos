@@ -860,7 +860,7 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
 
 app.get('/migrate-neon', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
-  const neonUrl = 'postgresql://neondb_owner:npg_Ceh3uS9cRKTD@ep-wandering-field-aw8vjnza-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require';
+  const neonUrl = 'postgresql://neondb_owner:npg_Ceh3uS9cRKTD@ep-wandering-field-aw8vjnza-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require';
   const neon = new Pool({ connectionString: neonUrl, ssl: { rejectUnauthorized: false } });
   try {
     const tables = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name");
