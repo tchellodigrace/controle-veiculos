@@ -861,16 +861,12 @@ app.get('/fix-users', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
   try {
     if (req.query.run === '1') {
-      const maxId = (await pool.query('SELECT COALESCE(MAX(id),0) as m FROM clientes')).rows[0].m;
-      const newId = maxId + 1;
-      await pool.query("UPDATE clientes SET id = $1 WHERE empresa = 'ARCAINFOVIDEO'", [newId]);
-      await pool.query("UPDATE usuarios SET cliente_id = $1 WHERE usuario = 'arcainfovideo_portaria'", [newId]);
       const tables = (await pool.query("SELECT table_name FROM information_schema.columns WHERE column_name='cliente_id' AND table_schema='public'")).rows.map(r=>r.table_name);
-      for (const t of tables) {
-        if (t === 'usuarios' || t === 'clientes') continue;
-        try { await pool.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = 1 AND cliente_id IN (SELECT id FROM clientes WHERE empresa='ARCAINFOVIDEO')`, [newId]); } catch(e) {}
-      }
-      await pool.query("SELECT setval('clientes_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM clientes))");
+      for (const t of tables) { try { await pool.query(`DELETE FROM ${t}`); } catch(e) {} }
+      try { await pool.query('DELETE FROM clientes'); } catch(e) {}
+      try { await pool.query('DELETE FROM usuarios'); } catch(e) {}
+      const seqs = (await pool.query("SELECT sequencename FROM pg_sequences WHERE schemaname='public'")).rows.map(r=>r.sequencename);
+      for (const s of seqs) { try { await pool.query(`SELECT setval('${s}', 1)`); } catch(e) {} }
       res.redirect('/fix-users?key=arcatech-bk-2026');
       return;
     }
@@ -882,7 +878,7 @@ app.get('/fix-users', async (req, res) => {
     const dupes = (await pool.query('SELECT id, COUNT(*) as c FROM clientes GROUP BY id HAVING COUNT(*)>1')).rows;
     if (dupes.length > 0) {
       log += '<p style="color:red">IDs duplicados!</p>';
-      log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold">CORRIGIR AGORA</a>';
+      log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold" onclick="return confirm(\'Isso vai DELETAR todos os clientes e usuarios. Confirma?\')">LIMPAR TUDO E COMECAR DE NOVO</a>';
     } else {
       log += '<p style="color:green">Tudo OK!</p>';
     }
