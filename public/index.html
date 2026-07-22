@@ -1024,7 +1024,8 @@ async function verificarAuth() {
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     try {
       const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (!res.ok) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
+      if (res.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
+      if (!res.ok) { if (tentativa < 2) { await new Promise(r => setTimeout(r, 2000)); continue; } localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
       const data = await res.json();
       usuarioLogado = data.usuario;
       const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
