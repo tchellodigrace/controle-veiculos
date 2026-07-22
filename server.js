@@ -878,10 +878,17 @@ app.get('/migrate-neon', async (req, res) => {
         FROM information_schema.columns WHERE table_name='${tn}' AND table_schema='public' ORDER BY ordinal_position
       `);
       for (const col of createRes.rows) {
+        let colType = col.data_type;
+        if (col.column_default && col.column_default.includes('nextval(')) {
+          if (col.data_type === 'integer') colType = 'SERIAL';
+          else if (col.data_type === 'bigint') colType = 'BIGSERIAL';
+          colDefs.push(col.column_name + ' ' + colType);
+          continue;
+        }
         let def = '';
         if (col.column_default) def = ' DEFAULT ' + col.column_default;
         const nullable = col.is_nullable === 'YES' ? '' : ' NOT NULL';
-        colDefs.push(col.column_name + ' ' + col.data_type + def + nullable);
+        colDefs.push(col.column_name + ' ' + colType + def + nullable);
       }
       await neon.query('CREATE TABLE ' + tn + ' (' + colDefs.join(', ') + ')');
       let inserted = 0;
