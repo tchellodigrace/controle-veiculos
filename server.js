@@ -324,9 +324,9 @@ app.post('/api/visitantes', authMiddleware, async (req, res) => {
     const hora = clientHora || new Date().toLocaleTimeString('pt-BR');
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      `INSERT INTO visitantes (cliente_id, usuario_id, nome, cpf, empresa, tipo, placa, nota, entrada)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [cid, req.usuario.id, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', hora]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, entrada)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [cid, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', hora]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
