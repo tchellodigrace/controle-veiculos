@@ -755,6 +755,7 @@
             <thead>
               <tr>
                 <th>#</th>
+                <th>Pos.</th>
                 <th>Nome</th>
                 <th>CPF</th>
                 <th>Empresa</th>
@@ -1750,6 +1751,7 @@ async function atualizarVisitantes(){
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
+        <td><b>${d.posicao || "—"}</b></td>
         <td><b>${d.nome}</b></td>
         <td>${d.cpf || "—"}</td>
         <td>${d.empresa || "—"}</td>
