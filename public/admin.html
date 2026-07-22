@@ -363,8 +363,8 @@ async function verDetalhes(id){
     if(!c) return;
     const baseUrl = window.location.origin;
     const portariaUrl = baseUrl;
-    const preMotoristaUrl = baseUrl + '/pre-registro.html?cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa);
-    const preVisitanteUrl = baseUrl + '/pre-registro-visitante.html?cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa);
+    const preMotoristaUrl = baseUrl + '/p/' + c.id;
+    const preVisitanteUrl = baseUrl + '/v/' + c.id;
 
     const usersRes = await fetch(API + '/api/admin/clientes/' + id + '/usuarios', { headers: getHeaders() });
     const users = await usersRes.json();

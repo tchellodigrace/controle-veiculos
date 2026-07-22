@@ -857,6 +857,24 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
   }
 });
 
+app.get('/p/:cliente_id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
+    if (!result.rows.length) return res.status(404).send('Cliente não encontrado');
+    const c = result.rows[0];
+    res.redirect('/pre-registro.html?cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa));
+  } catch { res.status(500).send('Erro'); }
+});
+
+app.get('/v/:cliente_id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
+    if (!result.rows.length) return res.status(404).send('Cliente não encontrado');
+    const c = result.rows[0];
+    res.redirect('/pre-registro-visitante.html?cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa));
+  } catch { res.status(500).send('Erro'); }
+});
+
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ erro: 'Rota não encontrada' });
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
