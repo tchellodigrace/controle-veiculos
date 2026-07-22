@@ -857,37 +857,6 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
   }
 });
 
-app.get('/backup-db', async (req, res) => {
-  if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
-  try {
-    const tables = await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'");
-    let sql = '-- Backup ArcaTech ' + new Date().toISOString() + '\n\n';
-    for (const t of tables.rows) {
-      const tn = t.table_name;
-      const rows = await pool.query('SELECT * FROM ' + tn);
-      if (rows.rows.length === 0) continue;
-      sql += 'DELETE FROM ' + tn + ';\n';
-      for (const r of rows.rows) {
-        const cols = Object.keys(r);
-        const vals = cols.map(c => {
-          const v = r[c];
-          if (v === null) return 'NULL';
-          if (typeof v === 'number') return v;
-          if (typeof v === 'boolean') return v;
-          return "'" + String(v).replace(/'/g, "''") + "'";
-        });
-        sql += 'INSERT INTO ' + tn + ' (' + cols.join(',') + ') VALUES (' + vals.join(',') + ');\n';
-      }
-      sql += '\n';
-    }
-    res.setHeader('Content-Type', 'application/sql');
-    res.setHeader('Content-Disposition', 'attachment; filename=backup-arcatech-' + new Date().toISOString().slice(0,10) + '.sql');
-    res.send(sql);
-  } catch (err) {
-    res.status(500).send('Erro: ' + err.message);
-  }
-});
-
 app.get('/p/:cliente_id', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
