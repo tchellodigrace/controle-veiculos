@@ -861,22 +861,17 @@ app.get('/fix-users', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
   try {
     if (req.query.run === '1') {
-      const cli = await pool.connect();
-      try {
-        await cli.query('BEGIN');
-        const maxId = (await cli.query('SELECT COALESCE(MAX(id),0) as m FROM clientes')).rows[0].m;
-        const newId = maxId + 1;
-        await cli.query("UPDATE clientes SET id = $1 WHERE empresa = 'ARCAINFOVIDEO'", [newId]);
-        await cli.query("UPDATE usuarios SET cliente_id = $1 WHERE usuario = 'arcainfovideo_portaria'", [newId]);
-        const allTables = (await cli.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.map(r=>r.table_name);
-        for (const t of allTables) {
-          try { await cli.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = $2`, [newId, 1]); } catch(e) {}
-        }
-        await cli.query("SELECT setval('clientes_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM clientes))");
-        await cli.query('COMMIT');
-        res.redirect('/fix-users?key=arcatech-bk-2026');
-      } catch(e) { await cli.query('ROLLBACK'); throw e; }
-      finally { cli.release(); }
+      const maxId = (await pool.query('SELECT COALESCE(MAX(id),0) as m FROM clientes')).rows[0].m;
+      const newId = maxId + 1;
+      await pool.query("UPDATE clientes SET id = $1 WHERE empresa = 'ARCAINFOVIDEO'", [newId]);
+      await pool.query("UPDATE usuarios SET cliente_id = $1 WHERE usuario = 'arcainfovideo_portaria'", [newId]);
+      const tables = (await pool.query("SELECT table_name FROM information_schema.columns WHERE column_name='cliente_id' AND table_schema='public'")).rows.map(r=>r.table_name);
+      for (const t of tables) {
+        if (t === 'usuarios' || t === 'clientes') continue;
+        try { await pool.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = 1 AND cliente_id IN (SELECT id FROM clientes WHERE empresa='ARCAINFOVIDEO')`, [newId]); } catch(e) {}
+      }
+      await pool.query("SELECT setval('clientes_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM clientes))");
+      res.redirect('/fix-users?key=arcatech-bk-2026');
       return;
     }
     const clientes = await pool.query('SELECT id, empresa FROM clientes ORDER BY id');
