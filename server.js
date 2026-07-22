@@ -46,6 +46,13 @@ function adminMiddleware(req, res, next) {
   } catch { return res.status(401).json({ erro: 'Token inválido' }); }
 }
 
+function logAuditoria(clienteId, usuario, acao, tipo, alvo, detalhes) {
+  pool.query(
+    'INSERT INTO logs_auditoria (cliente_id, usuario, acao, tipo, alvo, detalhes) VALUES ($1,$2,$3,$4,$5,$6)',
+    [clienteId, usuario||'', acao, tipo||'', alvo||'', detalhes||'']
+  ).catch(() => {});
+}
+
 app.post('/api/login', async (req, res) => {
   try {
     const { usuario, senha } = req.body;
@@ -110,6 +117,7 @@ app.post('/api/registros', authMiddleware, async (req, res) => {
       [cid, hora, placa.toUpperCase(), modelo||'', finalidade||'', empresa, motorista||'', cnh||'', hora, nota||'', obs||'', pos.rows[0].prox]
     );
     res.status(201).json(result.rows[0]);
+    logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + (motorista||'') + ' | Empresa: ' + empresa);
   } catch (err) {
     console.error('Erro ao criar registro:', err);
     res.status(500).json({ erro: 'Erro ao criar registro' });
@@ -125,6 +133,7 @@ app.put('/api/registros/:id/saida', authMiddleware, async (req, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Registro não encontrado ou já possui saída' });
     res.json(result.rows[0]);
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Saida', 'veiculo', result.rows[0].placa, 'Saida registrada as ' + hora);
   } catch (err) {
     console.error('Erro ao marcar saída:', err);
     res.status(500).json({ erro: 'Erro ao marcar saída' });
@@ -136,6 +145,7 @@ app.delete('/api/registros/:id', authMiddleware, async (req, res) => {
     const result = await pool.query('DELETE FROM registros WHERE id = $1 AND cliente_id = $2 RETURNING *', [req.params.id, req.usuario.cliente_id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Registro não encontrado' });
     res.json({ mensagem: 'Registro excluído com sucesso' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao', 'veiculo', result.rows[0].placa, 'Motorista: ' + (result.rows[0].motorista||''));
   } catch (err) {
     console.error('Erro ao excluir registro:', err);
     res.status(500).json({ erro: 'Erro ao excluir registro' });
@@ -333,6 +343,7 @@ app.post('/api/visitantes', authMiddleware, async (req, res) => {
       [cid, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', obs||'', hora, pos.rows[0].prox]
     );
     res.status(201).json(result.rows[0]);
+    logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'visitante', nome.toUpperCase(), 'Empresa: ' + (empresa||'') + ' | Tipo: ' + (tipo||''));
   } catch (err) {
     console.error('Erro ao criar visitante:', err);
     res.status(500).json({ erro: 'Erro ao criar visitante' });
@@ -348,6 +359,7 @@ app.put('/api/visitantes/:id/saida', authMiddleware, async (req, res) => {
     );
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Visitante não encontrado ou já possui saída' });
     res.json(result.rows[0]);
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Saida', 'visitante', result.rows[0].nome, 'Saida registrada as ' + hora);
   } catch (err) {
     console.error('Erro ao marcar saída:', err);
     res.status(500).json({ erro: 'Erro ao marcar saída' });
@@ -359,6 +371,7 @@ app.delete('/api/visitantes/:id', authMiddleware, async (req, res) => {
     const result = await pool.query('DELETE FROM visitantes WHERE id = $1 AND cliente_id = $2 RETURNING *', [req.params.id, req.usuario.cliente_id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Visitante não encontrado' });
     res.json({ mensagem: 'Visitante excluído com sucesso' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao', 'visitante', result.rows[0].nome, 'CPF: ' + (result.rows[0].cpf||''));
   } catch (err) {
     console.error('Erro ao excluir visitante:', err);
     res.status(500).json({ erro: 'Erro ao excluir visitante' });
@@ -451,6 +464,7 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, async (req, res) =>
     );
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     res.status(201).json(registro.rows[0]);
+    logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
   } catch (err) {
     console.error('Erro ao confirmar pre-registro:', err);
     res.status(500).json({ erro: 'Erro ao confirmar pré-registro' });
@@ -462,6 +476,7 @@ app.delete('/api/pre-registros/:id', authMiddleware, async (req, res) => {
     const result = await pool.query('DELETE FROM pre_registros WHERE id = $1 AND cliente_id = $2 RETURNING *', [req.params.id, req.usuario.cliente_id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     res.json({ mensagem: 'Pré-registro excluído' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao pre-registro', 'veiculo', result.rows[0].placa, 'Motorista: ' + (result.rows[0].motorista||''));
   } catch (err) {
     console.error('Erro ao excluir pre-registro:', err);
     res.status(500).json({ erro: 'Erro ao excluir pré-registro' });
@@ -601,6 +616,7 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, async (r
     );
     await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
     res.status(201).json(visitante.rows[0]);
+    logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'visitante', d.nome, 'CPF: ' + (d.cpf||'') + ' | Empresa: ' + (d.empresa||''));
   } catch (err) {
     console.error('Erro ao confirmar pre-registro visitante:', err);
     res.status(500).json({ erro: 'Erro ao confirmar pré-registro de visitante: ' + err.message });
@@ -612,6 +628,7 @@ app.delete('/api/pre-registros-visitantes/:id', authMiddleware, async (req, res)
     const result = await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1 AND cliente_id = $2 RETURNING *', [req.params.id, req.usuario.cliente_id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     res.json({ mensagem: 'Pré-registro excluído' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao pre-registro', 'visitante', result.rows[0].nome, 'CPF: ' + (result.rows[0].cpf||''));
   } catch (err) {
     console.error('Erro ao excluir pre-registro visitante:', err);
     res.status(500).json({ erro: 'Erro ao excluir pré-registro' });
@@ -673,6 +690,19 @@ app.get('/api/nome-empresa', authMiddleware, async (req, res) => {
     res.json({ empresa: result.rows[0] ? result.rows[0].empresa : '' });
   } catch (err) {
     res.json({ empresa: '' });
+  }
+});
+
+app.get('/api/auditoria', authMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const result = await pool.query(
+      'SELECT * FROM logs_auditoria WHERE cliente_id = $1 ORDER BY criado_em DESC LIMIT $2',
+      [req.usuario.cliente_id, limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar auditoria' });
   }
 });
 
@@ -1094,7 +1124,8 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS logs_acesso (id SERIAL PRIMARY KEY, admin_id INTEGER, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', ip VARCHAR(100) DEFAULT '', user_agent TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', status VARCHAR(20) DEFAULT 'aberto', prioridade VARCHAR(20) DEFAULT 'media', resposta TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS historico_clientes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-      "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')"
+      "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')",
+      "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

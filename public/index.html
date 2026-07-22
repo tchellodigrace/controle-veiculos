@@ -510,6 +510,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       Cadastros
     </div>
+    <div class="nav-item" id="navAuditoria">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Auditoria
+    </div>
     <div class="nav-item" id="navConfig">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Configurações
@@ -774,6 +778,30 @@
       </div>
     </div>
   </main>
+  <div id="viewAuditoria" style="display:none">
+    <div class="tabela-card card">
+      <div class="tabela-topo">
+        <h3>AUDITORIA - REGISTRO DE OPERACOES</h3>
+        <button class="btn btn-primario" onclick="carregarAuditoria()" style="font-size:12px;padding:6px 14px">Atualizar</button>
+      </div>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Operador</th>
+              <th>Acao</th>
+              <th>Tipo</th>
+              <th>Alvo</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaAuditoria"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioAuditoria" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum registro de auditoria</div>
+    </div>
+  </div>
   <footer>
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
     <span>Versão 2.0.0</span>
@@ -1466,6 +1494,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
   document.getElementById("vEmpresa").addEventListener("blur", autoPreencherVisitanteEmpresa);
   if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
   if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
+  if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
   atualizarRelogio();
   setInterval(atualizarRelogio, 1000);
   atualizar();
@@ -1637,19 +1666,53 @@ async function autoPreencherVisitante(tipo, valor){
 function mostrarVeiculos(){
   document.getElementById("navVeiculos").classList.add("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
   localStorage.setItem("activeView", "veiculos");
 }
 function mostrarVisitantes(){
   document.getElementById("navVisitantes").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
   localStorage.setItem("activeView", "visitantes");
   document.getElementById("vNome").focus();
   atualizarVisitantes();
   atualizarPreRegistrosVisitantes();
+}
+function mostrarAuditoria(){
+  document.getElementById("navAuditoria").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("viewAuditoria").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewVisitantes").style.display = "none";
+  localStorage.setItem("activeView", "auditoria");
+  carregarAuditoria();
+}
+async function carregarAuditoria(){
+  try {
+    const res = await fetch(API + '/api/auditoria?limit=200', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById("tabelaAuditoria");
+    const vazio = document.getElementById("vazioAuditoria");
+    if(dados.length === 0){ tbody.innerHTML = ""; vazio.style.display = "block"; return; }
+    vazio.style.display = "none";
+    const acaoCores = { "Entrada": "#38a169", "Saida": "#dd6b20", "Exclusao": "#e53e3e", "Confirmacao pre-registro": "#3182ce", "Exclusao pre-registro": "#e53e3e" };
+    tbody.innerHTML = dados.map(d => `<tr>
+      <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
+      <td><b>${d.usuario || "—"}</b></td>
+      <td><span style="background:${acaoCores[d.acao]||"#718096"};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${d.acao}</span></td>
+      <td>${d.tipo || "—"}</td>
+      <td><b>${d.alvo || "—"}</b></td>
+      <td style="font-size:12px;max-width:250px;word-break:break-word">${d.detalhes || "—"}</td>
+    </tr>`).join('');
+  } catch {}
 }
 
 async function atualizarPreRegistrosVisitantes(){
@@ -1706,6 +1769,7 @@ async function excluirPreRegistroVisitante(id){
 }
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
+document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
 
 async function registrarVisitante(){
   const nome = document.getElementById("vNome").value.trim();

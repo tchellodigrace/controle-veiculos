@@ -183,3 +183,14 @@ CREATE TABLE IF NOT EXISTS config_geral (
   valor TEXT DEFAULT '',
   descricao VARCHAR(200) DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS logs_auditoria (
+  id SERIAL PRIMARY KEY,
+  cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
+  usuario VARCHAR(100) DEFAULT '',
+  acao VARCHAR(100) NOT NULL,
+  tipo VARCHAR(50) DEFAULT '',
+  alvo VARCHAR(200) DEFAULT '',
+  detalhes TEXT DEFAULT '',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
