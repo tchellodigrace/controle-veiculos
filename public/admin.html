@@ -8,14 +8,14 @@
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ background:#f0f2f5; font-family:'Segoe UI',system-ui,sans-serif; color:#1a1a2e; }
   .topbar{
-    background:linear-gradient(135deg,#1a1a2e,#0f3460);
+    background:linear-gradient(135deg,#2563eb,#3b82f6);
     color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between;
     box-shadow:0 2px 8px rgba(0,0,0,.15);
   }
   .topbar h1{ font-size:18px; font-weight:700; }
   .topbar .user{ font-size:13px; opacity:.8; }
   .topbar .sair{ background:none; border:1px solid rgba(255,255,255,.3); color:#fff; padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; }
-  .topbar .sair:hover{ background:rgba(255,255,255,.1); }
+  .topbar .sair:hover{ background:rgba(255,255,255,.2); }
   .container{ max-width:1100px; margin:24px auto; padding:0 16px; }
   .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
   .stat-card{
@@ -42,8 +42,8 @@
   .btn-editar{ background:#3182ce; }
   .btn-excluir{ background:#e53e3e; }
   .btn-pagamento{ background:#38a169; }
-  .btn-novo{ background:#1a1a2e; color:#fff; padding:10px 20px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
-  .btn-novo:hover{ background:#0f3460; }
+  .btn-novo{ background:#2563eb; color:#fff; padding:10px 20px; border:none; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer; }
+  .btn-novo:hover{ background:#1d4ed8; }
   .acoes-col{ display:flex; gap:4px; }
   .modal-overlay{
     display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:100;
@@ -63,11 +63,11 @@
   }
   .form-group input:focus,.form-group select:focus{ border-color:#0f3460; }
   .form-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .btn-salvar{ width:100%; padding:10px; border:none; border-radius:8px; background:#1a1a2e; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
-  .btn-salvar:hover{ background:#0f3460; }
+  .btn-salvar{ width:100%; padding:10px; border:none; border-radius:8px; background:#2563eb; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-salvar:hover{ background:#1d4ed8; }
   .tabs{ display:flex; gap:8px; margin-bottom:20px; }
   .tab{ padding:8px 16px; border:2px solid #d1d5db; background:#fff; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:#4a5568; }
-  .tab.active{ background:#1a1a2e; color:#fff; border-color:#1a1a2e; }
+  .tab.active{ background:#2563eb; color:#fff; border-color:#2563eb; }
   .vazio{ text-align:center; color:#8b93a1; padding:24px; font-size:13px; }
 </style>
 </head>
