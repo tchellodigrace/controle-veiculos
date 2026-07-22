@@ -868,9 +868,9 @@ app.get('/fix-users', async (req, res) => {
         const newId = maxId + 1;
         await cli.query("UPDATE clientes SET id = $1 WHERE empresa = 'ARCAINFOVIDEO'", [newId]);
         await cli.query("UPDATE usuarios SET cliente_id = $1 WHERE usuario = 'arcainfovideo_portaria'", [newId]);
-        const allTables = ['registros','visitantes','pre_registros','pre_registros_visitantes','contas_motoristas','contas_visitantes'];
+        const allTables = (await cli.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.map(r=>r.table_name);
         for (const t of allTables) {
-          await cli.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = $2 AND cliente_id IN (SELECT id FROM clientes WHERE empresa = 'ARCAINFOVIDEO')`, [newId, 1]);
+          try { await cli.query(`UPDATE ${t} SET cliente_id = $1 WHERE cliente_id = $2`, [newId, 1]); } catch(e) {}
         }
         await cli.query("SELECT setval('clientes_id_seq', (SELECT COALESCE(MAX(id),0)+1 FROM clientes))");
         await cli.query('COMMIT');
