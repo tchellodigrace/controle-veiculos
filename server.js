@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'arcatech-controle-portaria-2026-secret-key';
+const JWT_SECRET = 'arcatech-controle-portaria-2026-secret-key';
 
 app.use(cors());
 app.use(express.json());
