@@ -861,6 +861,10 @@ app.get('/fix-users', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
   try {
     if (req.query.run === '1') {
+      const tables = (await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.map(r=>r.table_name);
+      for (const t of tables) { await pool.query('DROP TABLE IF EXISTS ' + t + ' CASCADE'); }
+      const seqs = (await pool.query("SELECT sequencename FROM pg_sequences WHERE schemaname='public'")).rows.map(r=>r.sequencename);
+      for (const s of seqs) { await pool.query('DROP SEQUENCE IF EXISTS ' + s + ' CASCADE'); }
       const fs = require('fs');
       const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
       await pool.query(schema);
@@ -868,9 +872,9 @@ app.get('/fix-users', async (req, res) => {
       return;
     }
     const tables = (await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.map(r=>r.table_name);
-    let log = '<h2>Setup Banco de Dados</h2>';
-    log += '<p>Tabelas atuais: ' + tables.join(', ') + '</p>';
-    log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold" onclick="return confirm(\'Isso vai recriar todas as tabelas faltantes. Confirma?\')">CRIAR TABELAS FALTANTES</a>';
+    let log = '<h2>Recriar Banco Completo</h2>';
+    log += '<p>Tabelas: ' + tables.join(', ') + '</p>';
+    log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold" onclick="return confirm(\'DROP + CREATE em todas as tabelas. Confirma?\')">RECREAR TUDO</a>';
     res.send(log);
   } catch (err) { res.status(500).send('Erro: ' + err.message); }
 });
