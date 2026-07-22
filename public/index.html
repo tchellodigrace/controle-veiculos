@@ -1743,6 +1743,7 @@ async function atualizarVisitantes(){
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
         <td class="acoes">
           ${!d.saida ? `<button class="btn-saida" onclick="registrarSaidaVisitante(${d.id})">Saída</button>` : ''}
+          <button class="btn-excluir" onclick="excluirVisitante(${d.id})">Excluir</button>
         </td>
       </tr>`;
     });
