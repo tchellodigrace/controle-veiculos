@@ -497,7 +497,7 @@
   <aside>
     <div class="nav-item nav-aviso" id="navMural">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      IMPORTANTE - LEIA
+      Avisos
     </div>
     <div class="nav-item active" id="navVeiculos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5"/><path d="M14 2h6v6M10 14 20 4"/></svg>
@@ -795,7 +795,7 @@
     <div id="viewMural" style="display:none">
       <div class="tabela-card card">
         <div class="tabela-topo">
-          <h3 style="color:#e53e3e">IMPORTANTE - LEIA</h3>
+          <h3 style="color:#e53e3e">AVISOS</h3>
           <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#e53e3e">+ Novo Aviso</button>
         </div>
         <div id="listaMural" style="padding:16px"></div>
@@ -1794,6 +1794,8 @@ async function carregarMural(){
     }).join('');
   } catch {}
 }
+function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
+function fecharModal(modal){ document.getElementById(modal).classList.remove('mostrar'); }
 function abrirModalMural(){
   document.getElementById("muralEditId").value = '';
   document.getElementById("muralTitulo").value = '';
