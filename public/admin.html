@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Admin - Controle de Portaria</title>
+<title>Painel ArcaTech Solu&#231;&#245;es</title>
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{ background:#f0f2f5; font-family:'Segoe UI',system-ui,sans-serif; color:#1a1a2e; }
@@ -73,7 +73,10 @@
 </head>
 <body>
 <div class="topbar">
-  <h1>Painel Administrativo</h1>
+  <div style="display:flex;align-items:center;gap:12px">
+    <img src="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png" alt="ArcaTech" style="height:36px;object-fit:contain">
+    <h1>Painel ArcaTech Solu&#231;&#245;es</h1>
+  </div>
   <div style="display:flex;align-items:center;gap:12px">
     <span class="user" id="adminNome">Admin</span>
     <button class="sair" onclick="sair()">Sair</button>
@@ -114,12 +117,12 @@
             <tr>
               <th>Empresa</th>
               <th>CNPJ</th>
-              <th>Responsável</th>
+              <th>Respons&#225;vel</th>
               <th>Plano</th>
               <th>Valor</th>
               <th>Expira</th>
               <th>Status</th>
-              <th>Ações</th>
+              <th>A&#231;&#245;es</th>
             </tr>
           </thead>
           <tbody id="tabelaClientes"></tbody>
@@ -138,7 +141,7 @@
             <tr>
               <th>Data</th>
               <th>Empresa</th>
-              <th>Descrição</th>
+              <th>Descri&#231;&#227;o</th>
               <th>Valor</th>
             </tr>
           </thead>
@@ -169,7 +172,7 @@
             <input type="text" id="fCnpj" placeholder="00.000.000/0000-00">
           </div>
           <div class="form-group">
-            <label>Responsável</label>
+            <label>Respons&#225;vel</label>
             <input type="text" id="fResponsavel" placeholder="Nome do responsável">
           </div>
         </div>
@@ -187,8 +190,8 @@
           <div class="form-group">
             <label>Plano</label>
             <select id="fPlano">
-              <option value="basico">Básico</option>
-              <option value="padrao">Padrão</option>
+              <option value="basico">B&#225;sico</option>
+              <option value="padrao">Padr&#227;o</option>
               <option value="premium">Premium</option>
             </select>
           </div>
@@ -199,11 +202,11 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Data Expiração</label>
+            <label>Data Expira&#231;&#227;o</label>
             <input type="date" id="fExpiracao">
           </div>
           <div class="form-group">
-            <label>Domínio</label>
+            <label>Dom&#237;nio</label>
             <input type="text" id="fDominio" placeholder="empresa.com.br">
           </div>
         </div>
@@ -236,7 +239,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Descrição</label>
+          <label>Descri&#231;&#227;o</label>
           <input type="text" id="pDescricao" placeholder="Ex.: Mensalidade Janeiro">
         </div>
         <button type="submit" class="btn-salvar">Registrar</button>
@@ -367,12 +370,12 @@ async function verDetalhes(id){
     let usersHtml = '';
     if(users.length > 0){
       usersHtml = `<div style="background:#f7f8fa;border-radius:8px;padding:14px;margin-bottom:14px">
-        <b style="font-size:12px;color:#1a1a2e">Usuários da Portaria</b>
+        <b style="font-size:12px;color:#1a1a2e">Usu&#225;rios da Portaria</b>
         <div style="margin-top:8px">${users.map(u => `<div style="font-size:12px;margin-bottom:4px"><b>${u.usuario}</b> / ${u.senha_exibicao || '***'} <span style="color:${u.ativo?'#38a169':'#e53e3e'};font-weight:600">${u.ativo?'Ativo':'Inativo'}</span></div>`).join('')}</div>
       </div>`;
     } else {
       usersHtml = `<div style="background:#fff0f0;border-radius:8px;padding:14px;margin-bottom:14px;font-size:12px;color:#cc0000;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <span>Nenhum usuário portaria criado.</span>
+        <span>Nenhum usu&#225;rio portaria criado.</span>
         <button class="btn-acao btn-editar" onclick="criarUsuarioPortaria(${c.id})" id="btnCriarPortaria">Criar Agora</button>
       </div>`;
     }
@@ -380,9 +383,9 @@ async function verDetalhes(id){
       <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${c.empresa}</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">
         <div><b>CNPJ:</b> ${c.cnpj || '—'}</div>
-        <div><b>Responsável:</b> ${c.responsavel || '—'}</div>
+        <div><b>Respons&#225;vel:</b> ${c.responsavel || '—'}</div>
         <div><b>Plano:</b> ${c.plano}</div>
-        <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/mês</div>
+        <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/m&#234;s</div>
         <div><b>Expira:</b> ${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</div>
         <div><b>Status:</b> ${c.ativo ? 'Ativo' : 'Inativo'}</div>
       </div>
@@ -514,9 +517,9 @@ async function criarUsuarioPortaria(clienteId){
     });
     if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } return; }
     const data = await res.json();
-    alert('Usuário criado!\n\nLogin: ' + data.usuario + '\nSenha: portaria123\n\nAltere a senha depois em Cadastros > Usuários do sistema.');
+    alert('Usu&#225;rio criado!\n\nLogin: ' + data.usuario + '\nSenha: portaria123\n\nAltere a senha depois em Cadastros > Usu&#225;rios do sistema.');
     fecharModal('modalDetalhe');
-  } catch { alert('Erro ao criar usuário'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } }
+  } catch { alert('Erro ao criar usu&#225;rio'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } }
 }
 </script>
 </body>

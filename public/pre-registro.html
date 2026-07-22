@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pré-Registro</title>
+<title>PrÃ©-Registro</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -41,7 +41,6 @@
     padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px; display:none;
   }
   .logo{ text-align:center; margin-bottom:16px; }
-  .logo img{ height:40px; }
   .info{ font-size:11px; color:#8b93a1; text-align:center; margin-top:12px; }
   .info b{ color:#0a3622; }
   .sucesso-msg{
@@ -68,8 +67,8 @@
     <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
       <div class="campo">
-        <label>Usuário</label>
-        <input type="text" id="loginUsuario" placeholder="Seu usuário" required>
+        <label>Usu&#225;rio</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usu&#225;rio" required>
       </div>
       <div class="campo">
         <label>Senha</label>
@@ -77,14 +76,14 @@
       </div>
       <button type="submit" id="btnLogin">Entrar</button>
     </form>
-    <p class="info">Não tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
+    <p class="info">N&#227;o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#0a3622;font-weight:700">Criar conta</a></p>
   </div>
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     </div>
-    <h1 id="tituloCadastro">Pré-Registro</h1>
+    <h1 id="tituloCadastro">Pr&#233;-Registro</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
     <div class="erro-msg" id="erroCadastro"></div>
     <form id="formCadastro" onsubmit="criarConta(event)">
@@ -93,8 +92,8 @@
         <input type="text" id="cadNome" placeholder="Seu nome" required>
       </div>
       <div class="campo">
-        <label>Usuário *</label>
-        <input type="text" id="cadUsuario" placeholder="Escolha um usuário" required>
+        <label>Usu&#225;rio *</label>
+        <input type="text" id="cadUsuario" placeholder="Escolha um usu&#225;rio" required>
       </div>
       <div class="campo">
         <label>Senha *</label>
@@ -102,7 +101,7 @@
       </div>
       <button type="submit" id="btnCadastrar">Criar Conta</button>
     </form>
-    <p class="info">Já tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
+    <p class="info">J&#225; tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#0a3622;font-weight:700">Voltar ao login</a></p>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -111,8 +110,8 @@
       <button class="sair" onclick="sair()">Sair</button>
     </div>
     <svg viewBox="0 0 24 24" fill="none" stroke="#0a3622" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
-    <h1>Pré-Registro</h1>
-    <p class="sub">Preencha os dados do veículo</p>
+    <h1>Pr&#233;-Registro</h1>
+    <p class="sub">Preencha os dados do ve&#237;culo</p>
     <div class="erro-msg" id="erroForm"></div>
     <form id="formPre" onsubmit="enviar(event)">
       <div class="campo">
@@ -121,14 +120,14 @@
         <datalist id="listaEmpresas"></datalist>
       </div>
       <div class="campo">
-        <label>Placa do Veículo *</label>
+        <label>Placa do Ve&#237;culo *</label>
         <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
       <div class="campo">
-        <label>Modelo do Veículo</label>
+        <label>Modelo do Ve&#237;culo</label>
         <select id="modelo">
           <option value="">Selecione</option>
-          <option>1 - Utilitário</option>
+          <option>1 - Utilit&#225;rio</option>
           <option>2 - Toko</option>
           <option>3 - Guindaste</option>
           <option>4 - Munk</option>
@@ -136,7 +135,7 @@
           <option>6 - P. Baixa</option>
           <option>7 - Truck</option>
           <option>8 - Empilhadeira</option>
-          <option>9 - Caminhão</option>
+          <option>9 - Caminh&#227;o</option>
           <option>10 - Outros</option>
         </select>
       </div>
@@ -146,62 +145,62 @@
           <option value="">Selecione</option>
           <option>1 - Coleta de material</option>
           <option>2 - Entrega de material</option>
-          <option>3 - Coleta de Óleo</option>
+          <option>3 - Coleta de &#211;leo</option>
           <option>4 - Coleta de sucata</option>
-          <option>5 - Coleta de Resíduos</option>
+          <option>5 - Coleta de Res&#237;duos</option>
         </select>
       </div>
       <div class="campo">
         <label>CNH</label>
-        <input type="text" id="cnh" placeholder="Número da CNH">
+        <input type="text" id="cnh" placeholder="N&#250;mero da CNH">
       </div>
       <div class="campo">
         <label>Nota Fiscal / RT</label>
         <input type="text" id="nota" placeholder="Informe a nota fiscal / RT">
       </div>
       <div class="campo">
-        <label>Observações</label>
-        <input type="text" id="obs" placeholder="Informações adicionais">
+        <label>Observa&#231;&#245;es</label>
+        <input type="text" id="obs" placeholder="Informa&#231;&#245;es adicionais">
       </div>
-      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+      <button type="submit" id="btnEnviar">Enviar Pr&#233;-Registro</button>
     </form>
   </div>
 
   <div class="sucesso" id="sucesso">
-    <div class="icone">?</div>
-    <h2>Pré-registro enviado!</h2>
-    <p>Seus dados já foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
-    <button onclick="resetar()">Novo Pré-Registro</button>
+    <div class="icone">&#10004;</div>
+    <h2>Pr&#233;-registro enviado!</h2>
+    <p>Seus dados j&#225; foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
+    <button onclick="resetar()">Novo Pr&#233;-Registro</button>
     <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
 </div>
 
 <script>
-const API = window.location.origin;
-const params = new URLSearchParams(window.location.search);
-const CLIENTE_ID = params.get('cliente_id');
-const EMPRESA_URL = params.get('empresa') || '';
+var API = window.location.origin;
+var params = new URLSearchParams(window.location.search);
+var CLIENTE_ID = params.get('cliente_id');
+var EMPRESA_URL = params.get('empresa') || '';
 
 if(!CLIENTE_ID){
-  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inválido</h2><p style="color:#666">Este link não é válido. Solicite o link correto à portaria.</p></div>';
+  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inv&#225;lido</h2><p style="color:#666">Este link n&#227;o &#233; v&#225;lido. Solicite o link correto &#224; portaria.</p></div>';
 }
 
-let tokenMotorista = localStorage.getItem('tokenMotorista_' + CLIENTE_ID);
-let motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado_' + CLIENTE_ID) || 'null');
+var tokenMotorista = localStorage.getItem('tokenMotorista_' + CLIENTE_ID);
+var motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado_' + CLIENTE_ID) || 'null');
 
 if(tokenMotorista && motoristaLogado){
   mostrarTelaForm();
 }
 
 if(EMPRESA_URL){
-  const nomeEmpresa = decodeURIComponent(EMPRESA_URL);
+  var nomeEmpresa = decodeURIComponent(EMPRESA_URL);
   document.getElementById('subLogin').textContent = nomeEmpresa;
-  document.getElementById('tituloCadastro').textContent = 'Pré-Registro - ' + nomeEmpresa;
+  document.getElementById('tituloCadastro').textContent = 'Pr&#233;-Registro - ' + nomeEmpresa;
 }
 
 function mostrarErro(id, msg){
-  const el = document.getElementById(id);
+  var el = document.getElementById(id);
   el.textContent = msg;
   el.style.display = "block";
 }
@@ -222,44 +221,44 @@ function mostrarTelaLogin(e){
 
 async function criarConta(e){
   e.preventDefault(); ocultarErro("erroCadastro");
-  const nome = document.getElementById("cadNome").value.trim();
-  const usuario = document.getElementById("cadUsuario").value.trim();
-  const senha = document.getElementById("cadSenha").value;
+  var nome = document.getElementById("cadNome").value.trim();
+  var usuario = document.getElementById("cadUsuario").value.trim();
+  var senha = document.getElementById("cadSenha").value;
   if(!nome || !usuario || !senha){ mostrarErro("erroCadastro", "Preencha todos os campos."); return; }
-  const btn = document.getElementById("btnCadastrar");
+  var btn = document.getElementById("btnCadastrar");
   btn.disabled = true; btn.textContent = "Criando conta...";
   try {
-    const res = await fetch(API + '/api/cadastro-motorista', {
+    var res = await fetch(API + '/api/cadastro-motorista', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente_id: parseInt(CLIENTE_ID), nome, usuario, senha })
+      body: JSON.stringify({ cliente_id: parseInt(CLIENTE_ID), nome: nome, usuario: usuario, senha: senha })
     });
-    if(!res.ok){ const err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
+    if(!res.ok){ var err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
     document.getElementById("formCadastro").reset();
     document.getElementById("telaCadastro").style.display = "none";
     document.getElementById("telaLogin").style.display = "block";
-    const msg = document.getElementById("msgSucesso");
+    var msg = document.getElementById("msgSucesso");
     msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
     msg.style.display = "block";
     btn.disabled = false; btn.textContent = "Criar Conta";
-  } catch { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+  } catch(ex) { mostrarErro("erroCadastro", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Criar Conta"; }
 }
 
 async function fazerLogin(e){
   e.preventDefault(); ocultarErro("erroLogin");
-  const usuario = document.getElementById("loginUsuario").value.trim();
-  const senha = document.getElementById("loginSenha").value;
-  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usuário e senha."); return; }
-  const btn = document.getElementById("btnLogin");
+  var usuario = document.getElementById("loginUsuario").value.trim();
+  var senha = document.getElementById("loginSenha").value;
+  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usu&#225;rio e senha."); return; }
+  var btn = document.getElementById("btnLogin");
   btn.disabled = true; btn.textContent = "Entrando...";
   try {
-    const res = await fetch(API + '/api/login-motorista', {
+    var res = await fetch(API + '/api/login-motorista', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ usuario, senha, cliente_id: parseInt(CLIENTE_ID) })
+      body: JSON.stringify({ usuario: usuario, senha: senha, cliente_id: parseInt(CLIENTE_ID) })
     });
-    if(!res.ok){ const err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
-    const data = await res.json();
+    if(!res.ok){ var err = await res.json(); mostrarErro("erroLogin", err.erro || "Erro ao entrar"); btn.disabled = false; btn.textContent = "Entrar"; return; }
+    var data = await res.json();
     tokenMotorista = data.token;
     motoristaLogado = data.motorista;
     localStorage.setItem('tokenMotorista_' + CLIENTE_ID, tokenMotorista);
@@ -267,7 +266,7 @@ async function fazerLogin(e){
     document.getElementById("formLogin").reset();
     btn.disabled = false; btn.textContent = "Entrar";
     mostrarTelaForm();
-  } catch { mostrarErro("erroLogin", "Erro de conexão"); btn.disabled = false; btn.textContent = "Entrar"; }
+  } catch(ex) { mostrarErro("erroLogin", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Entrar"; }
 }
 
 function mostrarTelaForm(){
@@ -281,12 +280,12 @@ function mostrarTelaForm(){
 
 async function carregarEmpresas(){
   try {
-    const res = await fetch(API + '/api/empresas-lista-pre?cliente_id=' + CLIENTE_ID);
+    var res = await fetch(API + '/api/empresas-lista-pre?cliente_id=' + CLIENTE_ID);
     if(!res.ok) return;
-    const lista = await res.json();
-    const dl = document.getElementById("listaEmpresas");
-    dl.innerHTML = lista.map(e => `<option value="${e.empresa}">`).join("");
-  } catch {}
+    var lista = await res.json();
+    var dl = document.getElementById("listaEmpresas");
+    dl.innerHTML = lista.map(function(e){ return '<option value="' + e.empresa + '">'; }).join("");
+  } catch(ex) {}
 }
 
 function sair(){
@@ -302,34 +301,34 @@ function sair(){
 
 async function enviar(e){
   e.preventDefault(); ocultarErro("erroForm");
-  const empresa = document.getElementById("empresa").value.trim().toUpperCase();
-  const placa = document.getElementById("placa").value.trim().toUpperCase();
+  var empresa = document.getElementById("empresa").value.trim().toUpperCase();
+  var placa = document.getElementById("placa").value.trim().toUpperCase();
   if(!empresa){ mostrarErro("erroForm", "Informe a empresa."); return; }
   if(!placa){ mostrarErro("erroForm", "Informe a placa."); return; }
-  const btn = document.getElementById("btnEnviar");
+  var btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
-  const payload = {
+  var payload = {
     cliente_id: parseInt(CLIENTE_ID),
-    empresa,
+    empresa: empresa,
     motorista: motoristaLogado.nome,
     cnh: document.getElementById("cnh").value.trim(),
-    placa,
+    placa: placa,
     modelo: document.getElementById("modelo").value,
     finalidade: document.getElementById("finalidade").value,
     nota: document.getElementById("nota").value.trim(),
     obs: document.getElementById("obs").value.trim()
   };
   try {
-    const res = await fetch(API + '/api/pre-registro', {
+    var res = await fetch(API + '/api/pre-registro', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if(!res.ok){ const err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
+    if(!res.ok){ var err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro"; return; }
     document.getElementById("formPre").style.display = "none";
     document.getElementById("sucesso").style.display = "block";
-    btn.disabled = false; btn.textContent = "Enviar Pré-Registro";
-  } catch { mostrarErro("erroForm", "Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
+    btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro";
+  } catch(ex) { mostrarErro("erroForm", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro"; }
 }
 
 function resetar(){
@@ -337,7 +336,7 @@ function resetar(){
   document.getElementById("formPre").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("btnEnviar").disabled = false;
-  document.getElementById("btnEnviar").textContent = "Enviar Pré-Registro";
+  document.getElementById("btnEnviar").textContent = "Enviar Pr&#233;-Registro";
 }
 
 document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
