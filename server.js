@@ -861,27 +861,16 @@ app.get('/fix-users', async (req, res) => {
   if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
   try {
     if (req.query.run === '1') {
-      const tables = (await pool.query("SELECT table_name FROM information_schema.columns WHERE column_name='cliente_id' AND table_schema='public'")).rows.map(r=>r.table_name);
-      for (const t of tables) { try { await pool.query(`DELETE FROM ${t}`); } catch(e) {} }
-      try { await pool.query('DELETE FROM clientes'); } catch(e) {}
-      try { await pool.query('DELETE FROM usuarios'); } catch(e) {}
-      const seqs = (await pool.query("SELECT sequencename FROM pg_sequences WHERE schemaname='public'")).rows.map(r=>r.sequencename);
-      for (const s of seqs) { try { await pool.query(`SELECT setval('${s}', 1)`); } catch(e) {} }
+      const fs = require('fs');
+      const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+      await pool.query(schema);
       res.redirect('/fix-users?key=arcatech-bk-2026');
       return;
     }
-    const clientes = await pool.query('SELECT id, empresa FROM clientes ORDER BY id');
-    const users = await pool.query('SELECT id, nome, usuario, cliente_id FROM usuarios ORDER BY id');
-    let log = '<h2>Correcao de IDs Duplicados</h2>';
-    log += '<pre>' + JSON.stringify(clientes.rows, null, 2) + '</pre>';
-    log += '<pre>' + JSON.stringify(users.rows, null, 2) + '</pre>';
-    const dupes = (await pool.query('SELECT id, COUNT(*) as c FROM clientes GROUP BY id HAVING COUNT(*)>1')).rows;
-    if (dupes.length > 0) {
-      log += '<p style="color:red">IDs duplicados!</p>';
-      log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold" onclick="return confirm(\'Isso vai DELETAR todos os clientes e usuarios. Confirma?\')">LIMPAR TUDO E COMECAR DE NOVO</a>';
-    } else {
-      log += '<p style="color:green">Tudo OK!</p>';
-    }
+    const tables = (await pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")).rows.map(r=>r.table_name);
+    let log = '<h2>Setup Banco de Dados</h2>';
+    log += '<p>Tabelas atuais: ' + tables.join(', ') + '</p>';
+    log += '<a href="/fix-users?key=arcatech-bk-2026&run=1" style="padding:12px 24px;background:#e53e3e;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold" onclick="return confirm(\'Isso vai recriar todas as tabelas faltantes. Confirma?\')">CRIAR TABELAS FALTANTES</a>';
     res.send(log);
   } catch (err) { res.status(500).send('Erro: ' + err.message); }
 });
