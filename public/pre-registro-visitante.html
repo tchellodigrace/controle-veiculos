@@ -54,10 +54,6 @@
   }
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .topbar .nome{ font-size:13px; color:#2a6f7e; font-weight:700; }
-  .topbar .sair{
-    font-size:11px; color:#cc0000; cursor:pointer; border:none; background:none;
-    text-decoration:underline; padding:0;
-  }
 </style>
 </head>
 <body>
@@ -120,7 +116,6 @@
   <div id="telaForm" style="display:none">
     <div class="topbar">
       <span class="nome" id="nomeVisitante">---</span>
-      <button class="sair" onclick="sair()">Sair</button>
     </div>
     <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     <h1>Pré-Registro Visitante</h1>
@@ -156,7 +151,6 @@
     <h2>Pré-registro enviado!</h2>
     <p>Seus dados foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
-    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
 </div>
@@ -262,17 +256,6 @@ function mostrarTelaForm(){
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeVisitante").textContent = visitanteLogado?.nome || "Visitante";
-}
-
-function sair(){
-  tokenVisitante = null;
-  visitanteLogado = null;
-  localStorage.removeItem('tokenVisitante_' + CLIENTE_ID);
-  localStorage.removeItem('visitanteLogado_' + CLIENTE_ID);
-  document.getElementById("telaLogin").style.display = "block";
-  document.getElementById("telaForm").style.display = "none";
-  document.getElementById("sucesso").style.display = "none";
-  document.getElementById("formLogin").reset();
 }
 
 async function enviar(e){

@@ -54,10 +54,6 @@
   }
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .topbar .nome{ font-size:13px; color:#2a6f7e; font-weight:700; }
-  .topbar .sair{
-    font-size:11px; color:#cc0000; cursor:pointer; border:none; background:none;
-    text-decoration:underline; padding:0;
-  }
 </style>
 </head>
 <body>
@@ -112,7 +108,6 @@
   <div id="telaForm" style="display:none">
     <div class="topbar">
       <span class="nome" id="nomeMotorista">---</span>
-      <button class="sair" onclick="sair()">Sair</button>
     </div>
     <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     <h1>Pré-Registro</h1>
@@ -176,7 +171,6 @@
     <h2>Pré-registro enviado!</h2>
     <p>Seus dados já foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
-    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
 </div>
@@ -291,17 +285,6 @@ async function carregarEmpresas(){
     var dl = document.getElementById("listaEmpresas");
     dl.innerHTML = lista.map(function(e){ return '<option value="' + e.empresa + '">'; }).join("");
   } catch(ex) {}
-}
-
-function sair(){
-  tokenMotorista = null;
-  motoristaLogado = null;
-  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
-  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
-  document.getElementById("telaLogin").style.display = "block";
-  document.getElementById("telaForm").style.display = "none";
-  document.getElementById("sucesso").style.display = "none";
-  document.getElementById("formLogin").reset();
 }
 
 async function enviar(e){
