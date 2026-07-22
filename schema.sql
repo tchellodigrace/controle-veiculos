@@ -145,3 +145,41 @@ CREATE TABLE IF NOT EXISTS faturamento (
   data_pagamento DATE DEFAULT CURRENT_DATE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS logs_acesso (
+  id SERIAL PRIMARY KEY,
+  admin_id INTEGER,
+  admin_usuario VARCHAR(100) DEFAULT '',
+  acao VARCHAR(200) NOT NULL,
+  detalhes TEXT DEFAULT '',
+  ip VARCHAR(100) DEFAULT '',
+  user_agent TEXT DEFAULT '',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chamados (
+  id SERIAL PRIMARY KEY,
+  cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE,
+  titulo VARCHAR(200) NOT NULL,
+  descricao TEXT DEFAULT '',
+  status VARCHAR(20) DEFAULT 'aberto',
+  prioridade VARCHAR(20) DEFAULT 'media',
+  resposta TEXT DEFAULT '',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS historico_clientes (
+  id SERIAL PRIMARY KEY,
+  cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL,
+  admin_usuario VARCHAR(100) DEFAULT '',
+  acao VARCHAR(200) NOT NULL,
+  detalhes TEXT DEFAULT '',
+  criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS config_geral (
+  chave VARCHAR(100) PRIMARY KEY,
+  valor TEXT DEFAULT '',
+  descricao VARCHAR(200) DEFAULT ''
+);

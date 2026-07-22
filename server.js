@@ -737,6 +737,7 @@ app.post('/api/admin/clientes', adminMiddleware, async (req, res) => {
       console.log('Aviso: não criou usuário portaria:', e.message);
     }
     await client.query('COMMIT');
+    pool.query('INSERT INTO historico_clientes (cliente_id, admin_usuario, acao, detalhes) VALUES ($1,$2,$3,$4)', [cliente.id, req.admin?.usuario || '', 'Cliente criado', 'Empresa: ' + empresa.toUpperCase()]).catch(()=>{});
     res.status(201).json({ ...cliente, portaria_usuario: userLogin.toLowerCase(), portaria_senha: defaultSenha });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -765,6 +766,7 @@ app.put('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
     if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
     params.push(req.params.id);
     await pool.query(`UPDATE clientes SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
+    pool.query('INSERT INTO historico_clientes (cliente_id, admin_usuario, acao, detalhes) VALUES ($1,$2,$3,$4)', [req.params.id, req.admin?.usuario || '', 'Cliente atualizado', updates.join(', ')]).catch(()=>{});
     res.json({ mensagem: 'Cliente atualizado' });
   } catch (err) {
     console.error('Erro ao atualizar cliente:', err);
@@ -774,7 +776,9 @@ app.put('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
 
 app.delete('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
   try {
+    const cli = await pool.query('SELECT empresa FROM clientes WHERE id = $1', [req.params.id]);
     await pool.query('DELETE FROM clientes WHERE id = $1', [req.params.id]);
+    pool.query('INSERT INTO historico_clientes (cliente_id, admin_usuario, acao, detalhes) VALUES ($1,$2,$3,$4)', [req.params.id, req.admin?.usuario || '', 'Cliente excluido', 'Empresa: ' + (cli.rows[0]?.empresa || '?')]).catch(()=>{});
     res.json({ mensagem: 'Cliente excluído' });
   } catch (err) {
     console.error('Erro ao excluir cliente:', err);
@@ -865,6 +869,178 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
   }
 });
 
+// === LOGS DE ACESSO ===
+function logAcessoMiddleware(req, res, next) {
+  if (req.admin) {
+    const ip = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '';
+    const ua = req.headers['user-agent'] || '';
+    pool.query(
+      'INSERT INTO logs_acesso (admin_id, admin_usuario, acao, detalhes, ip, user_agent) VALUES ($1,$2,$3,$4,$5,$6)',
+      [req.admin.id || null, req.admin.usuario || '', req.method + ' ' + req.originalUrl, JSON.stringify(req.body || {}).substring(0, 500), ip, ua]
+    ).catch(() => {});
+  }
+  next();
+}
+app.use('/api/admin', logAcessoMiddleware);
+
+app.get('/api/admin/logs', adminMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const result = await pool.query('SELECT * FROM logs_acesso ORDER BY criado_em DESC LIMIT $1', [limit]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar logs' });
+  }
+});
+
+// === CONFIGURACOES GERAIS ===
+app.get('/api/admin/config', adminMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM config_geral ORDER BY chave');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar config' });
+  }
+});
+
+app.put('/api/admin/config', adminMiddleware, async (req, res) => {
+  try {
+    const { configs } = req.body;
+    if (!configs || !Array.isArray(configs)) return res.status(400).json({ erro: 'Formato invalido' });
+    for (const c of configs) {
+      await pool.query(
+        `INSERT INTO config_geral (chave, valor, descricao) VALUES ($1, $2, $3)
+         ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor`,
+        [c.chave, c.valor || '', c.descricao || '']
+      );
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao salvar config' });
+  }
+});
+
+// === CHAMADOS (SUPORTE) ===
+app.get('/api/admin/chamados', adminMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT ch.*, c.empresa FROM chamados ch LEFT JOIN clientes c ON ch.cliente_id = c.id ORDER BY ch.criado_em DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar chamados' });
+  }
+});
+
+app.post('/api/admin/chamados', adminMiddleware, async (req, res) => {
+  try {
+    const { cliente_id, titulo, descricao, prioridade } = req.body;
+    if (!titulo) return res.status(400).json({ erro: 'Titulo e obrigatorio' });
+    const result = await pool.query(
+      'INSERT INTO chamados (cliente_id, titulo, descricao, prioridade) VALUES ($1,$2,$3,$4) RETURNING *',
+      [cliente_id || null, titulo, descricao || '', prioridade || 'media']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao criar chamado' });
+  }
+});
+
+app.put('/api/admin/chamados/:id', adminMiddleware, async (req, res) => {
+  try {
+    const { status, resposta } = req.body;
+    const result = await pool.query(
+      `UPDATE chamados SET status = COALESCE($1, status), resposta = COALESCE($2, resposta), atualizado_em = NOW() WHERE id = $3 RETURNING *`,
+      [status || null, resposta || null, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Chamado nao encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao atualizar chamado' });
+  }
+});
+
+app.delete('/api/admin/chamados/:id', adminMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM chamados WHERE id = $1', [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao excluir chamado' });
+  }
+});
+
+// === HISTORICO DE CLIENTES ===
+app.get('/api/admin/historico', adminMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+    const result = await pool.query(
+      `SELECT h.*, c.empresa FROM historico_clientes h LEFT JOIN clientes c ON h.cliente_id = c.id ORDER BY h.criado_em DESC LIMIT $1`,
+      [limit]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar historico' });
+  }
+});
+
+// === ALERTAS ===
+app.get('/api/admin/alertas', adminMiddleware, async (req, res) => {
+  try {
+    const alertas = [];
+    const expirados = await pool.query(
+      `SELECT id, empresa, data_expiracao FROM clientes WHERE ativo = TRUE AND data_expiracao IS NOT NULL AND data_expiracao < CURRENT_DATE`
+    );
+    expirados.rows.forEach(c => {
+      alertas.push({ tipo: 'expirado', titulo: 'Plano expirado', descricao: c.empresa + ' - expirou em ' + new Date(c.data_expiracao).toLocaleDateString('pt-BR'), cliente_id: c.id, empresa: c.empresa });
+    });
+    const vencendo = await pool.query(
+      `SELECT id, empresa, data_expiracao FROM clientes WHERE ativo = TRUE AND data_expiracao IS NOT NULL AND data_expiracao >= CURRENT_DATE AND data_expiracao <= CURRENT_DATE + INTERVAL '7 days'`
+    );
+    vencendo.rows.forEach(c => {
+      alertas.push({ tipo: 'vencendo', titulo: 'Plano vencendo em 7 dias', descricao: c.empresa + ' - vence em ' + new Date(c.data_expiracao).toLocaleDateString('pt-BR'), cliente_id: c.id, empresa: c.empresa });
+    });
+    const semUsuario = await pool.query(
+      `SELECT cl.id, cl.empresa FROM clientes cl LEFT JOIN usuarios u ON cl.id = u.cliente_id WHERE cl.ativo = TRUE AND u.id IS NULL`
+    );
+    semUsuario.rows.forEach(c => {
+      alertas.push({ tipo: 'atencao', titulo: 'Sem usuario portaria', descricao: c.empresa + ' - nenhum usuario de portaria criado', cliente_id: c.id, empresa: c.empresa });
+    });
+    const chamadosAbertos = await pool.query(
+      `SELECT ch.id, ch.titulo, c.empresa FROM chamados ch LEFT JOIN clientes c ON ch.cliente_id = c.id WHERE ch.status = 'aberto'`
+    );
+    chamadosAbertos.rows.forEach(ch => {
+      alertas.push({ tipo: 'chamado', titulo: 'Chamado aberto', descricao: (ch.empresa || 'Geral') + ' - ' + ch.titulo, cliente_id: ch.id });
+    });
+    res.json(alertas);
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao buscar alertas' });
+  }
+});
+
+// === EXPORT / BACKUP ===
+app.get('/api/admin/export/:tabela', adminMiddleware, async (req, res) => {
+  try {
+    const tabela = req.params.tabela;
+    const allowed = ['clientes', 'usuarios', 'registros', 'visitantes', 'pre_registros', 'pre_registros_visitantes', 'faturamento', 'chamados'];
+    if (!allowed.includes(tabela)) return res.status(400).json({ erro: 'Tabela nao permitida' });
+    const result = await pool.query(`SELECT * FROM ${tabela} ORDER BY id`);
+    if (result.rows.length === 0) return res.json({ csv: '', rows: 0 });
+    const headers = Object.keys(result.rows[0]);
+    const csvLines = [headers.join(';')];
+    result.rows.forEach(row => {
+      csvLines.push(headers.map(h => {
+        let v = row[h];
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'string') return '"' + v.replace(/"/g, '""') + '"';
+        return String(v);
+      }).join(';'));
+    });
+    res.json({ csv: csvLines.join('\n'), rows: result.rows.length, headers });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao exportar dados' });
+  }
+});
+
 app.get('/p/:cliente_id', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
@@ -914,7 +1090,11 @@ async function iniciar() {
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''",
       "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS obs VARCHAR(500) DEFAULT ''",
       "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS posicao INTEGER DEFAULT 0",
-      "CREATE TABLE IF NOT EXISTS faturamento (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, valor DECIMAL(10,2) NOT NULL, descricao VARCHAR(200) DEFAULT '', data_pagamento DATE DEFAULT CURRENT_DATE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+      "CREATE TABLE IF NOT EXISTS faturamento (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, valor DECIMAL(10,2) NOT NULL, descricao VARCHAR(200) DEFAULT '', data_pagamento DATE DEFAULT CURRENT_DATE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS logs_acesso (id SERIAL PRIMARY KEY, admin_id INTEGER, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', ip VARCHAR(100) DEFAULT '', user_agent TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', status VARCHAR(20) DEFAULT 'aberto', prioridade VARCHAR(20) DEFAULT 'media', resposta TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS historico_clientes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

@@ -106,6 +106,12 @@
   <div class="tabs">
     <button class="tab active" onclick="trocarAba(this,'abaClientes')">Clientes</button>
     <button class="tab" onclick="trocarAba(this,'abaFaturamento')">Faturamento</button>
+    <button class="tab" onclick="trocarAba(this,'abaAlertas')">Alertas</button>
+    <button class="tab" onclick="trocarAba(this,'abaChamados')">Suporte</button>
+    <button class="tab" onclick="trocarAba(this,'abaHistorico')">Historico</button>
+    <button class="tab" onclick="trocarAba(this,'abaLogs')">Logs</button>
+    <button class="tab" onclick="trocarAba(this,'abaConfig')">Config</button>
+    <button class="tab" onclick="trocarAba(this,'abaBackup')">Backup</button>
   </div>
 
   <div id="abaClientes">
@@ -151,7 +157,79 @@
       <div class="vazio" id="vazioFaturamento" style="display:none">Nenhum pagamento registrado</div>
     </div>
   </div>
-</div>
+
+  <div id="abaAlertas" style="display:none">
+    <div class="section">
+      <h2>Alertas <button class="btn-novo" style="margin-left:auto" onclick="carregarAlertas()">Atualizar</button></h2>
+      <div id="listaAlertas"></div>
+      <div class="vazio" id="vazioAlertas" style="display:none">Nenhum alerta no momento</div>
+    </div>
+  </div>
+
+  <div id="abaChamados" style="display:none">
+    <div class="section">
+      <h2>Suporte / Chamados <button class="btn-novo" style="margin-left:auto" onclick="abrirModalChamado()">+ Novo Chamado</button></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>#</th><th>Cliente</th><th>Titulo</th><th>Prioridade</th><th>Status</th><th>Criado</th><th>Acoes</th></tr></thead>
+          <tbody id="tabelaChamados"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioChamados" style="display:none">Nenhum chamado registrado</div>
+    </div>
+  </div>
+
+  <div id="abaHistorico" style="display:none">
+    <div class="section">
+      <h2>Historico de Clientes <button class="btn-novo" style="margin-left:auto" onclick="carregarHistorico()">Atualizar</button></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Data/Hora</th><th>Admin</th><th>Acao</th><th>Detalhes</th></tr></thead>
+          <tbody id="tabelaHistorico"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioHistorico" style="display:none">Nenhum registro encontrado</div>
+    </div>
+  </div>
+
+  <div id="abaLogs" style="display:none">
+    <div class="section">
+      <h2>Logs de Acesso <button class="btn-novo" style="margin-left:auto" onclick="carregarLogs()">Atualizar</button></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Data/Hora</th><th>Admin</th><th>Acao</th><th>IP</th></tr></thead>
+          <tbody id="tabelaLogs"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioLogs" style="display:none">Nenhum log registrado</div>
+    </div>
+  </div>
+
+  <div id="abaConfig" style="display:none">
+    <div class="section">
+      <h2>Configuracoes Gerais</h2>
+      <div id="listaConfig"></div>
+      <button class="btn-salvar" style="max-width:200px;margin-top:16px" onclick="salvarConfig()">Salvar Configuracoes</button>
+    </div>
+  </div>
+
+  <div id="abaBackup" style="display:none">
+    <div class="section">
+      <h2>Backup / Export</h2>
+      <p style="font-size:13px;color:#4a5568;margin-bottom:16px">Exporte os dados de qualquer tabela em formato CSV.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('clientes')">Clientes</button>
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('usuarios')">Usuarios</button>
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('registros')">Registros</button>
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('visitantes')">Visitantes</button>
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('pre_registros')">Pre-Registros</button>
+        <button class="btn-acao" style="background:#3182ce;padding:10px 18px" onclick="exportarTabela('pre_registros_visitantes')">Pre-Reg Visitantes</button>
+        <button class="btn-acao" style="background:#38a169;padding:10px 18px" onclick="exportarTabela('faturamento')">Faturamento</button>
+        <button class="btn-acao" style="background:#38a169;padding:10px 18px" onclick="exportarTabela('chamados')">Chamados</button>
+      </div>
+      <div id="exportStatus" style="margin-top:16px;font-size:13px;color:#4a5568"></div>
+    </div>
+  </div>
 
 <div class="modal-overlay" id="modalCliente">
   <div class="modal-content">
@@ -263,6 +341,40 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modalChamado">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Novo Chamado</h3>
+      <button class="modal-close" onclick="fecharModal('modalChamado')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form onsubmit="salvarChamado(event)">
+        <div class="form-group">
+          <label>Cliente</label>
+          <select id="chCliente"></select>
+        </div>
+        <div class="form-group">
+          <label>Titulo *</label>
+          <input type="text" id="chTitulo" required placeholder="Ex.: Duvida sobre faturamento">
+        </div>
+        <div class="form-group">
+          <label>Descricao</label>
+          <textarea id="chDescricao" rows="3" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit" placeholder="Detalhes do chamado..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Prioridade</label>
+          <select id="chPrioridade">
+            <option value="baixa">Baixa</option>
+            <option value="media" selected>Media</option>
+            <option value="alta">Alta</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-salvar">Criar Chamado</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 const API = window.location.origin;
 const token = localStorage.getItem('tokenAdmin');
@@ -282,8 +394,14 @@ function sair(){
 function trocarAba(btn, id){
   document.querySelectorAll('.tab').forEach(b => { b.classList.remove('active'); });
   btn.classList.add('active');
-  document.getElementById('abaClientes').style.display = id === 'abaClientes' ? 'block' : 'none';
-  document.getElementById('abaFaturamento').style.display = id === 'abaFaturamento' ? 'block' : 'none';
+  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup'].forEach(a => {
+    document.getElementById(a).style.display = a === id ? 'block' : 'none';
+  });
+  if(id === 'abaAlertas') carregarAlertas();
+  if(id === 'abaChamados') carregarChamados();
+  if(id === 'abaHistorico') carregarHistorico();
+  if(id === 'abaLogs') carregarLogs();
+  if(id === 'abaConfig') carregarConfig();
 }
 
 function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
@@ -627,9 +745,205 @@ async function criarUsuarioPortaria(clienteId){
     });
     if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } return; }
     const data = await res.json();
-    alert('Usuário criado!\n\nLogin: ' + data.usuario + '\nSenha: portaria123\n\nAltere a senha depois em Cadastros > Usuários do sistema.');
+    alert('Usuario criado!\n\nLogin: ' + data.usuario + '\nSenha: portaria123\n\nAltere a senha depois em Cadastros > Usuarios do sistema.');
     fecharModal('modalDetalhe');
-  } catch { alert('Erro ao criar usuário'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } }
+  } catch { alert('Erro ao criar usuario'); if(btn){ btn.textContent = 'Criar Agora'; btn.disabled = false; } }
+}
+
+async function carregarAlertas(){
+  try {
+    const res = await fetch(API + '/api/admin/alertas', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const el = document.getElementById('listaAlertas');
+    const vazio = document.getElementById('vazioAlertas');
+    if(dados.length === 0){ el.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    const cores = { expirado: '#e53e3e', vencendo: '#dd6b20', atencao: '#d69e2e', chamado: '#3182ce' };
+    const icons = { expirado: '&#10006;', vencendo: '&#9888;', atencao: '&#9888;', chamado: '&#9993;' };
+    el.innerHTML = dados.map(d => `
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;margin-bottom:8px;background:${cores[d.tipo]||'#718096'}15;border-left:4px solid ${cores[d.tipo]||'#718096'}">
+        <span style="font-size:18px;color:${cores[d.tipo]||'#718096'}">${icons[d.tipo]||''}</span>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:#1a1a2e">${d.titulo}</div>
+          <div style="font-size:12px;color:#4a5568">${d.descricao}</div>
+        </div>
+        <span style="font-size:10px;padding:3px 10px;border-radius:10px;background:${cores[d.tipo]||'#718096'};color:#fff;font-weight:600">${d.tipo}</span>
+      </div>`).join('');
+  } catch {}
+}
+
+async function carregarChamados(){
+  try {
+    const res = await fetch(API + '/api/admin/chamados', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById('tabelaChamados');
+    const vazio = document.getElementById('vazioChamados');
+    if(dados.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    const statusCores = { aberto: '#dd6b20', respondido: '#3182ce', fechado: '#38a169' };
+    const priCores = { baixa: '#718096', media: '#d69e2e', alta: '#e53e3e' };
+    tbody.innerHTML = dados.map(d => `<tr>
+      <td>${d.id}</td>
+      <td><b>${d.empresa || 'Geral'}</b></td>
+      <td>${d.titulo}</td>
+      <td><span style="color:${priCores[d.prioridade]||'#718096'};font-weight:600">${d.prioridade}</span></td>
+      <td><span style="background:${statusCores[d.status]||'#718096'};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">${d.status}</span></td>
+      <td>${new Date(d.criado_em).toLocaleDateString('pt-BR')}</td>
+      <td>
+        <div class="acoes-col">
+          ${d.status === 'aberto' ? `<button class="btn-acao" style="background:#3182ce" onclick="responderChamado(${d.id})">Responder</button>` : ''}
+          ${d.status !== 'fechado' ? `<button class="btn-acao" style="background:#38a169" onclick="fecharChamado(${d.id})">Fechar</button>` : ''}
+          <button class="btn-acao btn-excluir" onclick="excluirChamado(${d.id})">Excluir</button>
+        </div>
+      </td>
+    </tr>`).join('');
+  } catch {}
+}
+
+async function abrirModalChamado(){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    const clientes = await res.json();
+    const sel = document.getElementById('chCliente');
+    sel.innerHTML = '<option value="">Geral / Sem cliente</option>' + clientes.map(c => `<option value="${c.id}">${c.empresa}</option>`).join('');
+    document.getElementById('chTitulo').value = '';
+    document.getElementById('chDescricao').value = '';
+    document.getElementById('chPrioridade').value = 'media';
+    abrirModal('modalChamado');
+  } catch {}
+}
+
+async function salvarChamado(e){
+  e.preventDefault();
+  const payload = {
+    cliente_id: document.getElementById('chCliente').value ? parseInt(document.getElementById('chCliente').value) : null,
+    titulo: document.getElementById('chTitulo').value.trim(),
+    descricao: document.getElementById('chDescricao').value.trim(),
+    prioridade: document.getElementById('chPrioridade').value
+  };
+  try {
+    const res = await fetch(API + '/api/admin/chamados', { method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) });
+    if(!res.ok){ alert('Erro ao criar chamado'); return; }
+    fecharModal('modalChamado');
+    carregarChamados();
+  } catch { alert('Erro ao criar chamado'); }
+}
+
+async function responderChamado(id){
+  const resp = prompt('Digite sua resposta:');
+  if(!resp) return;
+  try {
+    await fetch(API + '/api/admin/chamados/' + id, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'respondido', resposta: resp }) });
+    carregarChamados();
+  } catch {}
+}
+
+async function fecharChamado(id){
+  try {
+    await fetch(API + '/api/admin/chamados/' + id, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: 'fechado' }) });
+    carregarChamados();
+  } catch {}
+}
+
+async function excluirChamado(id){
+  if(!confirm('Excluir este chamado?')) return;
+  try {
+    await fetch(API + '/api/admin/chamados/' + id, { method: 'DELETE', headers: getHeaders() });
+    carregarChamados();
+  } catch {}
+}
+
+async function carregarHistorico(){
+  try {
+    const res = await fetch(API + '/api/admin/historico', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById('tabelaHistorico');
+    const vazio = document.getElementById('vazioHistorico');
+    if(dados.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    tbody.innerHTML = dados.map(d => `<tr>
+      <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
+      <td>${d.admin_usuario || '—'}</td>
+      <td><b>${d.acao}</b></td>
+      <td style="max-width:300px;word-break:break-word">${d.detalhes || '—'}</td>
+    </tr>`).join('');
+  } catch {}
+}
+
+async function carregarLogs(){
+  try {
+    const res = await fetch(API + '/api/admin/logs?limit=100', { headers: getHeaders() });
+    if(!res.ok) return;
+    const dados = await res.json();
+    const tbody = document.getElementById('tabelaLogs');
+    const vazio = document.getElementById('vazioLogs');
+    if(dados.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    tbody.innerHTML = dados.map(d => `<tr>
+      <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
+      <td>${d.admin_usuario || '—'}</td>
+      <td><b>${d.acao}</b></td>
+      <td style="font-size:11px;color:#718096">${d.ip || '—'}</td>
+    </tr>`).join('');
+  } catch {}
+}
+
+const configDefaults = [
+  { chave: 'sistema_nome', valor: 'ArcaTech Controle', descricao: 'Nome do sistema' },
+  { chave: 'sistema_versao', valor: '1.0.0', descricao: 'Versao do sistema' },
+  { chave: 'notificar_vencimento_dias', valor: '7', descricao: 'Dias antes de vencimento para alertar' },
+  { chave: 'mensagem_portaria', valor: 'Bem-vindo ao controle de acesso', descricao: 'Mensagem exibida na portaria' },
+  { chave: 'horario_funcionamento', valor: '07:00 - 18:00', descricao: 'Horario de funcionamento padrao' }
+];
+
+async function carregarConfig(){
+  try {
+    const res = await fetch(API + '/api/admin/config', { headers: getHeaders() });
+    if(!res.ok) return;
+    let dados = await res.json();
+    if(dados.length === 0) dados = configDefaults;
+    const el = document.getElementById('listaConfig');
+    el.innerHTML = dados.map(d => `
+      <div class="form-group">
+        <label>${d.descricao || d.chave}</label>
+        <input type="text" data-chave="${d.chave}" value="${d.valor || ''}" style="width:100%">
+      </div>`).join('');
+  } catch {}
+}
+
+async function salvarConfig(){
+  const inputs = document.querySelectorAll('#listaConfig input[data-chave]');
+  const configs = Array.from(inputs).map(inp => ({
+    chave: inp.dataset.chave,
+    valor: inp.value
+  }));
+  try {
+    await fetch(API + '/api/admin/config', { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ configs }) });
+    alert('Configuracoes salvas!');
+  } catch { alert('Erro ao salvar configuracoes'); }
+}
+
+async function exportarTabela(tabela){
+  const el = document.getElementById('exportStatus');
+  el.textContent = 'Exportando...';
+  try {
+    const res = await fetch(API + '/api/admin/export/' + tabela, { headers: getHeaders() });
+    if(!res.ok){ el.textContent = 'Erro ao exportar'; return; }
+    const data = await res.json();
+    if(data.rows === 0){ el.textContent = 'Tabela vazia - nada para exportar'; return; }
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + data.csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = tabela + '_' + new Date().toISOString().substring(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    el.textContent = 'Exportado ' + data.rows + ' registros da tabela ' + tabela;
+  } catch { el.textContent = 'Erro ao exportar'; }
 }
 </script>
 </body>
