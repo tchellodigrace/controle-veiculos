@@ -792,41 +792,41 @@
         </div>
       </div>
     </div>
+    <div id="viewMural" style="display:none">
+      <div class="tabela-card card">
+        <div class="tabela-topo">
+          <h3 style="color:#e53e3e">IMPORTANTE - LEIA</h3>
+          <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#e53e3e">+ Novo Aviso</button>
+        </div>
+        <div id="listaMural" style="padding:16px"></div>
+        <div class="vazio" id="vazioMural" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum aviso no mural</div>
+      </div>
+    </div>
+    <div id="viewAuditoria" style="display:none">
+      <div class="tabela-card card">
+        <div class="tabela-topo">
+          <h3>AUDITORIA - REGISTRO DE OPERACOES</h3>
+          <button class="btn btn-primario" onclick="carregarAuditoria()" style="font-size:12px;padding:6px 14px">Atualizar</button>
+        </div>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Data/Hora</th>
+                <th>Operador</th>
+                <th>Acao</th>
+                <th>Tipo</th>
+                <th>Alvo</th>
+                <th>Detalhes</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaAuditoria"></tbody>
+          </table>
+        </div>
+        <div class="vazio" id="vazioAuditoria" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum registro de auditoria</div>
+      </div>
+    </div>
   </main>
-  <div id="viewMural" style="display:none">
-    <div class="tabela-card card">
-      <div class="tabela-topo">
-        <h3 style="color:#e53e3e">IMPORTANTE - LEIA</h3>
-        <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#e53e3e">+ Novo Aviso</button>
-      </div>
-      <div id="listaMural" style="padding:16px"></div>
-      <div class="vazio" id="vazioMural" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum aviso no mural</div>
-    </div>
-  </div>
-  <div id="viewAuditoria" style="display:none">
-    <div class="tabela-card card">
-      <div class="tabela-topo">
-        <h3>AUDITORIA - REGISTRO DE OPERACOES</h3>
-        <button class="btn btn-primario" onclick="carregarAuditoria()" style="font-size:12px;padding:6px 14px">Atualizar</button>
-      </div>
-      <div class="tabela-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Operador</th>
-              <th>Acao</th>
-              <th>Tipo</th>
-              <th>Alvo</th>
-              <th>Detalhes</th>
-            </tr>
-          </thead>
-          <tbody id="tabelaAuditoria"></tbody>
-        </table>
-      </div>
-      <div class="vazio" id="vazioAuditoria" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum registro de auditoria</div>
-    </div>
-  </div>
   <footer>
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
     <span>Versão 2.0.0</span>
