@@ -1023,26 +1023,35 @@ async function verificarAuth() {
   if (!token) { window.location.href = 'login.html'; return false; }
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     try {
-      const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
-      if (res.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
-      if (!res.ok) { if (tentativa < 2) { await new Promise(r => setTimeout(r, 2000)); continue; } localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
-      const data = await res.json();
-      usuarioLogado = data.usuario;
-      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-      if (usuario.nome) {
-        document.getElementById('sidebarUsuario').textContent = usuario.nome;
-        document.getElementById('usuarioLogado').textContent = "Operador: " + usuario.nome;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(API + '/api/verificar-token', {
+        headers: { 'Authorization': 'Bearer ' + token },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.status === 401) {
+        localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
+        window.location.href = 'login.html'; return false;
       }
-      const empresa = localStorage.getItem('empresa') || '';
-      if(empresa){
-        document.getElementById('sidebarEmpresa').textContent = empresa;
-        document.getElementById('footerEmpresa').textContent = 'Sistema de Controle de Portaria - ' + empresa;
-        document.title = empresa + ' | Controle de Portaria';
+      if (res.ok) {
+        const data = await res.json();
+        usuarioLogado = data.usuario;
+        const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+        if (usuario.nome) {
+          document.getElementById('sidebarUsuario').textContent = usuario.nome;
+          document.getElementById('usuarioLogado').textContent = "Operador: " + usuario.nome;
+        }
+        const empresa = localStorage.getItem('empresa') || '';
+        if(empresa){
+          document.getElementById('sidebarEmpresa').textContent = empresa;
+          document.getElementById('footerEmpresa').textContent = 'Sistema de Controle de Portaria - ' + empresa;
+          document.title = empresa + ' | Controle de Portaria';
+        }
+        return true;
       }
-      return true;
-    } catch {
-      if (tentativa < 2) await new Promise(r => setTimeout(r, 2000));
-    }
+    } catch(e) { console.log('Tentativa ' + (tentativa+1) + ' falhou:', e.message); }
+    if (tentativa < 2) await new Promise(r => setTimeout(r, 2000));
   }
   localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
   window.location.href = 'login.html'; return false;
