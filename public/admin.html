@@ -673,6 +673,7 @@ async function carregarClientes(){
             <button class="btn-acao" style="background:#805ad5" onclick="verDetalhes(${c.id})">Detalhes</button>
             <button class="btn-acao btn-editar" onclick="abrirModalEditar(${c.id})">Editar</button>
             <button class="btn-acao" style="background:${c.ativo ? '#e53e3e' : '#38a169'}" onclick="ativarDesativarCliente(${c.id}, ${!c.ativo})">${c.ativo ? 'Desativar' : 'Ativar'}</button>
+            <button class="btn-acao btn-excluir" onclick="excluirCliente(${c.id})">Excluir</button>
           </div>
         </td>
       </tr>`;
