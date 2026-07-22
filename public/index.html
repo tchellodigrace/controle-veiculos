@@ -1043,6 +1043,8 @@ async function atualizarPreRegistros(){
     card.style.display = "block";
     const tbody = document.getElementById("tabelaPre");
     tbody.innerHTML = "";
+    const iconConfirmar = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>`;
+    const iconExcluir = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
@@ -1053,9 +1055,11 @@ async function atualizarPreRegistros(){
         <td>${d.finalidade || "—"}</td>
         <td>${d.cnh || "—"}</td>
         <td>${d.nota || "—"}</td>
-        <td class="acoes">
-          <button class="btn-confirmar" onclick="confirmarPreRegistro(${d.id})" title="Confirmar chegada">&#x2714; Confirmar</button>
-          <button class="btn-excluir" onclick="excluirPreRegistro(${d.id})" title="Excluir">&#x1F5D1;&#xFE0F;</button>
+        <td>
+          <div class="acoes-tabela">
+            <button class="icon-btn btn-saida" title="Confirmar chegada" onclick="confirmarPreRegistro(${d.id})">${iconConfirmar}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluirPreRegistro(${d.id})">${iconExcluir}</button>
+          </div>
         </td>
       </tr>`;
     });
@@ -1657,6 +1661,8 @@ async function atualizarPreRegistrosVisitantes(){
     card.style.display = "block";
     const tbody = document.getElementById("tabelaPreVisitantes");
     tbody.innerHTML = "";
+    const iconConfirmar = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>`;
+    const iconExcluir = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
@@ -1666,9 +1672,11 @@ async function atualizarPreRegistrosVisitantes(){
         <td><b>${d.placa || "—"}</b></td>
         <td>${d.nota || "—"}</td>
         <td>${d.obs || "—"}</td>
-        <td class="acoes">
-          <button class="btn-confirmar" onclick="confirmarPreRegistroVisitante(${d.id})" title="Confirmar chegada">&#x2714; Confirmar</button>
-          <button class="btn-excluir" onclick="excluirPreRegistroVisitante(${d.id})" title="Excluir">&#x1F5D1;&#xFE0F;</button>
+        <td>
+          <div class="acoes-tabela">
+            <button class="icon-btn btn-saida" title="Confirmar chegada" onclick="confirmarPreRegistroVisitante(${d.id})">${iconConfirmar}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluirPreRegistroVisitante(${d.id})">${iconExcluir}</button>
+          </div>
         </td>
       </tr>`;
     });
