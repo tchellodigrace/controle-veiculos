@@ -151,6 +151,7 @@
     <h2>Pré-registro enviado!</h2>
     <p>Seus dados foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
+    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
 </div>
@@ -256,6 +257,17 @@ function mostrarTelaForm(){
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeVisitante").textContent = visitanteLogado?.nome || "Visitante";
+}
+
+function sair(){
+  tokenVisitante = null;
+  visitanteLogado = null;
+  localStorage.removeItem('tokenVisitante_' + CLIENTE_ID);
+  localStorage.removeItem('visitanteLogado_' + CLIENTE_ID);
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaForm").style.display = "none";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formLogin").reset();
 }
 
 async function enviar(e){

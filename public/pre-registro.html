@@ -171,6 +171,7 @@
     <h2>Pré-registro enviado!</h2>
     <p>Seus dados já foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
+    <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
 </div>
@@ -285,6 +286,17 @@ async function carregarEmpresas(){
     var dl = document.getElementById("listaEmpresas");
     dl.innerHTML = lista.map(function(e){ return '<option value="' + e.empresa + '">'; }).join("");
   } catch(ex) {}
+}
+
+function sair(){
+  tokenMotorista = null;
+  motoristaLogado = null;
+  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
+  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaForm").style.display = "none";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formLogin").reset();
 }
 
 async function enviar(e){
