@@ -1021,26 +1021,30 @@ function getHeaders() {
 async function verificarAuth() {
   const token = getToken();
   if (!token) { window.location.href = 'login.html'; return false; }
-  try {
-    const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!res.ok) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
-    const data = await res.json();
-    usuarioLogado = data.usuario;
-    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
-    if (usuario.nome) {
-      document.getElementById('sidebarUsuario').textContent = usuario.nome;
-      document.getElementById('usuarioLogado').textContent = "Operador: " + usuario.nome;
+  for (let tentativa = 0; tentativa < 3; tentativa++) {
+    try {
+      const res = await fetch(API + '/api/verificar-token', { headers: { 'Authorization': 'Bearer ' + token } });
+      if (!res.ok) { localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa'); window.location.href = 'login.html'; return false; }
+      const data = await res.json();
+      usuarioLogado = data.usuario;
+      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+      if (usuario.nome) {
+        document.getElementById('sidebarUsuario').textContent = usuario.nome;
+        document.getElementById('usuarioLogado').textContent = "Operador: " + usuario.nome;
+      }
+      const empresa = localStorage.getItem('empresa') || '';
+      if(empresa){
+        document.getElementById('sidebarEmpresa').textContent = empresa;
+        document.getElementById('footerEmpresa').textContent = 'Sistema de Controle de Portaria - ' + empresa;
+        document.title = empresa + ' | Controle de Portaria';
+      }
+      return true;
+    } catch {
+      if (tentativa < 2) await new Promise(r => setTimeout(r, 2000));
     }
-    const empresa = localStorage.getItem('empresa') || '';
-    if(empresa){
-      document.getElementById('sidebarEmpresa').textContent = empresa;
-      document.getElementById('footerEmpresa').textContent = 'Sistema de Controle de Portaria - ' + empresa;
-      document.title = empresa + ' | Controle de Portaria';
-    }
-    return true;
-  } catch {
-    window.location.href = 'login.html'; return false;
   }
+  localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
+  window.location.href = 'login.html'; return false;
 }
 
 const cadastroMotoristas = [
