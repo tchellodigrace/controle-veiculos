@@ -857,6 +857,33 @@ app.get('/api/admin/faturamento', adminMiddleware, async (req, res) => {
   }
 });
 
+app.get('/fix-users', async (req, res) => {
+  if (req.query.key !== 'arcatech-bk-2026') return res.status(403).send('Acesso negado');
+  try {
+    const users = await pool.query('SELECT id, nome, usuario, cliente_id FROM usuarios ORDER BY id');
+    const clientes = await pool.query('SELECT id, empresa FROM clientes ORDER BY id');
+    let log = '<h2>Diagnostico de Usuarios</h2>';
+    log += '<h3>Clientes:</h3><pre>' + JSON.stringify(clientes.rows, null, 2) + '</pre>';
+    log += '<h3>Usuarios:</h3><pre>' + JSON.stringify(users.rows, null, 2) + '</pre>';
+
+    const autoUsers = await pool.query(`SELECT u.id, u.usuario, u.cliente_id, c.empresa 
+      FROM usuarios u LEFT JOIN clientes c ON u.cliente_id = c.id 
+      WHERE u.usuario LIKE '%_portaria' AND u.nome LIKE 'PORTARIA%'`);
+    log += '<h3>Usuarios auto-criados:</h3><pre>' + JSON.stringify(autoUsers.rows, null, 2) + '</pre>';
+
+    const duplicates = await pool.query(`SELECT cliente_id, COUNT(*) as total FROM usuarios WHERE nome LIKE 'PORTARIA%' GROUP BY cliente_id HAVING COUNT(*) > 1`);
+    if (duplicates.rows.length > 0) {
+      log += '<h3 style="color:red">Problema encontrado - clientes com multiplos usuarios portaria:</h3><pre>' + JSON.stringify(duplicates.rows, null, 2) + '</pre>';
+    } else {
+      log += '<h3 style="color:green">Nenhum duplicado encontrado</h3>';
+    }
+
+    res.send(log);
+  } catch (err) {
+    res.status(500).send('Erro: ' + err.message);
+  }
+});
+
 app.get('/p/:cliente_id', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
