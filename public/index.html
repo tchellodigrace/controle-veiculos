@@ -139,16 +139,16 @@
   @keyframes badgePulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
   .nav-item svg{ width:16px; height:16px; flex-shrink:0; }
   .nav-aviso{
-    background:rgba(229,62,62,0.15);
-    color:#feb2b2;
-    border-left:3px solid #e53e3e;
+    background:rgba(153,0,0,0.15);
+    color:#e8a0a0;
+    border-left:3px solid #990000;
     font-weight:700;
     font-size:11.5px;
     letter-spacing:0.3px;
     margin-bottom:6px;
   }
-  .nav-aviso:hover{ background:rgba(229,62,62,0.25); color:#fff; }
-  .nav-aviso.active{ background:rgba(229,62,62,0.25); color:#fff; border-left:3px solid #fc8181; }
+  .nav-aviso:hover{ background:rgba(153,0,0,0.25); color:#fff; }
+  .nav-aviso.active{ background:rgba(153,0,0,0.25); color:#fff; border-left:3px solid #cc4444; }
   .sidebar-footer{
     margin-top:auto;
     border-top:1px solid rgba(255,255,255,0.12);
@@ -856,7 +856,7 @@
         <label>Mensagem</label>
         <textarea id="muralTexto" rows="5" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:13px" placeholder="Escreva a informacao importante aqui..."></textarea>
       </div>
-      <button class="btn btn-primario" style="width:100%;background:#990000" onclick="salvarMural()">Publicar</button>
+      <button class="btn btn-primario" onclick="salvarMural()">Publicar</button>
     </div>
   </div>
 </div>
