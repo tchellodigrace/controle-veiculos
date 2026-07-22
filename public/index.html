@@ -796,7 +796,7 @@
       <div class="tabela-card card">
         <div class="tabela-topo">
           <h3 style="color:#e53e3e">AVISOS</h3>
-          <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#e53e3e">+ Novo Aviso</button>
+          <button class="btn btn-primario" onclick="abrirModalMural()" style="font-size:12px;padding:6px 14px;background:#990000">+ Novo Aviso</button>
         </div>
         <div id="listaMural" style="padding:16px"></div>
         <div class="vazio" id="vazioMural" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum aviso no mural</div>
@@ -835,9 +835,9 @@
 
 <div class="modal-overlay" id="modalMural">
   <div class="modal-content">
-    <div class="modal-header" style="background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff">
+    <div class="modal-header">
       <h2>Novo Aviso</h2>
-      <button class="modal-close" onclick="fecharModal('modalMural')" style="color:#fff">&times;</button>
+      <button class="modal-close" onclick="fecharModal('modalMural')">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="muralEditId">
@@ -856,7 +856,7 @@
         <label>Mensagem</label>
         <textarea id="muralTexto" rows="5" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:13px" placeholder="Escreva a informacao importante aqui..."></textarea>
       </div>
-      <button class="btn btn-primario" style="width:100%;background:#e53e3e" onclick="salvarMural()">Publicar</button>
+      <button class="btn btn-primario" style="width:100%;background:#990000" onclick="salvarMural()">Publicar</button>
     </div>
   </div>
 </div>
