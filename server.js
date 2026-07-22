@@ -913,7 +913,8 @@ async function iniciar() {
       "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''",
       "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS obs VARCHAR(500) DEFAULT ''",
-      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS posicao INTEGER DEFAULT 0"
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS posicao INTEGER DEFAULT 0",
+      "CREATE TABLE IF NOT EXISTS faturamento (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, valor DECIMAL(10,2) NOT NULL, descricao VARCHAR(200) DEFAULT '', data_pagamento DATE DEFAULT CURRENT_DATE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}
