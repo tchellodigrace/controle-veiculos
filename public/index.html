@@ -479,8 +479,8 @@
       <p id="usuarioLogado">Operador: ---</p>
     </div>
     <div class="relogio">
-      <div id="dataAtual">&#x1F4C5; --/--/----</div>
-      <div id="horaAtual">&#x1F550; --:--:--</div>
+      <div id="dataAtual">📅 --/--/----</div>
+      <div id="horaAtual">🕐 --:--:--</div>
     </div>
   </header>
   <aside>
@@ -1183,8 +1183,8 @@ function imprimir(){ window.print(); }
 
 function atualizarRelogio(){
   const agora = new Date();
-  document.getElementById("dataAtual").textContent = "&#x1F4C5; " + agora.toLocaleDateString("pt-BR");
-  document.getElementById("horaAtual").textContent = "&#x1F550; " + agora.toLocaleTimeString("pt-BR");
+  document.getElementById("dataAtual").textContent = "\u{1F4C5} " + agora.toLocaleDateString("pt-BR");
+  document.getElementById("horaAtual").textContent = "\u{1F550} " + agora.toLocaleTimeString("pt-BR");
   document.getElementById("tituloRegistros").textContent =
     "REGISTROS DO DIA - " + agora.toLocaleDateString("pt-BR");
 }
