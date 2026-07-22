@@ -709,12 +709,12 @@ app.post('/api/admin/clientes', adminMiddleware, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const { empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio } = req.body;
+    const { empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio } = req.body;
     if (!empresa) return res.status(400).json({ erro: 'Empresa é obrigatória' });
     const cliResult = await client.query(
-      `INSERT INTO clientes (empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [empresa.toUpperCase(), cnpj||'', responsavel||'', email||'', telefone||'', plano||'basico', valor_mensal||0, data_expiracao||null, dominio||'']
+      `INSERT INTO clientes (empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [empresa.toUpperCase(), cnpj||'', responsavel||'', email||'', telefone||'', telefone_fixo||'', plano||'basico', valor_mensal||0, data_expiracao||null, dominio||'']
     );
     const cliente = cliResult.rows[0];
     const userLogin = empresa.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 20) + '_portaria';
@@ -741,13 +741,14 @@ app.post('/api/admin/clientes', adminMiddleware, async (req, res) => {
 
 app.put('/api/admin/clientes/:id', adminMiddleware, async (req, res) => {
   try {
-    const { empresa, cnpj, responsavel, email, telefone, plano, valor_mensal, data_expiracao, dominio, ativo } = req.body;
+    const { empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo } = req.body;
     const updates = []; const params = [];
     if (empresa !== undefined) { params.push(empresa.toUpperCase()); updates.push(`empresa = $${params.length}`); }
     if (cnpj !== undefined) { params.push(cnpj); updates.push(`cnpj = $${params.length}`); }
     if (responsavel !== undefined) { params.push(responsavel); updates.push(`responsavel = $${params.length}`); }
     if (email !== undefined) { params.push(email); updates.push(`email = $${params.length}`); }
     if (telefone !== undefined) { params.push(telefone); updates.push(`telefone = $${params.length}`); }
+    if (telefone_fixo !== undefined) { params.push(telefone_fixo); updates.push(`telefone_fixo = $${params.length}`); }
     if (plano !== undefined) { params.push(plano); updates.push(`plano = $${params.length}`); }
     if (valor_mensal !== undefined) { params.push(valor_mensal); updates.push(`valor_mensal = $${params.length}`); }
     if (data_expiracao !== undefined) { params.push(data_expiracao); updates.push(`data_expiracao = $${params.length}`); }
@@ -883,7 +884,8 @@ async function iniciar() {
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
-      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE"
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

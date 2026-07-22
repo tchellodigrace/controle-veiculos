@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS clientes (
   responsavel VARCHAR(200) DEFAULT '',
   email VARCHAR(200) DEFAULT '',
   telefone VARCHAR(20) DEFAULT '',
+  telefone_fixo VARCHAR(20) DEFAULT '',
   plano VARCHAR(50) DEFAULT 'basico',
   valor_mensal DECIMAL(10,2) DEFAULT 0,
   data_inicio DATE DEFAULT CURRENT_DATE,

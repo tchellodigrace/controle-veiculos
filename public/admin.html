@@ -182,8 +182,13 @@
             <input type="email" id="fEmail" placeholder="email@empresa.com">
           </div>
           <div class="form-group">
-            <label>Telefone</label>
+            <label>WhatsApp *</label>
             <input type="text" id="fTelefone" placeholder="(00) 00000-0000">
+            <small style="font-size:10px;color:#8b93a1">N&#250;mero para envio de informa&#231;&#245;es via WhatsApp</small>
+          </div>
+          <div class="form-group">
+            <label>Telefone Fixo</label>
+            <input type="text" id="fTelefoneFixo" placeholder="(00) 0000-0000">
           </div>
         </div>
         <div class="form-row">
@@ -287,7 +292,7 @@ function fecharModal(modal){ document.getElementById(modal).classList.remove('mo
 function abrirModalNovo(){
   document.getElementById('editId').value = '';
   document.getElementById('tituloModal').textContent = 'Novo Cliente';
-  ['fEmpresa','fCnpj','fResponsavel','fEmail','fTelefone','fValor','fDominio'].forEach(id => document.getElementById(id).value = '');
+  ['fEmpresa','fCnpj','fResponsavel','fEmail','fTelefone','fTelefoneFixo','fValor','fDominio'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('fPlano').value = 'basico';
   document.getElementById('fExpiracao').value = '';
   abrirModal('modalCliente');
@@ -306,6 +311,7 @@ async function abrirModalEditar(id){
     document.getElementById('fResponsavel').value = c.responsavel;
     document.getElementById('fEmail').value = c.email;
     document.getElementById('fTelefone').value = c.telefone;
+    document.getElementById('fTelefoneFixo').value = c.telefone_fixo || '';
     document.getElementById('fPlano').value = c.plano;
     document.getElementById('fValor').value = c.valor_mensal;
     document.getElementById('fExpiracao').value = c.data_expiracao ? c.data_expiracao.substring(0,10) : '';
@@ -323,6 +329,7 @@ async function salvarCliente(e){
     responsavel: document.getElementById('fResponsavel').value.trim(),
     email: document.getElementById('fEmail').value.trim(),
     telefone: document.getElementById('fTelefone').value.trim(),
+    telefone_fixo: document.getElementById('fTelefoneFixo').value.trim(),
     plano: document.getElementById('fPlano').value,
     valor_mensal: parseFloat(document.getElementById('fValor').value) || 0,
     data_expiracao: document.getElementById('fExpiracao').value || null,
@@ -456,6 +463,9 @@ async function verDetalhes(id){
         <div><b>Plano:</b> ${c.plano}</div>
         <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/mes</div>
         <div><b>Expira:</b> ${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</div>
+        <div><b>E-mail:</b> ${c.email || '—'}</div>
+        <div><b>WhatsApp:</b> ${c.telefone || '—'}</div>
+        ${c.telefone_fixo ? '<div><b>Tel. Fixo:</b> ' + c.telefone_fixo + '</div>' : ''}
         <div><b>Status:</b> ${c.ativo ? 'Ativo' : 'Inativo'}</div>
       </div>
       ${credenciaisHtml}
