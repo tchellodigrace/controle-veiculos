@@ -1018,9 +1018,13 @@ function getHeaders() {
   };
 }
 
+function mostrarErroAuth(msg) {
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:#fff;font-family:sans-serif;text-align:center;padding:20px"><div style="background:#2d2d44;padding:40px;border-radius:12px;max-width:500px"><h1 style="color:#e53e3e;margin-bottom:15px">⚠️ Erro de Autenticação</h1><p style="font-size:18px;margin-bottom:20px">' + msg + '</p><p style="color:#999;font-size:14px;margin-bottom:20px">Abra o Console (F12) e envie uma captura de tela.</p><button onclick="localStorage.clear();window.location.href=\'login.html\'" style="padding:12px 30px;background:#4FB0C6;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">Voltar ao Login</button></div></div>';
+}
+
 async function verificarAuth() {
   const token = getToken();
-  if (!token) { window.location.href = 'login.html'; return false; }
+  if (!token) { mostrarErroAuth('Token não encontrado. Faça login novamente.'); return false; }
   for (let tentativa = 0; tentativa < 3; tentativa++) {
     try {
       const controller = new AbortController();
@@ -1030,12 +1034,14 @@ async function verificarAuth() {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
+      console.log('[AUTH] Tentativa ' + (tentativa+1) + ': status=' + res.status + ' ok=' + res.ok);
       if (res.status === 401) {
         localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
-        window.location.href = 'login.html'; return false;
+        mostrarErroAuth('Sessão expirada (401). Faça login novamente.'); return false;
       }
       if (res.ok) {
         const data = await res.json();
+        console.log('[AUTH] Sucesso:', data);
         usuarioLogado = data.usuario;
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         if (usuario.nome) {
@@ -1050,11 +1056,14 @@ async function verificarAuth() {
         }
         return true;
       }
-    } catch(e) { console.log('Tentativa ' + (tentativa+1) + ' falhou:', e.message); }
+      mostrarErroAuth('Servidor retornou erro HTTP ' + res.status + '. Tentativa ' + (tentativa+1) + '/3');
+    } catch(e) {
+      console.log('[AUTH] Tentativa ' + (tentativa+1) + ' falhou:', e.message);
+      mostrarErroAuth('Falha na conexão: ' + e.message + '. Tentativa ' + (tentativa+1) + '/3');
+    }
     if (tentativa < 2) await new Promise(r => setTimeout(r, 2000));
   }
-  localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
-  window.location.href = 'login.html'; return false;
+  mostrarErroAuth('Todas as tentativas falharam. Verifique sua conexão.');
 }
 
 const cadastroMotoristas = [
@@ -1549,30 +1558,35 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 });
 
 (async function init(){
-  if (!await verificarAuth()) return;
-  carregarDatalist();
-  carregarDatalistEmpresas();
-  carregarDatalistVisitantes();
-  document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
-  document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
-  document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
-  document.getElementById("cnh").addEventListener("blur", autoPreencherCnh);
-  document.getElementById("vNome").addEventListener("blur", autoPreencherVisitanteNome);
-  document.getElementById("vCpf").addEventListener("blur", autoPreencherVisitanteCpf);
-  document.getElementById("vEmpresa").addEventListener("blur", autoPreencherVisitanteEmpresa);
-  if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
-  if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
-  if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
-  if(localStorage.getItem("activeView") === "mural") mostrarMural();
-  atualizarRelogio();
-  setInterval(atualizarRelogio, 1000);
-  atualizar();
-  setInterval(atualizar, 30000);
-  setInterval(atualizarVisitantes, 30000);
-  setInterval(atualizarPreRegistros, 30000);
-  atualizarPreRegistros();
-  verificarBadges();
-  setInterval(verificarBadges, 5000);
+  try {
+    if (!await verificarAuth()) return;
+    carregarDatalist();
+    carregarDatalistEmpresas();
+    carregarDatalistVisitantes();
+    document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
+    document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
+    document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
+    document.getElementById("cnh").addEventListener("blur", autoPreencherCnh);
+    document.getElementById("vNome").addEventListener("blur", autoPreencherVisitanteNome);
+    document.getElementById("vCpf").addEventListener("blur", autoPreencherVisitanteCpf);
+    document.getElementById("vEmpresa").addEventListener("blur", autoPreencherVisitanteEmpresa);
+    if(localStorage.getItem("sidebarCollapsed") === "true") document.querySelector(".app").classList.add("sidebar-collapsed");
+    if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
+    if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
+    if(localStorage.getItem("activeView") === "mural") mostrarMural();
+    atualizarRelogio();
+    setInterval(atualizarRelogio, 1000);
+    atualizar();
+    setInterval(atualizar, 30000);
+    setInterval(atualizarVisitantes, 30000);
+    setInterval(atualizarPreRegistros, 30000);
+    atualizarPreRegistros();
+    verificarBadges();
+    setInterval(verificarBadges, 5000);
+  } catch(e) {
+    console.error('[INIT] Erro:', e);
+    mostrarErroAuth('Erro ao inicializar: ' + e.message);
+  }
 })();
 
 let badgesVeiculosAnterior = 0;
