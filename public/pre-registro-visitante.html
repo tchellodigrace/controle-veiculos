@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
-<title>Pr&#233;-Registro Visitante</title>
+<title>Pré-Registro Visitante</title>
 <style>
   *{ box-sizing:border-box; }
   body{
@@ -72,8 +72,8 @@
     <div id="msgSucesso" class="sucesso-msg" style="display:none"></div>
     <form id="formLogin" onsubmit="fazerLogin(event)">
       <div class="campo">
-        <label>Usu&#225;rio</label>
-        <input type="text" id="loginUsuario" placeholder="Seu usu&#225;rio" required>
+        <label>Usuário</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usuário" required>
       </div>
       <div class="campo">
         <label>Senha</label>
@@ -81,14 +81,14 @@
       </div>
       <button type="submit" id="btnLogin">Entrar</button>
     </form>
-    <p class="info">N&#227;o tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#2a6f7e;font-weight:700">Criar conta</a></p>
+    <p class="info">Não tem conta? <a href="#" onclick="mostrarTelaCadastro(event)" style="color:#2a6f7e;font-weight:700">Criar conta</a></p>
   </div>
 
   <div id="telaCadastro" style="display:none">
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
     </div>
-    <h1 id="tituloCadastro">Pr&#233;-Registro Visitante</h1>
+    <h1 id="tituloCadastro">Pré-Registro Visitante</h1>
     <p class="sub">Preencha seus dados para se cadastrar</p>
     <div class="erro-msg" id="erroCadastro"></div>
     <form id="formCadastro" onsubmit="criarConta(event)">
@@ -105,8 +105,8 @@
         <input type="text" id="cadEmpresa" placeholder="Sua empresa">
       </div>
       <div class="campo">
-        <label>Usu&#225;rio *</label>
-        <input type="text" id="cadUsuario" placeholder="Escolha um usu&#225;rio" required>
+        <label>Usuário *</label>
+        <input type="text" id="cadUsuario" placeholder="Escolha um usuário" required>
       </div>
       <div class="campo">
         <label>Senha *</label>
@@ -114,7 +114,7 @@
       </div>
       <button type="submit" id="btnCadastrar">Criar Conta</button>
     </form>
-    <p class="info">J&#225; tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#2a6f7e;font-weight:700">Voltar ao login</a></p>
+    <p class="info">Já tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#2a6f7e;font-weight:700">Voltar ao login</a></p>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -123,7 +123,7 @@
       <button class="sair" onclick="sair()">Sair</button>
     </div>
     <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    <h1>Pr&#233;-Registro Visitante</h1>
+    <h1>Pré-Registro Visitante</h1>
     <p class="sub">Preencha os dados da visita</p>
     <div class="erro-msg" id="erroForm"></div>
     <form id="formPre" onsubmit="enviar(event)">
@@ -136,7 +136,7 @@
         </select>
       </div>
       <div class="campo">
-        <label>Placa do Ve&#237;culo *</label>
+        <label>Placa do Veículo *</label>
         <input type="text" id="vPlaca" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
       </div>
       <div class="campo">
@@ -144,18 +144,18 @@
         <input type="text" id="vNota" placeholder="Informe a nota fiscal / RT">
       </div>
       <div class="campo">
-        <label>Observa&#231;&#245;es</label>
-        <input type="text" id="vObs" placeholder="Informa&#231;&#245;es adicionais">
+        <label>Observações</label>
+        <input type="text" id="vObs" placeholder="Informações adicionais">
       </div>
-      <button type="submit" id="btnEnviar">Enviar Pr&#233;-Registro</button>
+      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
     </form>
   </div>
 
   <div class="sucesso" id="sucesso">
     <div class="icone">&#10004;</div>
-    <h2>Pr&#233;-registro enviado!</h2>
+    <h2>Pré-registro enviado!</h2>
     <p>Seus dados foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
-    <button onclick="resetar()">Novo Pr&#233;-Registro</button>
+    <button onclick="resetar()">Novo Pré-Registro</button>
     <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
 
@@ -168,7 +168,7 @@ var CLIENTE_ID = params.get('cliente_id');
 var EMPRESA_URL = params.get('empresa') || '';
 
 if(!CLIENTE_ID){
-  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inv&#225;lido</h2><p style="color:#666">Este link n&#227;o &#233; v&#225;lido. Solicite o link correto &#224; portaria.</p></div>';
+  document.querySelector('.card').innerHTML = '<div style="text-align:center;padding:40px"><h2 style="color:#cc0000">Link inválido</h2><p style="color:#666">Este link não é válido. Solicite o link correto à portaria.</p></div>';
 }
 
 var tokenVisitante = localStorage.getItem('tokenVisitante_' + CLIENTE_ID);
@@ -181,7 +181,7 @@ if(tokenVisitante && visitanteLogado){
 if(EMPRESA_URL){
   var nomeEmpresa = decodeURIComponent(EMPRESA_URL);
   document.getElementById('subLogin').textContent = nomeEmpresa;
-  document.getElementById('tituloCadastro').textContent = 'Pr&#233;-Registro Visitante - ' + nomeEmpresa;
+  document.getElementById('tituloCadastro').textContent = 'Pré-Registro Visitante - ' + nomeEmpresa;
 }
 
 function mostrarErro(id, msg){
@@ -211,7 +211,7 @@ async function criarConta(e){
   var empresa = document.getElementById("cadEmpresa").value.trim();
   var usuario = document.getElementById("cadUsuario").value.trim();
   var senha = document.getElementById("cadSenha").value;
-  if(!nome || !usuario || !senha){ mostrarErro("erroCadastro", "Preencha nome, usu&#225;rio e senha."); return; }
+  if(!nome || !usuario || !senha){ mostrarErro("erroCadastro", "Preencha nome, usuário e senha."); return; }
   var btn = document.getElementById("btnCadastrar");
   btn.disabled = true; btn.textContent = "Criando conta...";
   try {
@@ -228,14 +228,14 @@ async function criarConta(e){
     msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
     msg.style.display = "block";
     btn.disabled = false; btn.textContent = "Criar Conta";
-  } catch(ex) { mostrarErro("erroCadastro", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+  } catch(ex) { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
 }
 
 async function fazerLogin(e){
   e.preventDefault(); ocultarErro("erroLogin");
   var usuario = document.getElementById("loginUsuario").value.trim();
   var senha = document.getElementById("loginSenha").value;
-  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usu&#225;rio e senha."); return; }
+  if(!usuario || !senha){ mostrarErro("erroLogin", "Preencha usuário e senha."); return; }
   var btn = document.getElementById("btnLogin");
   btn.disabled = true; btn.textContent = "Entrando...";
   try {
@@ -253,7 +253,7 @@ async function fazerLogin(e){
     document.getElementById("formLogin").reset();
     btn.disabled = false; btn.textContent = "Entrar";
     mostrarTelaForm();
-  } catch(ex) { mostrarErro("erroLogin", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Entrar"; }
+  } catch(ex) { mostrarErro("erroLogin", "Erro de conexão"); btn.disabled = false; btn.textContent = "Entrar"; }
 }
 
 function mostrarTelaForm(){
@@ -280,7 +280,7 @@ async function enviar(e){
   var tipo = document.getElementById("vTipo").value;
   var placa = document.getElementById("vPlaca").value.trim().toUpperCase();
   if(!tipo){ mostrarErro("erroForm", "Informe o tipo (Entrega ou Coleta)."); return; }
-  if(!placa){ mostrarErro("erroForm", "Informe a placa do ve&#237;culo."); return; }
+  if(!placa){ mostrarErro("erroForm", "Informe a placa do veículo."); return; }
   var btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   var payload = {
@@ -300,11 +300,11 @@ async function enviar(e){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if(!res.ok){ var err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro"; return; }
+    if(!res.ok){ var err = await res.json(); mostrarErro("erroForm", err.erro || "Erro ao enviar"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; return; }
     document.getElementById("formPre").style.display = "none";
     document.getElementById("sucesso").style.display = "block";
-    btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro";
-  } catch(ex) { mostrarErro("erroForm", "Erro de conex&#227;o"); btn.disabled = false; btn.textContent = "Enviar Pr&#233;-Registro"; }
+    btn.disabled = false; btn.textContent = "Enviar Pré-Registro";
+  } catch(ex) { mostrarErro("erroForm", "Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
 }
 
 function resetar(){
@@ -312,7 +312,7 @@ function resetar(){
   document.getElementById("formPre").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("btnEnviar").disabled = false;
-  document.getElementById("btnEnviar").textContent = "Enviar Pr&#233;-Registro";
+  document.getElementById("btnEnviar").textContent = "Enviar Pré-Registro";
 }
 
 document.getElementById("vPlaca").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
