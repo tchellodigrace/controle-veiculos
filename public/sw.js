@@ -1,6 +1,5 @@
-const CACHE = 'controle-v1';
+const CACHE = 'controle-v2';
 const PRECACHE = [
-  '/',
   '/pre-registro.html',
   '/pre-registro-visitante.html',
   '/manifest.json'

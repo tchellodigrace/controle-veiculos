@@ -8,7 +8,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'oceanica-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || 'arcatech-controle-portaria-2026-secret-key';
 
 app.use(cors());
 app.use(express.json());
@@ -72,6 +72,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.get('/api/verificar-token', authMiddleware, (req, res) => {
+  console.log(`[VERIFICAR-TOKEN] OK usuario=${req.usuario.usuario} cliente=${req.usuario.cliente_id}`);
   res.json({ valido: true, usuario: req.usuario });
 });
 
