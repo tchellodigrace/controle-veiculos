@@ -319,14 +319,14 @@ app.get('/api/visitantes', authMiddleware, async (req, res) => {
 
 app.post('/api/visitantes', authMiddleware, async (req, res) => {
   try {
-    const { nome, cpf, empresa, tipo, placa, nota, hora: clientHora } = req.body;
+    const { nome, cpf, empresa, tipo, placa, nota, obs, hora: clientHora } = req.body;
     if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
     const hora = clientHora || new Date().toLocaleTimeString('pt-BR');
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, entrada)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [cid, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', hora]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [cid, nome.toUpperCase(), cpf||'', empresa||'', tipo||'', (placa||'').toUpperCase(), nota||'', obs||'', hora]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -587,9 +587,9 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, async (r
     const hora = req.body.hora || new Date().toLocaleTimeString('pt-BR');
     const hoje = req.body.data || new Date().toLocaleDateString('en-CA');
     const visitante = await pool.query(
-      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, entrada, data_registro)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [cid, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', hora, hoje]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, data_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [cid, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', d.obs||'', hora, hoje]
     );
     await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
     res.status(201).json(visitante.rows[0]);
@@ -903,7 +903,8 @@ async function iniciar() {
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''"
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS obs VARCHAR(500) DEFAULT ''"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

@@ -707,6 +707,10 @@
               <label>Nota Fiscal / RT</label>
               <input id="vNota" placeholder="Nota fiscal / RT">
             </div>
+            <div class="campo campo-obs">
+              <label>Observações</label>
+              <input id="vObs" placeholder="Informações adicionais">
+            </div>
           </div>
           <div class="acoes-form">
             <button class="btn btn-primario" onclick="registrarVisitante()">
@@ -757,6 +761,7 @@
                 <th>Tipo</th>
                 <th>Placa</th>
                 <th>Nota/RT</th>
+                <th>Obs</th>
                 <th>Entrada</th>
                 <th>Saída</th>
                 <th>Ações</th>
@@ -1703,6 +1708,7 @@ async function registrarVisitante(){
     tipo: document.getElementById("vTipo").value,
     placa: document.getElementById("vPlaca").value.trim().toUpperCase(),
     nota: document.getElementById("vNota").value.trim(),
+    obs: document.getElementById("vObs").value.trim(),
     hora: new Date().toLocaleTimeString('pt-BR')
   };
   try {
@@ -1721,6 +1727,7 @@ function limparVisitante(){
   document.getElementById("vTipo").value = "";
   document.getElementById("vPlaca").value = "";
   document.getElementById("vNota").value = "";
+  document.getElementById("vObs").value = "";
   document.getElementById("vNome").focus();
 }
 async function atualizarVisitantes(){
@@ -1739,11 +1746,11 @@ async function atualizarVisitantes(){
         <td>${d.tipo || "—"}</td>
         <td><b>${d.placa || "—"}</b></td>
         <td>${d.nota || "—"}</td>
+        <td>${d.obs || "—"}</td>
         <td>${d.entrada}</td>
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
         <td class="acoes">
-          ${d.saida ? '' : `<button class="btn-saida" onclick="saidaVisitante(${d.id})" title="Registrar Saída">&#x1F6AA;</button>`}
-          <button class="btn-excluir" onclick="excluirVisitante(${d.id})" title="Excluir">&#x1F5D1;&#xFE0F;</button>
+          ${!d.saida ? `<button class="btn-saida" onclick="registrarSaidaVisitante(${d.id})">Saída</button>` : ''}
         </td>
       </tr>`;
     });
