@@ -1655,22 +1655,32 @@ app.get('/api/admin/export/:tabela', adminMiddleware, apiLimiter, async (req, re
 // === ROTA LOGISTICA (PUBLICA VIA TOKEN) ===
 app.get('/l/:token', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1 AND logistica_ativo = TRUE', [req.params.token]);
+    const result = await pool.query('SELECT id, empresa, logistica_token, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!result.rows.length) return res.status(404).send('Link invalido ou desativado');
     const c = result.rows[0];
-    res.redirect('/logistica.html?token=' + encodeURIComponent(c.logistica_token) + '&cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa));
+    if (!c.logistica_ativo) return res.status(404).send('Logistica desativada para esta empresa');
+    res.redirect(302, '/logistica.html?token=' + encodeURIComponent(c.logistica_token) + '&cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa) + '&_t=' + Date.now());
   } catch { res.status(500).send('Erro'); }
 });
 
 app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
   try {
-    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1 AND logistica_ativo = TRUE', [req.params.token]);
-    if (!cliente.rows.length) return res.status(404).json({ erro: 'Link invalido' });
+    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length) {
+      console.log('[LOGISTICA] Token nao encontrado:', req.params.token.substring(0, 8) + '...');
+      return res.status(404).json({ erro: 'Link invalido' });
+    }
+    if (!cliente.rows[0].logistica_ativo) {
+      console.log('[LOGISTICA] Token encontrado mas logistica INATIVA para cliente:', cliente.rows[0].id, cliente.rows[0].empresa);
+      return res.status(403).json({ erro: 'Logistica desativada para esta empresa' });
+    }
     const cid = cliente.rows[0].id;
+    console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros] = await Promise.all([
       pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours' ORDER BY atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid])
     ]);
+    console.log('[LOGISTICA] Resultado:', localizacoes.rows.length, 'motoristas,', preRegistros.rows.length, 'pre-registros');
     res.json({ empresa: cliente.rows[0].empresa, motoristas: localizacoes.rows, preRegistros: preRegistros.rows });
   } catch (err) {
     console.error('Erro API logistica:', err);

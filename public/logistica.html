@@ -164,8 +164,16 @@ var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e6
 function carregarDados(){
   if(!TOKEN) return;
   fetch(API + '/api/logistica/' + TOKEN)
-    .then(function(res){ return res.json(); })
+    .then(function(res){
+      if(!res.ok){
+        // Se deu erro, mostrar no painel
+        document.getElementById('listaContainer').innerHTML = '<div style="text-align:center;color:#cc0000;font-size:13px;padding:20px">Erro ao carregar dados (HTTP ' + res.status + '). Verifique o link ou recarregue a pagina.</div>';
+        return null;
+      }
+      return res.json();
+    })
     .then(function(data){
+      if(!data || data.erro) return;
       var motoristas = data.motoristas || [];
       var preRegistros = data.preRegistros || [];
 
