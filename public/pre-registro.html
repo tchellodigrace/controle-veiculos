@@ -149,6 +149,7 @@
   <div id="telaForm" style="display:none">
     <div class="topbar">
       <span class="nome" id="nomeMotorista">---</span>
+      <button onclick="sair()" style="padding:4px 12px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#666;font-size:11px;font-weight:600;cursor:pointer" title="Sair do sistema">Sair</button>
     </div>
     <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
     <h1>Pré-Registro</h1>
@@ -475,8 +476,8 @@ async function iniciarRastreamento(){
       if(gpsUltimaPos) enviarLocalizacao(gpsUltimaPos);
     }, 15000);
 
-    // Auto-stop ao fechar a pagina
-    window.addEventListener('beforeunload', pararRastreamento);
+    // Auto-stop e deslogar ao fechar a pagina
+    window.addEventListener('beforeunload', function(){ pararRastreamento(); sairSilencioso(); });
 
   } catch(erro){
     if(erro.code === 1){
@@ -533,17 +534,22 @@ function pararRastreamento(){
   if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
   gpsUltimaPos = null;
   document.getElementById('gpsStatus').classList.remove('ativo');
-  window.removeEventListener('beforeunload', pararRastreamento);
 }
 
 function mostrarTelaForm(){
   document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaAguardando").style.display = "none";
   document.getElementById("telaForm").style.display = "block";
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
   document.getElementById("gpsPanel").style.display = "block";
   carregarEmpresas();
+}
+
+function sairSilencioso(){
+  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
+  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
 }
 
 function sair(){
