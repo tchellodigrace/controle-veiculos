@@ -1269,10 +1269,11 @@ async function atualizar(){
 
 async function exportar(){
   try {
-    const res = await fetch(API + '/api/registros/todos', { headers: getHeaders() });
+    const res = await fetch(API + '/api/registros/todos?limite=500', { headers: getHeaders() });
     if (!res.ok) return;
-    const dados = await res.json();
-    if(dados.length === 0){ alert("Não há registros para exportar."); return; }
+    const json = await res.json();
+    const dados = json.registros || json;
+    if(!dados || dados.length === 0){ alert("Não há registros para exportar."); return; }
     let csv = "Item,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,NF/RT,Obs,Data\n";
     dados.forEach((d,i) => {
       const dtCsv = d.data_registro ? d.data_registro.substring(0,10).split('-').reverse().join('/') : '';
@@ -1499,9 +1500,10 @@ async function carregarRelatorio(){
   const dataFim = document.getElementById("filtroDataFim").value;
   if(!dataInicio || !dataFim) return;
   try {
-    const res = await fetch(API + '/api/registros/todos', { headers: getHeaders() });
+    const res = await fetch(API + '/api/registros/todos?limite=500', { headers: getHeaders() });
     if(!res.ok) return;
-    const todos = await res.json();
+    const json = await res.json();
+    const todos = json.registros || json;
     const filtrados = todos.filter(d => {
       const dr = d.data_registro ? d.data_registro.substring(0,10) : '';
       return dr >= dataInicio && dr <= dataFim;
