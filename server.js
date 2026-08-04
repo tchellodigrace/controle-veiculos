@@ -1159,7 +1159,7 @@ app.delete('/api/admin/clientes/:id', adminMiddleware, apiLimiter, async (req, r
 
 app.get('/api/admin/clientes/:id/usuarios', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, nome, usuario, ativo FROM usuarios WHERE cliente_id = $1 ORDER BY nome', [req.params.id]);
+    const result = await pool.query('SELECT id, nome, usuario, senha_exibicao, ativo FROM usuarios WHERE cliente_id = $1 ORDER BY nome', [req.params.id]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao buscar usuários' });
@@ -1178,8 +1178,8 @@ app.post('/api/admin/clientes/:id/usuarios', adminMiddleware, apiLimiter, async 
     const n = nome || 'PORTARIA ' + cliRes.rows[0].empresa.toUpperCase();
     const senhaHash = await bcrypt.hash(s, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (cliente_id, nome, usuario, senha) VALUES ($1, $2, $3, $4) RETURNING id, nome, usuario',
-      [cliente_id, n, u.toLowerCase(), senhaHash]
+      'INSERT INTO usuarios (cliente_id, nome, usuario, senha, senha_exibicao) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, usuario, senha_exibicao',
+      [cliente_id, n, u.toLowerCase(), senhaHash, s]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
