@@ -1217,7 +1217,7 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
 
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, criado_em FROM clientes ORDER BY criado_em DESC');
+    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, criado_em FROM clientes ORDER BY criado_em DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar clientes:', err);
@@ -1602,6 +1602,56 @@ app.get('/api/admin/export/:tabela', adminMiddleware, apiLimiter, async (req, re
   }
 });
 
+// === ROTA LOGISTICA (PUBLICA VIA TOKEN) ===
+app.get('/l/:token', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1 AND logistica_ativo = TRUE', [req.params.token]);
+    if (!result.rows.length) return res.status(404).send('Link invalido ou desativado');
+    const c = result.rows[0];
+    res.redirect('/logistica.html?token=' + encodeURIComponent(c.logistica_token) + '&cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa));
+  } catch { res.status(500).send('Erro'); }
+});
+
+app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
+  try {
+    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1 AND logistica_ativo = TRUE', [req.params.token]);
+    if (!cliente.rows.length) return res.status(404).json({ erro: 'Link invalido' });
+    const cid = cliente.rows[0].id;
+    const [localizacoes, preRegistros] = await Promise.all([
+      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours' ORDER BY atualizado_em DESC", [cid]),
+      pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid])
+    ]);
+    res.json({ empresa: cliente.rows[0].empresa, motoristas: localizacoes.rows, preRegistros: preRegistros.rows });
+  } catch (err) {
+    console.error('Erro API logistica:', err);
+    res.status(500).json({ erro: 'Erro ao buscar dados' });
+  }
+});
+
+// === ADMIN: TOGGLE LOGISTICA ===
+app.put('/api/admin/clientes/:id/logistica', adminMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const { ativo } = req.body;
+    const id = parseInt(req.params.id);
+    if (typeof ativo !== 'boolean') return res.status(400).json({ erro: 'Parametro ativo obrigatorio (boolean)' });
+    if (ativo) {
+      const existing = await pool.query('SELECT logistica_token FROM clientes WHERE id = $1', [id]);
+      var token = existing.rows[0]?.logistica_token || '';
+      if (!token) {
+        token = crypto.randomBytes(16).toString('hex');
+      }
+      await pool.query('UPDATE clientes SET logistica_ativo = TRUE, logistica_token = $1 WHERE id = $2', [token, id]);
+      res.json({ ativo: true, token: token });
+    } else {
+      await pool.query('UPDATE clientes SET logistica_ativo = FALSE WHERE id = $1', [id]);
+      res.json({ ativo: false });
+    }
+  } catch (err) {
+    console.error('Erro ao toggle logistica:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar' });
+  }
+});
+
 app.get('/p/:cliente_id', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
@@ -1681,7 +1731,9 @@ async function iniciar() {
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
-      "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE"
+      "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_ativo BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_token VARCHAR(100) DEFAULT ''"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

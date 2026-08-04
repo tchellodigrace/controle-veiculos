@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<title>Painel de Logistica</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:#f0f2f5; min-height:100vh; }
+  .topbar{
+    background:linear-gradient(135deg,#1a1a2e 0%,#2a2a4a 100%);
+    color:#fff; padding:12px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  .topbar h1{ font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .topbar h1 svg{ width:22px; height:22px; }
+  .topbar .empresa{ font-size:13px; opacity:.8; font-weight:400; }
+  .topbar .status{ font-size:11px; display:flex; align-items:center; gap:6px; }
+  .status-dot{ width:8px; height:8px; border-radius:50%; background:#28a745; animation:pulsar 2s ease-in-out infinite; }
+  @keyframes pulsar{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(1.4); } }
+
+  .container{ padding:16px; max-width:1400px; margin:0 auto; }
+  .grid{ display:grid; grid-template-columns:1fr 340px; gap:16px; }
+
+  .card{
+    background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+    overflow:hidden;
+  }
+  .card-header{
+    padding:14px 16px; border-bottom:1px solid #e8ebed;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-header h3{ font-size:14px; color:#1a1a2e; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .card-header .count{ font-size:12px; color:#6b7685; }
+
+  #mapaContainer{ width:100%; height:500px; background:#e8e8e8; }
+  .mapa-vazio{
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;
+    color:#9aa4ad; font-size:14px; z-index:1000; background:#f7f8fa;
+  }
+  .mapa-vazio svg{ width:48px; height:48px; opacity:.3; }
+
+  /* Lista lateral */
+  .lista-section{ display:flex; flex-direction:column; gap:12px; max-height:560px; overflow-y:auto; padding:12px; }
+  .motorista-card{
+    background:#f7f9fb; border:1px solid #e0e3e7; border-radius:10px;
+    padding:12px; cursor:pointer; transition:.15s;
+  }
+  .motorista-card:hover{ background:#eef3f7; border-color:#4FB0C6; transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .motorista-card .mc-topo{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .motorista-card .mc-cor{ width:14px; height:14px; border-radius:50%; flex-shrink:0; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .motorista-card .mc-nome{ font-weight:700; color:#1a1a2e; font-size:13px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .motorista-card .mc-info{ font-size:11px; color:#6b7685; display:flex; flex-direction:column; gap:2px; }
+  .motorista-card .mc-rua{ color:#4a5568; }
+  .motorista-card .mc-tempo{ color:#9aa4ad; font-size:10px; margin-top:4px; }
+
+  /* Pre-registros */
+  .pr-card{
+    background:#fffbe6; border:1px solid #ffe082; border-radius:10px;
+    padding:10px 12px; font-size:12px;
+  }
+  .pr-card .pr-topo{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .pr-card .pr-motorista{ font-weight:700; color:#1a1a2e; font-size:12px; }
+  .pr-card .pr-info{ color:#6b7685; line-height:1.6; }
+  .pr-card .pr-info b{ color:#4a5568; }
+
+  /* Leaflet */
+  .leaflet-popup-content{ font-size:13px; line-height:1.5; }
+  .leaflet-popup-content b{ color:#1a1a2e; }
+
+  /* Responsivo */
+  @media(max-width:900px){
+    .grid{ grid-template-columns:1fr; }
+    #mapaContainer{ height:350px; }
+    .lista-section{ max-height:300px; }
+  }
+  @media(max-width:500px){
+    .topbar{ padding:10px 14px; flex-direction:column; gap:4px; text-align:center; }
+    .container{ padding:10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Painel de Logistica
+    </h1>
+    <div class="empresa" id="nomeEmpresa">---</div>
+  </div>
+  <div class="status">
+    <div class="status-dot"></div>
+    <span>Tempo real</span>
+  </div>
+</div>
+
+<div class="container">
+  <div class="grid">
+    <!-- Mapa -->
+    <div class="card">
+      <div class="card-header">
+        <h3>&#x1F4CD; Rastreamento ao Vivo</h3>
+        <span class="count" id="motoristaCount">0 motoristas a caminho</span>
+      </div>
+      <div style="position:relative">
+        <div id="mapaContainer"></div>
+        <div class="mapa-vazio" id="mapaVazio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Nenhum motorista a caminho no momento
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista lateral -->
+    <div class="card">
+      <div class="card-header">
+        <h3>&#x1F4E6; Entregas e Coletas</h3>
+      </div>
+      <div class="lista-section" id="listaContainer">
+        <div style="text-align:center;color:#9aa4ad;font-size:13px;padding:20px">Carregando...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var API = window.location.origin;
+var params = new URLSearchParams(window.location.search);
+var TOKEN = params.get('token');
+var CLIENTE_ID = params.get('cliente_id');
+var EMPRESA = params.get('empresa') || '---';
+
+if(!TOKEN || !CLIENTE_ID){
+  document.querySelector('.container').innerHTML = '<div style="text-align:center;padding:60px"><h2 style="color:#cc0000">Link invalido</h2><p style="color:#666;margin-top:8px">Este link expirou ou foi desativado.</p></div>';
+}
+
+document.getElementById('nomeEmpresa').textContent = EMPRESA;
+
+// === MAPA ===
+var mapa = null;
+var marcadores = [];
+var mapaIniciado = false;
+
+function iniciarMapa(){
+  if(mapaIniciado){ setTimeout(function(){ if(mapa) mapa.invalidateSize(); }, 100); return; }
+  mapaIniciado = true;
+  mapa = L.map('mapaContainer', { zoomControl: true }).setView([-15.78, -47.93], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(mapa);
+  setTimeout(function(){ mapa.invalidateSize(); }, 200);
+}
+
+var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e63','#795548','#607d8b','#3f51b5'];
+
+function carregarDados(){
+  if(!TOKEN) return;
+  fetch(API + '/api/logistica/' + TOKEN)
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      var motoristas = data.motoristas || [];
+      var preRegistros = data.preRegistros || [];
+
+      // Atualizar count
+      document.getElementById('motoristaCount').textContent = motoristas.length + ' motorista' + (motoristas.length !== 1 ? 's' : '') + ' a caminho';
+      var vazioEl = document.getElementById('mapaVazio');
+      if(motoristas.length > 0){ vazioEl.style.display = 'none'; } else { vazioEl.style.display = 'flex'; }
+
+      // Montar lista lateral
+      var listaHtml = '';
+
+      // Motoristas
+      motoristas.forEach(function(d, idx){
+        var cor = cores[idx % cores.length];
+        var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
+        listaHtml +=
+          '<div class="motorista-card" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
+            '<div class="mc-topo">' +
+              '<div class="mc-cor" style="background:' + cor + '"></div>' +
+              '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
+            '</div>' +
+            '<div class="mc-info">' +
+              (d.placa ? '<div>Placa: <b>' + esc(d.placa) + '</b></div>' : '') +
+              (d.empresa ? '<div>Empresa: ' + esc(d.empresa) + '</div>' : '') +
+              (d.rua ? '<div class="mc-rua">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
+              '<div class="mc-tempo">Atualizado: ' + tempo + '</div>' +
+            '</div>' +
+          '</div>';
+      });
+
+      // Separador
+      if(motoristas.length > 0 && preRegistros.length > 0){
+        listaHtml += '<div style="text-align:center;font-size:11px;color:#9aa4ad;padding:4px;border-top:1px dashed #ddd">&#x1F4E6; PRE-REGISTROS PENDENTES (' + preRegistros.length + ')</div>';
+      }
+
+      // Pre-registros
+      preRegistros.forEach(function(pr){
+        listaHtml +=
+          '<div class="pr-card">' +
+            '<div class="pr-topo">' +
+              '<div style="font-size:16px">&#x1F69A;</div>' +
+              '<div class="pr-motorista">' + esc(pr.motorista || '---') + '</div>' +
+            '</div>' +
+            '<div class="pr-info">' +
+              '<b>Placa:</b> ' + esc(pr.placa || '---') +
+              (pr.modelo ? ' | <b>Modelo:</b> ' + esc(pr.modelo) : '') +
+              (pr.finalidade ? ' | <b>Tipo:</b> ' + esc(pr.finalidade) : '') +
+              (pr.empresa ? '<br><b>Empresa:</b> ' + esc(pr.empresa) : '') +
+              (pr.nota ? '<br><b>Nota:</b> ' + esc(pr.nota) : '') +
+              (pr.obs ? '<br><b>Obs:</b> ' + esc(pr.obs) : '') +
+            '</div>' +
+          '</div>';
+      });
+
+      if(motoristas.length === 0 && preRegistros.length === 0){
+        listaHtml = '<div style="text-align:center;color:#9aa4ad;font-size:13px;padding:20px">Nenhuma movimentacao no momento</div>';
+      }
+
+      document.getElementById('listaContainer').innerHTML = listaHtml;
+
+      // Atualizar mapa
+      if(!mapa) return;
+      marcadores.forEach(function(m){ mapa.removeLayer(m); });
+      marcadores = [];
+      var bounds = [];
+      motoristas.forEach(function(d, idx){
+        if(d.lat == null || d.lng == null) return;
+        var cor = cores[idx % cores.length];
+        var icone = L.divIcon({
+          className: '',
+          html: '<div style="position:relative;width:38px;height:38px">' +
+            '<div style="width:38px;height:38px;background:' + cor + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.3)"></div>' +
+            '<div style="position:absolute;top:7px;left:50%;transform:translateX(-50%) rotate(45deg);color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)">' + (idx + 1) + '</div>' +
+          '</div>',
+          iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -38]
+        });
+        var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapa);
+        var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
+        var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">&#x1F69A; A caminho</span>' : '<span style="color:#2196F3;font-weight:700">&#x2705; Chegou</span>';
+        marker.bindPopup(
+          '<div style="min-width:200px">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+              '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
+              '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
+            '</div>' +
+            statusText + '<br>' +
+            (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
+            (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
+            (d.rua ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0;color:#2a6f7e">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
+            '<div style="margin-top:4px;font-size:11px;color:#9aa4ad">Atualizado: ' + tempo + '</div>' +
+          '</div>'
+        );
+
+        // Label
+        var labelText = esc(d.nome || 'Motorista');
+        if(d.rua) labelText += ' &middot; ' + esc(d.rua);
+        var labelIcon = L.divIcon({
+          className: '',
+          html: '<div style="background:#fff;color:#333;font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap;border:1px solid #ddd;max-width:240px;overflow:hidden;text-overflow:ellipsis"><span style="color:' + cor + ';font-weight:800">#' + (idx+1) + '</span> ' + labelText + '</div>',
+          iconSize: [240, 24], iconAnchor: [120, 44]
+        });
+        var label = L.marker([d.lat, d.lng], { icon: labelIcon, interactive: false }).addTo(mapa);
+        marcadores.push(label);
+        marcadores.push(marker);
+        bounds.push([d.lat, d.lng]);
+      });
+      if(bounds.length > 0){
+        if(bounds.length === 1){ mapa.setView(bounds[0], 15); }
+        else { mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 }); }
+      }
+    })
+    .catch(function(){});
+}
+
+function focarMapa(lat, lng){
+  if(mapa){ mapa.setView([lat, lng], 16, { animate: true }); }
+}
+
+function esc(s){
+  if(!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// Iniciar
+iniciarMapa();
+carregarDados();
+setInterval(carregarDados, 10000);
+</script>
+</body>
+</html>

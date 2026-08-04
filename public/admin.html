@@ -545,6 +545,23 @@ async function verDetalhes(id){
         </div>
       </div>`;
 
+    const logisticaUrl = c.logistica_token ? (baseUrl + '/l/' + c.logistica_token) : '';
+    const logisticaAtivo = !!c.logistica_ativo;
+    const logisticaHtml = `
+      <div style="background:${logisticaAtivo ? '#d4edda' : '#f7f8fa'};border:1px solid ${logisticaAtivo ? '#28a745' : '#e0e3e7'};border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <b style="font-size:12px;color:#1a1a2e">&#x1F4CD; Painel de Logistica</b>
+          <button onclick="toggleLogistica(${c.id}, ${!logisticaAtivo})" style="padding:6px 16px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;${logisticaAtivo ? 'background:#dc3545;color:#fff' : 'background:#28a745;color:#fff'}">
+            ${logisticaAtivo ? 'Desativar' : 'Ativar'}
+          </button>
+        </div>
+        ${logisticaAtivo ? '<div style="font-size:11px;margin-bottom:8px;color:#155724">&#x2705; Ativo — Compartilhe este link com o almoxarifado:</div>' +
+          '<div style="display:flex;gap:6px;align-items:center"><input id="logisticaLinkInput" value="' + logisticaUrl + '" readonly style="flex:1;padding:8px 10px;border:1px solid #28a745;border-radius:6px;font-size:12px;background:#fff;color:#333">' +
+          '<button onclick="copiarLinkLogistica()" style="padding:8px 14px;background:#28a745;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Copiar Link</button></div>' +
+          '<div style="font-size:10px;color:#6b7685;margin-top:6px">Acesso sem login. Mostra mapa em tempo real e lista de entregas.</div>'
+        : '<div style="font-size:11px;color:#6b7685">Ative para gerar um link exclusivo de rastreamento para o almoxarifado.</div>'}
+      </div>`;
+
     const encodedMsg = encodeURIComponent(msgCompartilhamento);
     const clienteNome = encodeURIComponent(c.empresa);
     const emailDest = c.email ? encodeURIComponent(c.email) : '';
@@ -596,6 +613,7 @@ async function verDetalhes(id){
       </div>
       ${credenciaisHtml}
       ${linksHtml}
+      ${logisticaHtml}
       ${compartilharHtml}
     `;
 
@@ -630,6 +648,31 @@ function baixarTexto(){
   a.download = 'acesso_' + data.empresa.replace(/\s+/g,'_') + '.txt';
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function toggleLogistica(clienteId, ativar){
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + clienteId + '/logistica', {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ ativo: ativar })
+    });
+    if(!res.ok){ alert('Erro ao ' + (ativar ? 'ativar' : 'desativar') + ' painel de logistica'); return; }
+    const data = await res.json();
+    verDetalhes(clienteId);
+  } catch(e){ alert('Erro de conexao'); }
+}
+
+function copiarLinkLogistica(){
+  const input = document.getElementById('logisticaLinkInput');
+  if(!input) return;
+  navigator.clipboard.writeText(input.value).then(function(){
+    alert('Link copiado!');
+  }).catch(function(){
+    input.select();
+    document.execCommand('copy');
+    alert('Link copiado!');
+  });
 }
 
 async function ativarDesativarCliente(id, ativo){
