@@ -10,6 +10,6 @@ services:
       - key: NODE_ENV
         value: production
       - key: JWT_SECRET
-        value: 'arcatech-controle-portaria-2026-secret-key'
+        sync: false
       - key: DATABASE_URL
         sync: false

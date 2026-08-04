@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Painel Administrativo ArcaTech Solucoes - Gestao de clientes e controle de portaria">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
 <title>Painel ArcaTech Soluções</title>
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
@@ -69,9 +71,13 @@
   .tab{ padding:8px 16px; border:2px solid #d1d5db; background:#fff; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:#4a5568; }
   .tab.active{ background:#4F86C6; color:#fff; border-color:#4F86C6; }
   .vazio{ text-align:center; color:#8b93a1; padding:24px; font-size:13px; }
+  .skip-link{position:absolute;top:-40px;left:0;background:#4F86C6;color:#fff;padding:8px 16px;z-index:10000;font-size:14px;font-weight:600;text-decoration:none;border-radius:0 0 6px 0;transition:top .2s;}
+  .skip-link:focus{top:0;}
 </style>
 </head>
 <body>
+<a href="#mainAdmin" class="skip-link">Pular para conteudo principal</a>
+<noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:12px">
     <img src="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png" alt="ArcaTech" style="height:36px;object-fit:contain">
@@ -83,7 +89,7 @@
   </div>
 </div>
 
-<div class="container">
+<div class="container" id="mainAdmin">
   <div class="stats">
     <div class="stat-card">
       <div class="label">Total Clientes</div>
@@ -381,6 +387,7 @@ const token = localStorage.getItem('tokenAdmin');
 if(!token) window.location.href = '/admin-login.html';
 
 function getHeaders(){ return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }; }
+function esc(s){ if(s==null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 const admin = JSON.parse(localStorage.getItem('adminLogado') || '{}');
 if(admin.nome) document.getElementById('adminNome').textContent = admin.nome;
@@ -500,13 +507,13 @@ async function verDetalhes(id){
             </div>
             <div>
               <div style="font-size:11px;opacity:.8">Senha</div>
-              <div style="font-size:20px;font-weight:700;letter-spacing:.5px">${u.senha_exibicao || '***'}</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:.5px;cursor:pointer" onclick="this.textContent = this.dataset.show === '1' ? '••••••••' : '${u.senha_exibicao || '***'}'; this.dataset.show = this.dataset.show === '1' ? '0' : '1'" data-show="0" title="Clique para mostrar/ocultar senha">••••••••</div>
             </div>
             <span style="font-size:10px;background:${u.ativo?'rgba(255,255,255,.25)':'rgba(255,0,0,.3)'};padding:3px 10px;border-radius:10px">${u.ativo?'Ativo':'Inativo'}</span>
           </div>
         </div>`).join('');
 
-      const userLines = users.map(u => '  Usuario: ' + u.usuario + '\n  Senha: ' + (u.senha_exibicao || '***')).join('\n');
+      const userLines = users.map(u => '  Usuario: ' + u.usuario + '\n  Senha: [protegida - use o painel admin para visualizar]').join('\n');
       msgCompartilhamento =
         'Acesso ao Sistema de Controle - ' + c.empresa + '\n\n' +
         'Portaria:\n' + portariaUrl + '\n\n' +
@@ -574,16 +581,16 @@ async function verDetalhes(id){
       </div>`;
 
     document.getElementById('modalDetalheBody').innerHTML = `
-      <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${c.empresa}</h3>
+      <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${esc(c.empresa)}</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">
-        <div><b>CNPJ:</b> ${c.cnpj || '—'}</div>
-        <div><b>Responsavel:</b> ${c.responsavel || '—'}</div>
-        <div><b>Plano:</b> ${c.plano}</div>
+        <div><b>CNPJ:</b> ${esc(c.cnpj || '—'}</div>
+        <div><b>Responsavel:</b> ${esc(c.responsavel || '—'}</div>
+        <div><b>Plano:</b> ${esc(c.plano)}</div>
         <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/mes</div>
         <div><b>Expira:</b> ${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</div>
-        <div><b>E-mail:</b> ${c.email || '—'}</div>
-        <div><b>WhatsApp:</b> ${c.telefone || '—'}</div>
-        ${c.telefone_fixo ? '<div><b>Tel. Fixo:</b> ' + c.telefone_fixo + '</div>' : ''}
+        <div><b>E-mail:</b> ${esc(c.email || '—'}</div>
+        <div><b>WhatsApp:</b> ${esc(c.telefone || '—'}</div>
+        ${c.telefone_fixo ? '<div><b>Tel. Fixo:</b> ' + esc(c.telefone_fixo) + '</div>' : ''}
         <div><b>Status:</b> ${c.ativo ? 'Ativo' : 'Inativo'}</div>
       </div>
       ${credenciaisHtml}
@@ -661,10 +668,10 @@ async function carregarClientes(){
       let statusBadge = c.ativo ? '<span class="badge-ativo">Ativo</span>' : '<span class="badge-inativo">Inativo</span>';
       if(expirado && c.ativo) statusBadge = '<span class="badge-expirado">Expirado</span>';
       return `<tr>
-        <td><b>${c.empresa}</b></td>
-        <td>${c.cnpj || '—'}</td>
-        <td>${c.responsavel || '—'}</td>
-        <td>${c.plano}</td>
+        <td><b>${esc(c.empresa)}</b></td>
+        <td>${esc(c.cnpj || '—'}</td>
+        <td>${esc(c.responsavel || '—'}</td>
+        <td>${esc(c.plano)}</td>
         <td>R$ ${(c.valor_mensal || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
         <td>${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</td>
         <td>${statusBadge}</td>
@@ -692,8 +699,8 @@ async function carregarFaturamento(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.data_pagamento).toLocaleDateString('pt-BR')}</td>
-      <td><b>${d.empresa || '—'}</b></td>
-      <td>${d.descricao || '—'}</td>
+      <td><b>${esc(d.empresa || '—'}</b></td>
+      <td>${esc(d.descricao || '—'}</td>
       <td>R$ ${(d.valor || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
     </tr>`).join('');
   } catch {}
@@ -704,7 +711,7 @@ async function abrirModalPagamento(){
     const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
     const clientes = await res.json();
     const select = document.getElementById('pCliente');
-    select.innerHTML = '<option value="">Selecione</option>' + clientes.map(c => `<option value="${c.id}">${c.empresa}</option>`).join('');
+    select.innerHTML = '<option value="">Selecione</option>' + clientes.map(c => `<option value="${c.id}">${esc(c.empresa)}</option>`).join('');
     document.getElementById('pValor').value = '';
     document.getElementById('pData').value = new Date().toISOString().substring(0,10);
     document.getElementById('pDescricao').value = '';
@@ -732,9 +739,9 @@ async function salvarPagamento(e){
   } catch { alert('Erro ao registrar pagamento'); }
 }
 
-carregarDashboard();
-carregarClientes();
-carregarFaturamento();
+try { carregarDashboard(); } catch(e) { /* falha silenciosa */ }
+try { carregarClientes(); } catch(e) { /* falha silenciosa */ }
+try { carregarFaturamento(); } catch(e) { /* falha silenciosa */ }
 
 async function criarUsuarioPortaria(clienteId){
   const btn = document.getElementById('btnCriarPortaria');
@@ -766,8 +773,8 @@ async function carregarAlertas(){
       <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;margin-bottom:8px;background:${cores[d.tipo]||'#718096'}15;border-left:4px solid ${cores[d.tipo]||'#718096'}">
         <span style="font-size:18px;color:${cores[d.tipo]||'#718096'}">${icons[d.tipo]||''}</span>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:#1a1a2e">${d.titulo}</div>
-          <div style="font-size:12px;color:#4a5568">${d.descricao}</div>
+          <div style="font-size:13px;font-weight:700;color:#1a1a2e">${esc(d.titulo)}</div>
+          <div style="font-size:12px;color:#4a5568">${esc(d.descricao)}</div>
         </div>
         <span style="font-size:10px;padding:3px 10px;border-radius:10px;background:${cores[d.tipo]||'#718096'};color:#fff;font-weight:600">${d.tipo}</span>
       </div>`).join('');
@@ -787,8 +794,8 @@ async function carregarChamados(){
     const priCores = { baixa: '#718096', media: '#d69e2e', alta: '#e53e3e' };
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${d.id}</td>
-      <td><b>${d.empresa || 'Geral'}</b></td>
-      <td>${d.titulo}</td>
+      <td><b>${esc(d.empresa || 'Geral'}</b></td>
+      <td>${esc(d.titulo)}</td>
       <td><span style="color:${priCores[d.prioridade]||'#718096'};font-weight:600">${d.prioridade}</span></td>
       <td><span style="background:${statusCores[d.status]||'#718096'};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">${d.status}</span></td>
       <td>${new Date(d.criado_em).toLocaleDateString('pt-BR')}</td>
@@ -808,7 +815,7 @@ async function abrirModalChamado(){
     const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
     const clientes = await res.json();
     const sel = document.getElementById('chCliente');
-    sel.innerHTML = '<option value="">Geral / Sem cliente</option>' + clientes.map(c => `<option value="${c.id}">${c.empresa}</option>`).join('');
+    sel.innerHTML = '<option value="">Geral / Sem cliente</option>' + clientes.map(c => `<option value="${c.id}">${esc(c.empresa)}</option>`).join('');
     document.getElementById('chTitulo').value = '';
     document.getElementById('chDescricao').value = '';
     document.getElementById('chPrioridade').value = 'media';
@@ -867,9 +874,9 @@ async function carregarHistorico(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
-      <td>${d.admin_usuario || '—'}</td>
-      <td><b>${d.acao}</b></td>
-      <td style="max-width:300px;word-break:break-word">${d.detalhes || '—'}</td>
+      <td>${esc(d.admin_usuario || '—'}</td>
+      <td><b>${esc(d.acao)}</b></td>
+      <td style="max-width:300px;word-break:break-word">${esc(d.detalhes || '—'}</td>
     </tr>`).join('');
   } catch {}
 }
@@ -885,8 +892,8 @@ async function carregarLogs(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
-      <td>${d.admin_usuario || '—'}</td>
-      <td><b>${d.acao}</b></td>
+      <td>${esc(d.admin_usuario || '—'}</td>
+      <td><b>${esc(d.acao)}</b></td>
       <td style="font-size:11px;color:#718096">${d.ip || '—'}</td>
     </tr>`).join('');
   } catch {}
@@ -909,8 +916,8 @@ async function carregarConfig(){
     const el = document.getElementById('listaConfig');
     el.innerHTML = dados.map(d => `
       <div class="form-group">
-        <label>${d.descricao || d.chave}</label>
-        <input type="text" data-chave="${d.chave}" value="${d.valor || ''}" style="width:100%">
+        <label>${esc(d.descricao || d.chave}</label>
+        <input type="text" data-chave="${d.chave}" value="${esc(d.valor || ''}" style="width:100%">
       </div>`).join('');
   } catch {}
 }

@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin - Controle de Portaria</title>
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<title>Painel Administrativo - Controle de Portaria</title>
+<meta name="description" content="Painel administrativo do sistema de controle de portaria">
 <style>
   *{ box-sizing:border-box; margin:0; padding:0; }
   body{
@@ -38,6 +40,7 @@
 </style>
 </head>
 <body>
+<noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
 <div class="login-card">
   <h1>Painel Administrativo</h1>
   <p class="sub">Controle de Vendas e Clientes</p>
@@ -45,11 +48,11 @@
   <form onsubmit="fazerLogin(event)">
     <div class="campo">
       <label>Usuário</label>
-      <input type="text" id="usuario" placeholder="Usuário admin" required>
+      <input type="text" id="usuario" placeholder="Usuário admin" autocomplete="username" required>
     </div>
     <div class="campo">
       <label>Senha</label>
-      <input type="password" id="senha" placeholder="Sua senha" required>
+      <input type="password" id="senha" placeholder="Sua senha" autocomplete="current-password" required>
     </div>
     <button type="submit" id="btn" class="btn">Entrar</button>
   </form>

@@ -3,7 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Sistema de Controle de Portaria - Gestao de entrada e saida de veiculos e visitantes">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
 <title>Controle de Portaria</title>
+<style>
+  /* Skip link para acessibilidade */
+  .skip-link{
+    position:absolute;top:-40px;left:0;background:var(--verde-primario);color:#fff;padding:8px 16px;z-index:10000;
+    font-size:14px;font-weight:600;text-decoration:none;border-radius:0 0 6px 0;
+    transition:top .2s;
+  }
+  .skip-link:focus{top:0;}
+</style>
 <style>
   :root{
     --verde-escuro:#2a6f7e;
@@ -467,7 +478,6 @@
   .usuario-item small{ color:#8b93a1; font-size:11px; }
   .usuario-item em{ font-size:11px; color:var(--verde-escuro); }
   .usuario-status{ font-size:10px; background:#e0e3e7; padding:2px 8px; border-radius:10px; }
-  .senha-badge{ font-size:10px; background:#d1e7dd; color:#0f5132; padding:2px 8px; border-radius:10px; font-family:monospace; letter-spacing:0.5px; }
   .badge-admin{ background:var(--verde-escuro); color:#fff; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
@@ -479,9 +489,11 @@
 </style>
 </head>
 <body>
+<a href="#mainContent" class="skip-link">Pular para conteudo principal</a>
+<noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
 <div class="app">
   <header>
-    <button class="menu-toggle" id="btnToggleSidebar" title="Menu">
+    <button class="menu-toggle" id="btnToggleSidebar" title="Menu" aria-label="Abrir ou fechar menu lateral">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:36px;height:36px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
@@ -546,7 +558,7 @@
       </div>
     </div>
   </aside>
-  <main>
+  <main id="mainContent">
     <div id="viewVeiculos">
       <div class="painel-topo">
         <div class="card form-card">
@@ -554,7 +566,7 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Placa do Veículo</label>
-              <input id="placa" placeholder="Ex.: ABC1D23">
+              <input id="placa" placeholder="Ex.: ABC1D23" maxlength="8">
             </div>
             <div class="campo">
               <label>Modelo do Veículo</label>
@@ -585,25 +597,25 @@
             </div>
             <div class="campo">
               <label>Empresa</label>
-              <input id="empresa" list="listaEmpresas" placeholder="Informe a empresa">
+              <input id="empresa" list="listaEmpresas" placeholder="Informe a empresa" maxlength="100">
             <datalist id="listaEmpresas"></datalist>
             </div>
             <div class="campo">
               <label>Motorista</label>
-              <input id="motorista" list="listaMotoristas" placeholder="Informe o motorista" autocomplete="off">
+              <input id="motorista" list="listaMotoristas" placeholder="Informe o motorista" autocomplete="off" maxlength="100">
               <datalist id="listaMotoristas"></datalist>
             </div>
             <div class="campo">
               <label>CNH</label>
-              <input id="cnh" placeholder="Informe a CNH">
+              <input id="cnh" placeholder="Informe a CNH" maxlength="20">
             </div>
             <div class="campo">
               <label>Nota Fiscal / RT</label>
-              <input id="nota" placeholder="Informe a nota fiscal / RT">
+              <input id="nota" placeholder="Informe a nota fiscal / RT" maxlength="50">
             </div>
             <div class="campo campo-obs">
               <label>Informações Adicionais</label>
-              <input id="obs" placeholder="Observações, serviço, destino, etc.">
+              <input id="obs" placeholder="Observações, serviço, destino, etc." maxlength="500">
             </div>
             <div class="aviso-sms" id="avisoSMS">
               <span>&#x26A0;&#xFE0F;</span>
@@ -614,7 +626,7 @@
             </div>
           </div>
           <div class="acoes-form">
-            <button class="btn btn-primario" onclick="registrar()">
+            <button id="btnRegistrar" class="btn btn-primario" onclick="registrar()">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
               Registrar Entrada
             </button>
@@ -700,16 +712,16 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Nome Completo</label>
-              <input id="vNome" list="listaVisitantes" placeholder="Nome do visitante" autocomplete="off">
+              <input id="vNome" list="listaVisitantes" placeholder="Nome do visitante" autocomplete="off" maxlength="100">
               <datalist id="listaVisitantes"></datalist>
             </div>
             <div class="campo">
               <label>CPF</label>
-              <input id="vCpf" placeholder="000.000.000-00">
+              <input id="vCpf" placeholder="000.000.000-00" maxlength="14">
             </div>
             <div class="campo">
               <label>Empresa</label>
-              <input id="vEmpresa" placeholder="Empresa onde trabalha">
+              <input id="vEmpresa" placeholder="Empresa onde trabalha" maxlength="100">
             </div>
             <div class="campo">
               <label>Tipo</label>
@@ -721,19 +733,19 @@
             </div>
             <div class="campo">
               <label>Placa</label>
-              <input id="vPlaca" placeholder="Placa do veículo" style="text-transform:uppercase">
+              <input id="vPlaca" placeholder="Placa do veículo" style="text-transform:uppercase" maxlength="8">
             </div>
             <div class="campo">
               <label>Nota Fiscal / RT</label>
-              <input id="vNota" placeholder="Nota fiscal / RT">
+              <input id="vNota" placeholder="Nota fiscal / RT" maxlength="50">
             </div>
             <div class="campo campo-obs">
               <label>Observações</label>
-              <input id="vObs" placeholder="Informações adicionais">
+              <input id="vObs" placeholder="Informações adicionais" maxlength="500">
             </div>
           </div>
           <div class="acoes-form">
-            <button class="btn btn-primario" onclick="registrarVisitante()">
+            <button id="btnRegistrarVisitante" class="btn btn-primario" onclick="registrarVisitante()">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="6" width="18" height="12" rx="2"/><circle cx="7" cy="16" r="1.6"/><path d="M14 6l3-3h4l2 4"/></svg>
               Registrar Entrada
             </button>
@@ -857,7 +869,7 @@
         <label>Mensagem</label>
         <textarea id="muralTexto" rows="5" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-family:inherit;font-size:13px" placeholder="Escreva a informacao importante aqui..."></textarea>
       </div>
-      <button class="btn btn-primario" onclick="salvarMural()">Publicar</button>
+      <button id="btnSalvarMural" class="btn btn-primario" onclick="salvarMural()">Salvar</button>
     </div>
   </div>
 </div>
@@ -930,7 +942,7 @@
           <input type="password" id="configSenha2" placeholder="Confirmar senha">
         </div>
         <div class="acoes-form" style="margin-top:16px">
-          <button type="submit" class="btn btn-primario">Salvar</button>
+          <button id="btnSalvarConfig" type="submit" class="btn btn-primario">Salvar</button>
         </div>
       </form>
     </div>
@@ -996,7 +1008,7 @@
       <button class="modal-close" onclick="fecharSobre()">&times;</button>
     </div>
     <div class="modal-body" style="text-align:center">
-      <img src="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png" alt="ArcaTech" style="height:80px;object-fit:contain;margin-bottom:12px">
+      <img src="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png" alt="Logo ArcaTech" width="80" height="80" loading="lazy" style="height:80px;object-fit:contain;margin-bottom:12px">
       <p style="font-size:18px;font-weight:800;color:#1a1a2e;margin:0 0 4px">ArcaTech Soluções</p>
       <p style="font-size:13px;color:#8b93a1;margin:0 0 16px">+55 22 99279-8906</p>
       <hr style="margin:12px 0">
@@ -1019,8 +1031,16 @@ function getHeaders() {
   };
 }
 
+function esc(s){ if(s===null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
 function mostrarErroAuth(msg) {
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:#fff;font-family:sans-serif;text-align:center;padding:20px"><div style="background:#2d2d44;padding:40px;border-radius:12px;max-width:500px"><h1 style="color:#e53e3e;margin-bottom:15px">⚠️ Erro de Autenticação</h1><p style="font-size:18px;margin-bottom:20px">' + msg + '</p><p style="color:#999;font-size:14px;margin-bottom:20px">Abra o Console (F12) e envie uma captura de tela.</p><button onclick="localStorage.clear();window.location.href=\'login.html\'" style="padding:12px 30px;background:#4FB0C6;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">Voltar ao Login</button></div></div>';
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100vh;background:#1a1a2e;color:#fff;font-family:sans-serif;text-align:center;padding:20px';
+  div.innerHTML = '<div style="background:#2d2d44;padding:40px;border-radius:12px;max-width:500px"><h1 style="color:#e53e3e;margin-bottom:15px">Erro de Autenticação</h1><p id="authErrorMsg" style="font-size:18px;margin-bottom:20px"></p><p style="color:#999;font-size:14px;margin-bottom:20px">Abra o Console (F12) e envie uma captura de tela.</p><button id="authErrBtn" style="padding:12px 30px;background:#4FB0C6;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer">Voltar ao Login</button></div>';
+  document.body.innerHTML = '';
+  document.body.appendChild(div);
+  document.getElementById('authErrorMsg').textContent = msg;
+  document.getElementById('authErrBtn').addEventListener('click', function(){ localStorage.clear(); window.location.href = 'login.html'; });
 }
 
 async function verificarAuth() {
@@ -1035,14 +1055,14 @@ async function verificarAuth() {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
-      console.log('[AUTH] Tentativa ' + (tentativa+1) + ': status=' + res.status + ' ok=' + res.ok);
+      // Auth tentativa 
       if (res.status === 401) {
-        localStorage.removeItem('token'); localStorage.removeItem('usuario'); localStorage.removeItem('empresa');
+        localStorage.clear();
         mostrarErroAuth('Sessão expirada (401). Faça login novamente.'); return false;
       }
       if (res.ok) {
         const data = await res.json();
-        console.log('[AUTH] Sucesso:', data);
+        // Auth OK
         usuarioLogado = data.usuario;
         const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
         if (usuario.nome) {
@@ -1063,7 +1083,7 @@ async function verificarAuth() {
       }
       mostrarErroAuth('Servidor retornou erro HTTP ' + res.status + '. Tentativa ' + (tentativa+1) + '/3');
     } catch(e) {
-      console.log('[AUTH] Tentativa ' + (tentativa+1) + ' falhou:', e.message);
+      // Auth falhou
       mostrarErroAuth('Falha na conexão: ' + e.message + '. Tentativa ' + (tentativa+1) + '/3');
     }
     if (tentativa < 2) await new Promise(r => setTimeout(r, 2000));
@@ -1071,46 +1091,8 @@ async function verificarAuth() {
   mostrarErroAuth('Todas as tentativas falharam. Verifique sua conexão.');
 }
 
-const cadastroMotoristas = [
-  {motorista:"RICARDO CAVATI", cnh:"959.320.207-25", placa:"LRW2F92", empresa:"LIMPEZA PROFUNDA"},
-  {motorista:"JOAO PAULO LEITE DA SILVA", cnh:"264.586.978-56", placa:"RQP2F23", empresa:"VIX"},
-  {motorista:"CARLOS SEVERINO", cnh:"798.904.667-91", placa:"RKU8J82", empresa:"FILADELFIA"},
-  {motorista:"GUILHERME RIBEIRO", cnh:"206.599.317-02", placa:"SRX5G20", empresa:"FÊNIX DO BRASIL"},
-  {motorista:"LUCIANO DOS SANTOS", cnh:"057.451.987-45", placa:"RQR2B64", empresa:"FILADELFIA"},
-  {motorista:"CARLOS ALBERTO DE SOUZA", cnh:"955.254.677-04", placa:"LUD1906", empresa:"SUPERGASBRAS"},
-  {motorista:"PEDRO PAULO SILVA", cnh:"129.424.276-80", placa:"SRX5G20", empresa:"FÊNIX DO BRASIL"},
-  {motorista:"FLÁVIO DE AZEVEDO", cnh:"087.380.117-27", placa:"KYK3172", empresa:"RODOMAC"},
-  {motorista:"JEAN DA SILVA PERES", cnh:"112.824.157-94", placa:"KPE1932", empresa:"FILADELFIA"},
-  {motorista:"WANDERSON DE PAULA", cnh:"073.101.187-23", placa:"JQR5A35", empresa:"S.O.S"},
-  {motorista:"ANDERSON DA SILVA", cnh:"097.349.547-25", placa:"LLJ9A08", empresa:"TRANSFORMA"},
-  {motorista:"CRISTIANO GONÇALVES LINS", cnh:"051.498.747-28", placa:"KYK3172", empresa:"RODOMAC"},
-  {motorista:"DENILSON PECANHA PASSOS", cnh:"074.503.697-02", placa:"RKUTI22", empresa:"VIX"},
-  {motorista:"DAVI DA CONCEICAO SILVA", cnh:"097.299.017-83", placa:"QUC0J07", empresa:"JAMEF"},
-  {motorista:"JOSE ELIAS SOARES", cnh:"681.074.717-68", placa:"QRF9E51", empresa:"VIX"},
-  {motorista:"DANIEL GASPAR", cnh:"098.082.987-96", placa:"", empresa:"EFITRANS"},
-  {motorista:"CESAR LINO BAPTISTA JUNIOR", cnh:"088.796.297-46", placa:"RMY5J26", empresa:"LB SOLDAS"},
-  {motorista:"ALISON DE OLIVEIR DA SILVA", cnh:"133.921.527-65", placa:"LMA2C60", empresa:"FILADELFIA"},
-  {motorista:"MARCOS VENICIUS AZEREDO", cnh:"915.940.737-91", placa:"SRK2D09", empresa:"AEROSTEEL"},
-  {motorista:"ADRIELE ANTUNES", cnh:"171.517.797-55", placa:"LQM6B95", empresa:"GRUPO TROCA"},
-  {motorista:"ROBERTO CARLOS", cnh:"976.126.007-06", placa:"PTO0G19", empresa:"FILADELFIA"},
-  {motorista:"PAULO CEZAR", cnh:"709.650.087-62", placa:"TTZ82C41", empresa:"FILADELFIA"},
-  {motorista:"PATRICK CARVALHO", cnh:"014.732.826-38", placa:"RUI1J33", empresa:"FILADELFIA"},
-  {motorista:"ROBSON CARLOS", cnh:"36382071", placa:"RJF9E28", empresa:"FILADELFIA"}
-];
-
-(function preencherListaMotoristas(){
-  const dl = document.getElementById("listaMotoristas");
-  dl.innerHTML = cadastroMotoristas.map(c => `<option value="${c.motorista}">`).join("");
-})();
-
 document.getElementById("motorista").addEventListener("input", function(){
-  const nome = this.value.trim().toUpperCase();
-  const encontrado = cadastroMotoristas.find(c => c.motorista === nome);
-  if(encontrado){
-    if(encontrado.placa) placa.value = encontrado.placa;
-    if(encontrado.empresa) empresa.value = encontrado.empresa;
-    if(encontrado.cnh) cnh.value = encontrado.cnh;
-  }
+  // Auto-preenchimento via API (autoPreencherMotorista cuida disso)
 });
 
 document.getElementById("modelo").addEventListener("change", function(){
@@ -1119,6 +1101,9 @@ document.getElementById("modelo").addEventListener("change", function(){
 });
 
 async function registrar(){
+  const btn = document.getElementById('btnRegistrar');
+  if(btn && btn.disabled) return;
+  if(btn){ btn.disabled = true; btn.textContent = 'Registrando...'; }
   const payload = {
     placa: placa.value.trim().toUpperCase(),
     modelo: modelo.value,
@@ -1127,10 +1112,11 @@ async function registrar(){
     motorista: motorista.value.trim(),
     cnh: cnh.value.trim(),
     nota: nota.value.trim(),
-    obs: obs.value.trim(),
-    hora: new Date().toLocaleTimeString('pt-BR')
+    obs: obs.value.trim()
+    // hora gerada pelo servidor (segurança)
   };
   if (!payload.placa || !payload.empresa){
+    if(btn){ btn.disabled = false; btn.textContent = 'REGISTRAR ENTRADA'; }
     alert("Preencha ao menos Placa e Empresa.");
     return;
   }
@@ -1138,10 +1124,11 @@ async function registrar(){
     const res = await fetch(API + '/api/registros', {
       method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
     });
-    if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao registrar'); return; }
+    if (!res.ok) { const err = await res.json(); if(btn){ btn.disabled = false; btn.textContent = 'REGISTRAR ENTRADA'; } alert(err.erro || 'Erro ao registrar'); return; }
     limparCampos();
     atualizar();
-  } catch { alert('Erro de conexão com o servidor'); }
+  } catch { if(btn){ btn.disabled = false; btn.textContent = 'REGISTRAR ENTRADA'; } alert('Erro de conexão com o servidor'); }
+  if(btn){ btn.disabled = false; btn.textContent = 'REGISTRAR ENTRADA'; }
 }
 
 async function atualizarPreRegistros(){
@@ -1159,17 +1146,17 @@ async function atualizarPreRegistros(){
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
-        <td><b>${d.motorista}</b></td>
-        <td>${d.empresa}</td>
-        <td>${d.placa}</td>
-        <td>${d.modelo || "—"}</td>
-        <td>${d.finalidade || "—"}</td>
-        <td>${d.cnh || "—"}</td>
-        <td>${d.nota || "—"}</td>
+        <td><b>${esc(d.motorista)}</b></td>
+        <td>${esc(d.empresa)}</td>
+        <td>${esc(d.placa)}</td>
+        <td>${esc(d.modelo) || "—"}</td>
+        <td>${esc(d.finalidade) || "—"}</td>
+        <td>${esc(d.cnh) || "—"}</td>
+        <td>${esc(d.nota) || "—"}</td>
         <td>
           <div class="acoes-tabela">
-            <button class="icon-btn btn-saida" title="Confirmar chegada" onclick="confirmarPreRegistro(${d.id})">${iconConfirmar}</button>
-            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluirPreRegistro(${d.id})">${iconExcluir}</button>
+            <button class="icon-btn btn-saida" title="Confirmar chegada" aria-label="Confirmar chegada do pré-registro" onclick="confirmarPreRegistro(${d.id})">${iconConfirmar}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir pré-registro" onclick="excluirPreRegistro(${d.id})">${iconExcluir}</button>
           </div>
         </td>
       </tr>`;
@@ -1179,9 +1166,10 @@ async function atualizarPreRegistros(){
 
 async function confirmarPreRegistro(id){
   try {
+    // Hora e data geradas pelo servidor (segurança)
     const res = await fetch(API + '/api/pre-registros/' + id + '/confirmar', {
       method: 'POST', headers: { ...getHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR'), data: new Date().toLocaleDateString('en-CA') })
+      body: JSON.stringify({})
     });
     if(!res.ok){ alert("Erro ao confirmar"); return; }
     atualizarPreRegistros();
@@ -1210,7 +1198,7 @@ async function marcarSaida(id){
   try {
     const res = await fetch(API + '/api/registros/' + id + '/saida', {
       method: 'PUT', headers: getHeaders(),
-      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR') })
+      body: JSON.stringify({})
     });
     if (!res.ok) { const err = await res.json(); alert(err.erro || 'Erro ao marcar saída'); return; }
     atualizar();
@@ -1258,20 +1246,20 @@ async function atualizar(){
         <td>${i+1}</td>
         <td><b>${d.posicao || "—"}</b></td>
         <td>${d.chegada}</td>
-        <td><b>${d.placa}</b></td>
-        <td>${d.modelo || "—"}</td>
-        <td>${d.finalidade || "—"}</td>
-        <td>${d.empresa}</td>
-        <td>${d.motorista || "—"}</td>
-        <td>${d.cnh || "—"}</td>
+        <td><b>${esc(d.placa)}</b></td>
+        <td>${esc(d.modelo) || "—"}</td>
+        <td>${esc(d.finalidade) || "—"}</td>
+        <td>${esc(d.empresa)}</td>
+        <td>${esc(d.motorista) || "—"}</td>
+        <td>${esc(d.cnh) || "—"}</td>
         <td>${d.entrada}</td>
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
-        <td>${d.nota || "—"}</td>
-        <td>${d.obs || "—"}</td>
+        <td>${esc(d.nota) || "—"}</td>
+        <td>${esc(d.obs) || "—"}</td>
         <td>
           <div class="acoes-tabela">
-            <button class="icon-btn btn-saida" title="Marcar saída" ${d.saida ? "disabled" : ""} onclick="marcarSaida(${d.id})">${iconSaida}</button>
-            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluir(${d.id})">${iconExcluir}</button>
+            <button class="icon-btn btn-saida" title="Marcar saída" aria-label="Marcar saída do veículo" ${d.saida ? "disabled" : ""} onclick="marcarSaida(${d.id})">${iconSaida}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir registro de veículo" onclick="excluir(${d.id})">${iconExcluir}</button>
           </div>
         </td>
       </tr>`;
@@ -1288,7 +1276,7 @@ async function exportar(){
     let csv = "Item,Placa,Modelo,Finalidade,Empresa,Motorista,CNH,Entrada,Saída,NF/RT,Obs,Data\n";
     dados.forEach((d,i) => {
       const dtCsv = d.data_registro ? d.data_registro.substring(0,10).split('-').reverse().join('/') : '';
-      csv += `${i+1},${d.placa},${d.modelo},${d.finalidade},${d.empresa},${d.motorista},${d.cnh},${d.entrada},${d.saida},${d.nota},${d.obs},${dtCsv}\n`;
+      csv += `${i+1},${esc(d.placa)},${esc(d.modelo)},${esc(d.finalidade)},${esc(d.empresa)},${esc(d.motorista)},${esc(d.cnh)},${d.entrada},${d.saida},${esc(d.nota)},${esc(d.obs)},${dtCsv}\n`;
     });
     let blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
     let url = window.URL.createObjectURL(blob);
@@ -1315,8 +1303,8 @@ document.getElementById("obs").addEventListener("keypress", e=>{
 
 document.getElementById("sair").addEventListener("click", ()=>{
   if(confirm("Deseja sair do sistema?")){
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
+    // Limpar TODAS as chaves do localStorage (segurança)
+    localStorage.clear();
     window.location.href = 'login.html';
   }
 });
@@ -1363,24 +1351,27 @@ function fecharSobre(){
 }
 async function salvarConfig(e){
   e.preventDefault();
+  const btn = document.getElementById('btnSalvarConfig');
+  if(btn){ btn.disabled = true; btn.textContent = 'Salvando...'; }
   const nome = document.getElementById("configNome").value.trim();
   const senha = document.getElementById("configSenha").value;
   const senha2 = document.getElementById("configSenha2").value;
-  if(senha && senha !== senha2){ alert("Senhas não conferem."); return; }
+  if(senha && senha !== senha2){ if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert("Senhas não conferem."); return; }
   const body = { nome };
   if(senha) body.senha = senha;
   try {
     const res = await fetch(API + '/api/config', {
       method: 'PUT', headers: getHeaders(), body: JSON.stringify(body)
     });
-    if(!res.ok){ const e = await res.json(); alert(e.erro || "Erro ao salvar"); return; }
+    if(!res.ok){ const e = await res.json(); if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert(e.erro || "Erro ao salvar"); return; }
     const data = await res.json();
     usuarioLogado = data;
     localStorage.setItem("usuarioLogado", JSON.stringify(data));
     document.getElementById("nomeUsuario").textContent = data.nome;
     alert("Configurações salvas!");
     fecharConfig();
-  } catch { alert("Erro ao salvar"); }
+  } catch { if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert("Erro ao salvar"); }
+  if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; }
 }
 async function carregarUsuarios(){
   try {
@@ -1390,8 +1381,8 @@ async function carregarUsuarios(){
     const div = document.getElementById("listaUsuarios");
     div.innerHTML = usuarios.filter(u => !u.desativado).map(u => `
       <div class="usuario-item">
-        <span>${u.nome} <small>(${u.usuario})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
-        <span class="senha-badge" title="Senha">${u.senha_exibicao || '—'}</span>
+        <span>${esc(u.nome)} <small>(${esc(u.usuario)})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
+
         <span class="usuario-status ${u.admin ? 'badge-admin' : ''}">${u.admin ? 'Admin' : 'Operador'}</span>
       </div>
     `).join("");
@@ -1417,9 +1408,9 @@ async function carregarContasMotoristas(){
     const div = document.getElementById("listaContas");
     div.innerHTML = contas.map(c => `
       <div class="usuario-item">
-        <span>${c.nome} <small>(${c.usuario})</small></span>
+        <span>${esc(c.nome)} <small>(${esc(c.usuario)})</small></span>
         <div style="display:flex;gap:6px;align-items:center">
-          <span class="senha-badge" title="Senha">${c.senha_exibicao || '—'}</span>
+
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
           <button class="btn-excluir" onclick="alternarContaMotorista(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '&#x2716;' : '&#x2714;'}</button>
         </div>
@@ -1462,9 +1453,9 @@ async function carregarContasVisitantes(){
     const div = document.getElementById("listaContasVisitantes");
     div.innerHTML = contas.map(c => `
       <div class="usuario-item">
-        <span>${c.nome} <small>(${c.usuario})</small></span>
+        <span>${esc(c.nome)} <small>(${esc(c.usuario)})</small></span>
         <div style="display:flex;gap:6px;align-items:center">
-          <span class="senha-badge" title="Senha">${c.senha_exibicao || '—'}</span>
+
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
           <button class="btn-excluir" onclick="alternarContaVisitante(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '&#x2716;' : '&#x2714;'}</button>
         </div>
@@ -1527,16 +1518,16 @@ async function carregarRelatorio(){
         <td>${i+1}</td>
         <td>${dt}</td>
         <td>${d.chegada}</td>
-        <td><b>${d.placa}</b></td>
-        <td>${d.modelo || "—"}</td>
-        <td>${d.finalidade || "—"}</td>
-        <td>${d.empresa}</td>
-        <td>${d.motorista || "—"}</td>
-        <td>${d.cnh || "—"}</td>
+        <td><b>${esc(d.placa)}</b></td>
+        <td>${esc(d.modelo) || "—"}</td>
+        <td>${esc(d.finalidade) || "—"}</td>
+        <td>${esc(d.empresa)}</td>
+        <td>${esc(d.motorista) || "—"}</td>
+        <td>${esc(d.cnh) || "—"}</td>
         <td>${d.entrada}</td>
         <td>${d.saida || "—"}</td>
-        <td>${d.nota || "—"}</td>
-        <td>${d.obs || "—"}</td>
+        <td>${esc(d.nota) || "—"}</td>
+        <td>${esc(d.obs) || "—"}</td>
       </tr>`;
     });
   } catch { alert('Erro ao carregar relatório'); }
@@ -1568,6 +1559,10 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     carregarDatalist();
     carregarDatalistEmpresas();
     carregarDatalistVisitantes();
+    // Trim automatico em inputs de texto
+    document.querySelectorAll('#placa,#motorista,#cnh,#nota,#obs,#empresa,#vNome,#vCpf,#vEmpresa,#vNota,#vObs').forEach(function(el) {
+      el.addEventListener('change', function() { this.value = this.value.trim(); });
+    });
     document.getElementById("motorista").addEventListener("blur", autoPreencherMotorista);
     document.getElementById("placa").addEventListener("blur", autoPreencherPlaca);
     document.getElementById("empresa").addEventListener("blur", autoPreencherEmpresa);
@@ -1582,14 +1577,13 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     atualizar();
-    setInterval(atualizar, 30000);
-    setInterval(atualizarVisitantes, 30000);
-    setInterval(atualizarPreRegistros, 30000);
     atualizarPreRegistros();
     verificarBadges();
-    setInterval(verificarBadges, 5000);
+    // Timer unificado - reduz de 5 para 2 timers (relogio + dados)
+    setInterval(async function(){
+      await Promise.all([atualizar(), atualizarVisitantes(), atualizarPreRegistros(), verificarBadges()]);
+    }, 30000);
   } catch(e) {
-    console.error('[INIT] Erro:', e);
     mostrarErroAuth('Erro ao inicializar: ' + e.message);
   }
 })();
@@ -1654,7 +1648,7 @@ async function carregarDatalist(){
     if(!res.ok) return;
     const lista = await res.json();
     const dl = document.getElementById("listaMotoristas");
-    dl.innerHTML = lista.map(m => `<option value="${m.motorista}" data-placa="${m.placa}" data-empresa="${m.empresa}" data-cnh="${m.cnh}">`).join("");
+    dl.innerHTML = lista.map(m => `<option value="${esc(m.motorista)}" data-placa="${esc(m.placa)}" data-empresa="${esc(m.empresa)}" data-cnh="${esc(m.cnh)}">`).join("");
   } catch {}
 }
 async function carregarDatalistEmpresas(){
@@ -1714,7 +1708,7 @@ async function carregarDatalistVisitantes(){
     if(!res.ok) return;
     const lista = await res.json();
     const dl = document.getElementById("listaVisitantes");
-    dl.innerHTML = lista.map(v => `<option value="${v.nome}" data-cpf="${v.cpf}" data-empresa="${v.empresa}">`).join("");
+    dl.innerHTML = lista.map(v => `<option value="${esc(v.nome)}" data-cpf="${esc(v.cpf)}" data-empresa="${esc(v.empresa)}">`).join("");
   } catch {}
 }
 function autoPreencherVisitanteNome(){
@@ -1816,13 +1810,13 @@ async function carregarMural(){
       const badge = isUrgente ? '<span style="background:#e53e3e;color:#fff;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;margin-left:8px">URGENTE</span>' : '';
       return `<div style="background:${bgColor};border:1px solid ${borderColor};border-radius:10px;padding:16px;margin-bottom:12px;position:relative">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:15px;font-weight:700;color:#1a1a2e">${d.titulo}${badge}</div>
+          <div style="font-size:15px;font-weight:700;color:#1a1a2e">${esc(d.titulo)}${badge}</div>
           <div style="display:flex;gap:6px">
             <button onclick="editarMural(${d.id},'${d.titulo.replace(/'/g,"\\'")}','${(d.texto||'').replace(/'/g,"\\'").replace(/\n/g,"\\n")}','${d.prioridade}')" style="background:#3182ce;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Editar</button>
             <button onclick="excluirMural(${d.id})" style="background:#e53e3e;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Excluir</button>
           </div>
         </div>
-        <div style="font-size:13px;color:#4a5568;white-space:pre-wrap;line-height:1.6">${d.texto || ''}</div>
+        <div style="font-size:13px;color:#4a5568;white-space:pre-wrap;line-height:1.6">${esc(d.texto) || ''}</div>
         <div style="font-size:10px;color:#a0aec0;margin-top:8px">${new Date(d.criado_em).toLocaleString('pt-BR')}</div>
       </div>`;
     }).join('');
@@ -1845,21 +1839,24 @@ function editarMural(id, titulo, texto, prioridade){
   abrirModal('modalMural');
 }
 async function salvarMural(){
+  const btn = document.getElementById('btnSalvarMural');
+  if(btn){ btn.disabled = true; btn.textContent = 'Salvando...'; }
   const id = document.getElementById("muralEditId").value;
   const payload = {
     titulo: document.getElementById("muralTitulo").value.trim(),
     texto: document.getElementById("muralTexto").value.trim(),
     prioridade: document.getElementById("muralPrioridade").value
   };
-  if(!payload.titulo){ alert('Informe o titulo'); return; }
+  if(!payload.titulo){ if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert('Informe o titulo'); return; }
   try {
     const url = id ? API + '/api/mural/' + id : API + '/api/mural';
     const method = id ? 'PUT' : 'POST';
     const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
-    if(!res.ok){ alert('Erro ao salvar'); return; }
+    if(!res.ok){ if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert('Erro ao salvar'); return; }
     fecharModal('modalMural');
     carregarMural();
-  } catch { alert('Erro ao salvar'); }
+  } catch { if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert('Erro ao salvar'); }
+  if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; }
 }
 async function excluirMural(id){
   if(!confirm('Excluir este aviso?')) return;
@@ -1880,11 +1877,11 @@ async function carregarAuditoria(){
     const acaoCores = { "Entrada": "#38a169", "Saida": "#dd6b20", "Exclusao": "#e53e3e", "Confirmacao pre-registro": "#3182ce", "Exclusao pre-registro": "#e53e3e" };
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
-      <td><b>${d.usuario || "—"}</b></td>
-      <td><span style="background:${acaoCores[d.acao]||"#718096"};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${d.acao}</span></td>
-      <td>${d.tipo || "—"}</td>
-      <td><b>${d.alvo || "—"}</b></td>
-      <td style="font-size:12px;max-width:250px;word-break:break-word">${d.detalhes || "—"}</td>
+      <td><b>${esc(d.usuario) || "—"}</b></td>
+      <td><span style="background:${acaoCores[d.acao]||"#718096"};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${esc(d.acao)}</span></td>
+      <td>${esc(d.tipo) || "—"}</td>
+      <td><b>${esc(d.alvo) || "—"}</b></td>
+      <td style="font-size:12px;max-width:250px;word-break:break-word">${esc(d.detalhes) || "—"}</td>
     </tr>`).join('');
   } catch {}
 }
@@ -1904,16 +1901,16 @@ async function atualizarPreRegistrosVisitantes(){
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
-        <td><b>${d.nome}</b></td>
-        <td>${d.empresa || "—"}</td>
-        <td>${d.tipo || "—"}</td>
-        <td><b>${d.placa || "—"}</b></td>
-        <td>${d.nota || "—"}</td>
-        <td>${d.obs || "—"}</td>
+        <td><b>${esc(d.nome)}</b></td>
+        <td>${esc(d.empresa) || "—"}</td>
+        <td>${esc(d.tipo) || "—"}</td>
+        <td><b>${esc(d.placa) || "—"}</b></td>
+        <td>${esc(d.nota) || "—"}</td>
+        <td>${esc(d.obs) || "—"}</td>
         <td>
           <div class="acoes-tabela">
-            <button class="icon-btn btn-saida" title="Confirmar chegada" onclick="confirmarPreRegistroVisitante(${d.id})">${iconConfirmar}</button>
-            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluirPreRegistroVisitante(${d.id})">${iconExcluir}</button>
+            <button class="icon-btn btn-saida" title="Confirmar chegada" aria-label="Confirmar chegada do visitante" onclick="confirmarPreRegistroVisitante(${d.id})">${iconConfirmar}</button>
+            <button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir pré-registro de visitante" onclick="excluirPreRegistroVisitante(${d.id})">${iconExcluir}</button>
           </div>
         </td>
       </tr>`;
@@ -1947,8 +1944,11 @@ document.getElementById("navAuditoria").addEventListener("click", mostrarAuditor
 document.getElementById("navMural").addEventListener("click", mostrarMural);
 
 async function registrarVisitante(){
+  const btn = document.getElementById('btnRegistrarVisitante');
+  if(btn && btn.disabled) return;
+  if(btn){ btn.disabled = true; }
   const nome = document.getElementById("vNome").value.trim();
-  if(!nome){ alert("Informe o nome do visitante."); return; }
+  if(!nome){ if(btn) btn.disabled = false; alert("Informe o nome do visitante."); return; }
   const payload = {
     nome,
     cpf: document.getElementById("vCpf").value.trim(),
@@ -1963,10 +1963,11 @@ async function registrarVisitante(){
     const res = await fetch(API + '/api/visitantes', {
       method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
     });
-    if(!res.ok){ const e = await res.json(); alert(e.erro || "Erro"); return; }
+    if(!res.ok){ const e = await res.json(); if(btn) btn.disabled = false; alert(e.erro || "Erro"); return; }
     limparVisitante();
     atualizarVisitantes();
-  } catch { alert("Erro ao registrar visitante"); }
+  } catch { if(btn) btn.disabled = false; alert("Erro ao registrar visitante"); }
+  if(btn) btn.disabled = false;
 }
 function limparVisitante(){
   document.getElementById("vNome").value = "";
@@ -1991,19 +1992,19 @@ async function atualizarVisitantes(){
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
         <td><b>${d.posicao || "—"}</b></td>
-        <td><b>${d.nome}</b></td>
-        <td>${d.cpf || "—"}</td>
-        <td>${d.empresa || "—"}</td>
-        <td>${d.tipo || "—"}</td>
-        <td><b>${d.placa || "—"}</b></td>
-        <td>${d.nota || "—"}</td>
-        <td>${d.obs || "—"}</td>
+        <td><b>${esc(d.nome)}</b></td>
+        <td>${esc(d.cpf) || "—"}</td>
+        <td>${esc(d.empresa) || "—"}</td>
+        <td>${esc(d.tipo) || "—"}</td>
+        <td><b>${esc(d.placa) || "—"}</b></td>
+        <td>${esc(d.nota) || "—"}</td>
+        <td>${esc(d.obs) || "—"}</td>
         <td>${d.entrada}</td>
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
         <td>
           <div class="acoes-tabela">
-            ${!d.saida ? `<button class="icon-btn btn-saida" title="Registrar saída" onclick="saidaVisitante(${d.id})">${iconSaida}</button>` : ''}
-            <button class="icon-btn btn-excluir" title="Excluir" onclick="excluirVisitante(${d.id})">${iconExcluir}</button>
+            ${!d.saida ? `<button class="icon-btn btn-saida" title="Registrar saída" aria-label="Registrar saída do visitante" onclick="saidaVisitante(${d.id})">${iconSaida}</button>` : ''}
+            <button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir registro de visitante" onclick="excluirVisitante(${d.id})">${iconExcluir}</button>
           </div>
         </td>
       </tr>`;
@@ -2029,6 +2030,44 @@ async function excluirVisitante(id){
     atualizarVisitantes();
   } catch { alert("Erro ao excluir"); }
 }
+
+// === Verificacao periodica de expiracao do token JWT ===
+function verificarExpiracaoToken() {
+  try {
+    const token = getToken();
+    if (!token) return;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const exp = payload.exp * 1000;
+    const agora = Date.now();
+    const restante = exp - agora;
+    if (restante <= 0) {
+      localStorage.clear();
+      window.location.reload();
+      return;
+    }
+    // Avisar 30 minutos antes de expirar
+    if (restante < 30 * 60 * 1000 && !window._tokenWarned) {
+      window._tokenWarned = true;
+      const minutos = Math.ceil(restante / 60000);
+      alert('Sua sessao expirara em ' + minutos + ' minutos. Salve seu trabalho e faca login novamente.');
+    }
+  } catch {}
+}
+setInterval(verificarExpiracaoToken, 60000);
+verificarExpiracaoToken();
+
+// === Handler global de erros JS ===
+window.onerror = function(msg, url, line, col, err) {
+  // Nao enviar para servidor para nao vazar dados, apenas log silencioso
+  if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+    navigator.sendBeacon('/api/health', '');
+  }
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  // Log silencioso para erros de promise nao tratados
+  return;
+});
 </script>
 </body>
 </html>
