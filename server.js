@@ -1025,14 +1025,14 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
     if (!usuario || !senha) return res.status(400).json({ erro: 'Usuário e senha são obrigatórios' });
     const lockKey = 'admin:' + usuario.toLowerCase();
     if (checkLockout(lockKey)) return res.status(429).json({ erro: 'Conta temporariamente bloqueada. Tente novamente em 15 minutos.' });
-    const result = await pool.query('SELECT id, nome, usuario, senha FROM admin_users WHERE usuario = $1', [usuario.toLowerCase()]);
+    const result = await pool.query('SELECT id, nome, usuario, senha, trocar_senha FROM admin_users WHERE usuario = $1', [usuario.toLowerCase()]);
     if (result.rows.length === 0) { recordFailedAttempt(lockKey); return res.status(401).json({ erro: 'Usuário ou senha inválidos' }); }
     const admin = result.rows[0];
     const senhaValida = await bcrypt.compare(senha, admin.senha);
     if (!senhaValida) { recordFailedAttempt(lockKey); return res.status(401).json({ erro: 'Usuário ou senha inválidos' }); }
     clearAttempts(lockKey);
-    const token = jwt.sign({ id: admin.id, nome: admin.nome, admin: true }, JWT_SECRET, { expiresIn: '12h' });
-    res.json({ token, admin: { id: admin.id, nome: admin.nome } });
+    const token = jwt.sign({ id: admin.id, nome: admin.nome, usuario: admin.usuario, admin: true, trocar_senha: !!admin.trocar_senha }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token, admin: { id: admin.id, nome: admin.nome, trocar_senha: !!admin.trocar_senha } });
   } catch (err) {
     console.error('Erro no login admin:', err);
     res.status(500).json({ erro: 'Erro ao fazer login' });
@@ -1178,7 +1178,7 @@ app.post('/api/admin/clientes/:id/usuarios', adminMiddleware, apiLimiter, async 
     const n = nome || 'PORTARIA ' + cliRes.rows[0].empresa.toUpperCase();
     const senhaHash = await bcrypt.hash(s, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (cliente_id, nome, usuario, senha, senha_exibicao) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, usuario, senha_exibicao',
+      'INSERT INTO usuarios (cliente_id, nome, usuario, senha, senha_exibicao, trocar_senha) VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id, nome, usuario, senha_exibicao',
       [cliente_id, n, u.toLowerCase(), senhaHash, s]
     );
     res.status(201).json(result.rows[0]);

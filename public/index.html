@@ -1367,8 +1367,11 @@ async function salvarConfig(e){
     if(!res.ok){ const e = await res.json(); if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert(e.erro || "Erro ao salvar"); return; }
     const data = await res.json();
     usuarioLogado = data;
-    localStorage.setItem("usuarioLogado", JSON.stringify(data));
-    document.getElementById("nomeUsuario").textContent = data.nome;
+    localStorage.setItem("usuario", JSON.stringify(data));
+    const el1 = document.getElementById("sidebarUsuario");
+    const el2 = document.getElementById("usuarioLogado");
+    if (el1) el1.textContent = data.nome;
+    if (el2) el2.textContent = "Operador: " + data.nome;
     alert("Configurações salvas!");
     fecharConfig();
   } catch { if(btn){ btn.disabled = false; btn.textContent = 'Salvar'; } alert("Erro ao salvar"); }
@@ -1380,14 +1383,12 @@ async function carregarUsuarios(){
     if(!res.ok) return;
     const usuarios = await res.json();
     const div = document.getElementById("listaUsuarios");
-    div.innerHTML = usuarios.filter(u => !u.desativado).map(u => `
+    div.innerHTML = usuarios.filter(u => u.ativo !== false).map(u => `
       <div class="usuario-item">
         <span>${esc(u.nome)} <small>(${esc(u.usuario)})</small>${u.id === usuarioLogado.id ? ' <em>— você</em>' : ''}</span>
-
-        <span class="usuario-status ${u.admin ? 'badge-admin' : ''}">${u.admin ? 'Admin' : 'Operador'}</span>
+        <span class="usuario-status">Operador</span>
       </div>
     `).join("");
-    carregarContasMotoristas();
   } catch {}
 }
 function trocarTab(btn, tabId){

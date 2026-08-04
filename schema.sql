@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS admin_users (
   nome VARCHAR(100) NOT NULL,
   usuario VARCHAR(50) UNIQUE NOT NULL,
   senha VARCHAR(255) NOT NULL,
+  trocar_senha BOOLEAN DEFAULT FALSE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   senha VARCHAR(255) NOT NULL,
   senha_exibicao VARCHAR(100) DEFAULT '',
   ativo BOOLEAN DEFAULT TRUE,
+  trocar_senha BOOLEAN DEFAULT FALSE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(cliente_id, usuario)
 );
@@ -87,6 +89,7 @@ CREATE TABLE IF NOT EXISTS contas_motoristas (
   empresa VARCHAR(200) DEFAULT '',
   senha_exibicao VARCHAR(100) DEFAULT '',
   ativo BOOLEAN DEFAULT TRUE,
+  trocar_senha BOOLEAN DEFAULT FALSE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(cliente_id, usuario)
 );
@@ -101,6 +104,7 @@ CREATE TABLE IF NOT EXISTS contas_visitantes (
   empresa VARCHAR(200) DEFAULT '',
   senha_exibicao VARCHAR(100) DEFAULT '',
   ativo BOOLEAN DEFAULT TRUE,
+  trocar_senha BOOLEAN DEFAULT FALSE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(cliente_id, usuario)
 );
