@@ -815,7 +815,7 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
 
 app.post('/api/motorista/cheguei', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
   try {
-    await pool.query('UPDATE localizacoes_motoristas SET a_caminho = FALSE, atualizado_em = NOW() WHERE motorista_id = $1 AND cliente_id = $2', [
+    await pool.query('UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), atualizado_em = NOW() WHERE motorista_id = $1 AND cliente_id = $2', [
       req.motorista.id,
       req.motorista.cliente_id
     ]);
@@ -829,10 +829,10 @@ app.post('/api/motorista/cheguei', motoristaAuthMiddleware, apiLimiter, async (r
 app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em
+      SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, atualizado_em
       FROM localizacoes_motoristas
-      WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours'
-      ORDER BY atualizado_em DESC
+      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE) AND atualizado_em > NOW() - INTERVAL '2 hours'
+      ORDER BY chegou ASC, atualizado_em DESC
     `, [req.usuario.cliente_id]);
     res.json(result.rows);
   } catch (err) {
@@ -1677,7 +1677,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros] = await Promise.all([
-      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours' ORDER BY atualizado_em DESC", [cid]),
+      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE) AND atualizado_em > NOW() - INTERVAL '2 hours' ORDER BY chegou ASC, atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid])
     ]);
     console.log('[LOGISTICA] Resultado:', localizacoes.rows.length, 'motoristas,', preRegistros.rows.length, 'pre-registros');
@@ -1788,6 +1788,8 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS localizacoes_motoristas (id SERIAL PRIMARY KEY, motorista_id INTEGER, cliente_id INTEGER, nome VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', lat DOUBLE PRECISION, lng DOUBLE PRECISION, rua VARCHAR(200) DEFAULT '', a_caminho BOOLEAN DEFAULT TRUE, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE INDEX IF NOT EXISTS idx_localizacoes_cliente ON localizacoes_motoristas(cliente_id, a_caminho)",
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS rua VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS chegou BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS chegada_em TIMESTAMP DEFAULT NULL",
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",

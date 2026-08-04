@@ -526,6 +526,7 @@
   .motorista-card .mc-placa{ font-size:11px; color:#6b7685; }
   .motorista-card .mc-rua{ font-size:11px; color:#4a5568; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .motorista-card .mc-tempo{ font-size:10px; color:#9aa4ad; margin-top:2px; }
+  .motorista-card.chegou-card{ background:#e8f0fe; border-color:#2196F3; }
   @media (max-width:800px){
     #rastreamentoGrid{ grid-template-columns:1fr !important; }
     #listaMotoristasRastreamento{ order:2; max-height:200px; }
@@ -2303,7 +2304,9 @@ async function carregarLocalizacoes(){
     var badgeEl = document.getElementById('badgeRastreamento');
     var listaEl = document.getElementById('listaMotoristasRastreamento');
     var listaContainerEl = document.getElementById('motoristaListaContainer');
-    countEl.textContent = dados.length + ' motorista' + (dados.length !== 1 ? 's' : '') + ' a caminho';
+    var aCaminhoCount = dados.filter(function(d){ return d.a_caminho; }).length;
+    var chegouCount = dados.filter(function(d){ return d.chegou; }).length;
+    countEl.textContent = aCaminhoCount + ' a caminho' + (chegouCount > 0 ? ', ' + chegouCount + ' chegou' : '');
     if(dados.length > 0){
       badgeEl.textContent = dados.length;
       badgeEl.style.display = 'inline';
@@ -2319,17 +2322,20 @@ async function carregarLocalizacoes(){
     listaContainerEl.innerHTML = '';
     dados.forEach(function(d, idx){
       var cor = cores[idx % cores.length];
+      var chegou = !!d.chegou;
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
+      var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
       var card = document.createElement('div');
-      card.className = 'motorista-card';
+      card.className = 'motorista-card' + (chegou ? ' chegou-card' : '');
       card.innerHTML =
         '<div class="mc-topo">' +
-          '<div class="mc-cor" style="background:' + cor + '"></div>' +
+          '<div class="mc-cor" style="background:' + (chegou ? '#2196F3' : cor) + '"></div>' +
           '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
+          (chegou ? '<div style="font-size:10px;background:#2196F3;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Chegou</div>' : '') +
         '</div>' +
         (d.placa ? '<div class="mc-placa">Placa: ' + esc(d.placa) + '</div>' : '') +
         (d.rua ? '<div class="mc-rua">📍 ' + esc(d.rua) + '</div>' : '') +
-        '<div class="mc-tempo">Atualizado: ' + tempo + '</div>';
+        '<div class="mc-tempo">' + (chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>';
       card.onclick = (function(dd, lat, lng){
         return function(){
           if(mapaRastreamento){
@@ -2358,7 +2364,8 @@ async function carregarLocalizacoes(){
       });
       var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapaRastreamento);
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
-      var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">A caminho</span>' : '<span style="color:#2196F3;font-weight:700">Chegou</span>';
+      var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">🚛 A caminho</span>' : '<span style="color:#2196F3;font-weight:700">📍 Chegou</span>';
+      var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
       var ruaText = d.rua ? '<span style="color:#2a6f7e">📍</span> ' + esc(d.rua) : '';
       marker.bindPopup(
         '<div style="min-width:180px">' +
@@ -2366,7 +2373,7 @@ async function carregarLocalizacoes(){
             '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
             '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
           '</div>' +
-          statusText + '<br>' +
+          statusText + horaChegada + '<br>' +
           (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
           (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
           (ruaText ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0">' + ruaText + '</div>' : '') +

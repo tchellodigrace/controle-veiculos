@@ -57,6 +57,7 @@
   .motorista-card .mc-info{ font-size:11px; color:#6b7685; display:flex; flex-direction:column; gap:2px; }
   .motorista-card .mc-rua{ color:#4a5568; }
   .motorista-card .mc-tempo{ color:#9aa4ad; font-size:10px; margin-top:4px; }
+  .motorista-card.chegou-card{ background:#e8f0fe; border-color:#2196F3; }
 
   /* Pre-registros */
   .pr-card{
@@ -178,7 +179,9 @@ function carregarDados(){
       var preRegistros = data.preRegistros || [];
 
       // Atualizar count
-      document.getElementById('motoristaCount').textContent = motoristas.length + ' motorista' + (motoristas.length !== 1 ? 's' : '') + ' a caminho';
+      var aCaminhoCount = motoristas.filter(function(d){ return d.a_caminho; }).length;
+      var chegouCount = motoristas.filter(function(d){ return d.chegou; }).length;
+      document.getElementById('motoristaCount').textContent = aCaminhoCount + ' a caminho' + (chegouCount > 0 ? ', ' + chegouCount + ' chegou' : '');
       var vazioEl = document.getElementById('mapaVazio');
       if(motoristas.length > 0){ vazioEl.style.display = 'none'; } else { vazioEl.style.display = 'flex'; }
 
@@ -188,18 +191,21 @@ function carregarDados(){
       // Motoristas
       motoristas.forEach(function(d, idx){
         var cor = cores[idx % cores.length];
+        var chegou = !!d.chegou;
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
+        var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
         listaHtml +=
-          '<div class="motorista-card" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
+          '<div class="motorista-card' + (chegou ? ' chegou-card' : '') + '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
             '<div class="mc-topo">' +
-              '<div class="mc-cor" style="background:' + cor + '"></div>' +
+              '<div class="mc-cor" style="background:' + (chegou ? '#2196F3' : cor) + '"></div>' +
               '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
+              (chegou ? '<div style="font-size:10px;background:#2196F3;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Chegou</div>' : '') +
             '</div>' +
             '<div class="mc-info">' +
               (d.placa ? '<div>Placa: <b>' + esc(d.placa) + '</b></div>' : '') +
               (d.empresa ? '<div>Empresa: ' + esc(d.empresa) + '</div>' : '') +
               (d.rua ? '<div class="mc-rua">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
-              '<div class="mc-tempo">Atualizado: ' + tempo + '</div>' +
+              '<div class="mc-tempo">' + (chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>' +
             '</div>' +
           '</div>';
       });
@@ -253,13 +259,14 @@ function carregarDados(){
         var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapa);
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">&#x1F69A; A caminho</span>' : '<span style="color:#2196F3;font-weight:700">&#x2705; Chegou</span>';
+        var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
         marker.bindPopup(
           '<div style="min-width:200px">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
               '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
               '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
             '</div>' +
-            statusText + '<br>' +
+            statusText + horaChegada + '<br>' +
             (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
             (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
             (d.rua ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0;color:#2a6f7e">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
