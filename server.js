@@ -1039,6 +1039,26 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
   }
 });
 
+app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const { senha_atual, nova_senha } = req.body;
+    if (!senha_atual || !nova_senha) return res.status(400).json({ erro: 'Senha atual e nova senha sao obrigatorias' });
+    if (nova_senha.length < 8) return res.status(400).json({ erro: 'Nova senha deve ter pelo menos 8 caracteres' });
+    const errC = validarComplexidadeSenha(nova_senha);
+    if (errC) return res.status(400).json({ erro: errC });
+    const result = await pool.query('SELECT senha FROM admin_users WHERE id = $1', [req.admin.id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Admin nao encontrado' });
+    const senhaValida = await bcrypt.compare(senha_atual, result.rows[0].senha);
+    if (!senhaValida) return res.status(401).json({ erro: 'Senha atual incorreta' });
+    const senhaHash = await bcrypt.hash(nova_senha, 10);
+    await pool.query('UPDATE admin_users SET senha = $1, trocar_senha = FALSE WHERE id = $2', [senhaHash, req.admin.id]);
+    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso' });
+  } catch (err) {
+    console.error('Erro ao alterar senha admin:', err);
+    res.status(500).json({ erro: 'Erro ao alterar senha' });
+  }
+});
+
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, criado_em FROM clientes ORDER BY criado_em DESC');

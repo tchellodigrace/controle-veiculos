@@ -85,6 +85,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <span class="user" id="adminNome">Admin</span>
+    <button class="sair" style="border-color:rgba(255,255,255,.5)" onclick="abrirTrocarSenha()">Trocar Senha</button>
     <button class="sair" onclick="sair()">Sair</button>
   </div>
 </div>
@@ -953,6 +954,56 @@ async function exportarTabela(tabela){
     el.textContent = 'Exportado ' + data.rows + ' registros da tabela ' + tabela;
   } catch { el.textContent = 'Erro ao exportar'; }
 }
+
+function abrirTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.add('mostrar'); }
+function fecharTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.remove('mostrar'); }
+async function salvarSenhaAdmin(){
+  const btn = document.getElementById('btnSalvarSenha');
+  const atual = document.getElementById('senhaAtual').value.trim();
+  const nova = document.getElementById('novaSenha').value;
+  const nova2 = document.getElementById('novaSenha2').value;
+  if(!atual || !nova || !nova2){ alert('Preencha todos os campos.'); return; }
+  if(nova !== nova2){ alert('As senhas nao conferem.'); return; }
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    const token = localStorage.getItem('adminToken');
+    const res = await fetch(API + '/api/admin/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ senha_atual: atual, nova_senha: nova })
+    });
+    const data = await res.json();
+    if(!res.ok){ alert(data.erro || 'Erro ao alterar senha.'); btn.disabled = false; btn.textContent = 'Salvar'; return; }
+    alert('Senha alterada com sucesso!');
+    fecharTrocarSenha();
+    document.getElementById('senhaAtual').value = '';
+    document.getElementById('novaSenha').value = '';
+    document.getElementById('novaSenha2').value = '';
+  } catch { alert('Erro ao alterar senha.'); }
+  btn.disabled = false; btn.textContent = 'Salvar';
+}
 </script>
+
+<div id="modalTrocarSenha" class="modal-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:30px;max-width:400px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.2)">
+    <h3 style="margin:0 0 20px;font-size:18px;color:#1a1a2e">Trocar Senha do Admin</h3>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;color:#555;margin-bottom:4px">Senha Atual</label>
+      <input type="password" id="senhaAtual" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:12px;color:#555;margin-bottom:4px">Nova Senha (min. 8 chars, maiuscula, minuscula e numero)</label>
+      <input type="password" id="novaSenha" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="display:block;font-size:12px;color:#555;margin-bottom:4px">Confirmar Nova Senha</label>
+      <input type="password" id="novaSenha2" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="fecharTrocarSenha()" style="padding:8px 18px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Cancelar</button>
+      <button id="btnSalvarSenha" onclick="salvarSenhaAdmin()" style="padding:8px 18px;border:none;border-radius:8px;background:#4F86C6;color:#fff;cursor:pointer;font-size:13px;font-weight:600">Salvar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
