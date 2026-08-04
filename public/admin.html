@@ -966,7 +966,7 @@ async function salvarSenhaAdmin(){
   if(nova !== nova2){ alert('As senhas nao conferem.'); return; }
   btn.disabled = true; btn.textContent = 'Salvando...';
   try {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('tokenAdmin');
     const res = await fetch(API + '/api/admin/config', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
