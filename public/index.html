@@ -247,6 +247,23 @@
   }
   .aviso-sms.mostrar{ display:flex; }
   .aviso-sms b{ display:block; margin-bottom:2px; color:#5c3f07; }
+  .autocomplete-wrap{ position:relative; }
+  .autocomplete-list{
+    position:absolute; top:100%; left:0; right:0; z-index:1000;
+    background:#fff; border:1px solid var(--cinza-borda); border-top:none;
+    border-radius:0 0 6px 6px; max-height:200px; overflow-y:auto;
+    box-shadow:0 6px 16px rgba(0,0,0,.12); display:none;
+  }
+  .autocomplete-list.open{ display:block; }
+  .autocomplete-list .ac-item{
+    padding:8px 10px; font-size:13px; color:#26313a; cursor:pointer;
+    border-bottom:1px solid #f0f0f0; transition:background .15s;
+  }
+  .autocomplete-list .ac-item:last-child{ border-bottom:none; }
+  .autocomplete-list .ac-item:hover,
+  .autocomplete-list .ac-item.active{ background:#e8f5e9; color:#1c8a4f; font-weight:600; }
+  .autocomplete-list .ac-item .ac-match{ font-weight:700; color:#1c8a4f; }
+  .campo input.ac-input{ border-radius:6px 6px 0 0; }
   .acoes-form{
     margin-top:18px;
     display:flex;
@@ -606,8 +623,10 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Placa do Veículo</label>
-              <input id="placa" list="listaPlacas" placeholder="Ex.: ABC1D23" maxlength="8">
-              <datalist id="listaPlacas"></datalist>
+              <div class="autocomplete-wrap">
+                <input id="placa" class="ac-input" placeholder="Ex.: ABC1D23" maxlength="8" autocomplete="off">
+                <div class="autocomplete-list" id="acPlaca"></div>
+              </div>
             </div>
             <div class="campo">
               <label>Modelo do Veículo</label>
@@ -638,8 +657,10 @@
             </div>
             <div class="campo">
               <label>Empresa</label>
-              <input id="empresa" list="listaEmpresas" placeholder="Informe a empresa" maxlength="100">
-            <datalist id="listaEmpresas"></datalist>
+              <div class="autocomplete-wrap">
+                <input id="empresa" class="ac-input" placeholder="Informe a empresa" maxlength="100" autocomplete="off">
+                <div class="autocomplete-list" id="acEmpresa"></div>
+              </div>
             </div>
             <div class="campo">
               <label>Motorista</label>
@@ -648,8 +669,10 @@
             </div>
             <div class="campo">
               <label>CNH</label>
-              <input id="cnh" list="listaCnh" placeholder="Informe a CNH" maxlength="20">
-              <datalist id="listaCnh"></datalist>
+              <div class="autocomplete-wrap">
+                <input id="cnh" class="ac-input" placeholder="Informe a CNH" maxlength="20" autocomplete="off">
+                <div class="autocomplete-list" id="acCnh"></div>
+              </div>
             </div>
             <div class="campo">
               <label>Nota Fiscal / RT</label>
@@ -766,13 +789,17 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Nome Completo</label>
-              <input id="vNome" list="listaVisitantes" placeholder="Nome do visitante" autocomplete="off" maxlength="100">
-              <datalist id="listaVisitantes"></datalist>
+              <div class="autocomplete-wrap">
+                <input id="vNome" class="ac-input" placeholder="Nome do visitante" autocomplete="off" maxlength="100">
+                <div class="autocomplete-list" id="acVisitante"></div>
+              </div>
             </div>
             <div class="campo">
               <label>CPF</label>
-              <input id="vCpf" list="listaCpfs" placeholder="000.000.000-00" maxlength="14">
-              <datalist id="listaCpfs"></datalist>
+              <div class="autocomplete-wrap">
+                <input id="vCpf" class="ac-input" placeholder="000.000.000-00" maxlength="14" autocomplete="off">
+                <div class="autocomplete-list" id="acCpf"></div>
+              </div>
             </div>
             <div class="campo">
               <label>Empresa</label>
@@ -1642,7 +1669,9 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     if (!await verificarAuth()) return;
     carregarDatalist();
     carregarDatalistEmpresas();
+    iniciarAutocompletesPortaria();
     carregarDatalistVisitantes();
+    iniciarAutocompletesVisitantes();
     // Trim automatico em inputs de texto
     document.querySelectorAll('#placa,#motorista,#cnh,#nota,#obs,#empresa,#vNome,#vCpf,#vEmpresa,#vNota,#vObs').forEach(function(el) {
       el.addEventListener('change', function() { this.value = this.value.trim(); });
@@ -1737,23 +1766,108 @@ async function carregarDatalist(){
   } catch {}
 }
 async function carregarDatalistEmpresas(){
+  // Agora usa autocomplete dinamico ao digitar
+}
+
+// === AUTOCOMPLETE DINAMICO ===
+var acTimers = {};
+var acActiveIdx = {};
+
+function fecharTodasListasAc(exceptId){
+  document.querySelectorAll('.autocomplete-list.open').forEach(function(el){
+    if(el.id !== exceptId) el.classList.remove('open');
+  });
+}
+
+function configurarAutocomplete(inputId, listId, campo, endpoint, authHeaders){
+  var input = document.getElementById(inputId);
+  var lista = document.getElementById(listId);
+  if(!input || !lista) return;
+
+  input.addEventListener('input', function(){
+    var val = this.value.trim();
+    if(val.length < 1){ lista.classList.remove('open'); lista.innerHTML = ''; return; }
+    fecharTodasListasAc(listId);
+    acActiveIdx[listId] = -1;
+    clearTimeout(acTimers[campo + inputId]);
+    acTimers[campo + inputId] = setTimeout(function(){ buscarSugestoes(inputId, listId, campo, endpoint, val, authHeaders); }, 300);
+  });
+
+  input.addEventListener('focus', function(){
+    var val = this.value.trim();
+    if(val.length >= 1) fecharTodasListasAc(listId);
+  });
+
+  input.addEventListener('keydown', function(e){
+    var items = lista.querySelectorAll('.ac-item');
+    if(!items.length) return;
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      acActiveIdx[listId] = Math.min((acActiveIdx[listId]||-1) + 1, items.length - 1);
+      atualizarAcActive(items, listId);
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      acActiveIdx[listId] = Math.max((acActiveIdx[listId]||0) - 1, 0);
+      atualizarAcActive(items, listId);
+    } else if(e.key === 'Enter' && acActiveIdx[listId] >= 0){
+      e.preventDefault();
+      items[acActiveIdx[listId]].click();
+    } else if(e.key === 'Escape'){
+      lista.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    if(!input.contains(e.target) && !lista.contains(e.target)) lista.classList.remove('open');
+  });
+}
+
+function atualizarAcActive(items, listId){
+  items.forEach(function(it, i){
+    it.classList.toggle('active', i === acActiveIdx[listId]);
+    if(i === acActiveIdx[listId]) it.scrollIntoView({ block:'nearest' });
+  });
+}
+
+async function buscarSugestoes(inputId, listId, campo, endpoint, query, authHeaders){
+  var lista = document.getElementById(listId);
   try {
-    const campos = [
-      { campo: 'empresa', datalistId: 'listaEmpresas' },
-      { campo: 'placa', datalistId: 'listaPlacas' },
-      { campo: 'cnh', datalistId: 'listaCnh' }
-    ];
-    const promises = campos.map(c =>
-      fetch(API + '/api/empresas-lista?campo=' + c.campo, { headers: getHeaders() })
-        .then(res => res.ok ? res.json() : [])
-        .then(lista => {
-          const dl = document.getElementById(c.datalistId);
-          if(dl) dl.innerHTML = lista.map(e => `<option value="${e[c.campo]}">`).join("");
-        })
-        .catch(() => {})
-    );
-    await Promise.all(promises);
-  } catch {}
+    var url = endpoint + '&campo=' + campo + '&q=' + encodeURIComponent(query);
+    var fetchOpts = authHeaders ? { headers: authHeaders } : {};
+    var res = await fetch(url, fetchOpts);
+    if(!res.ok) return;
+    var data = await res.json();
+    if(!data || data.length === 0){ lista.classList.remove('open'); lista.innerHTML = ''; return; }
+    var queryUpper = query.toUpperCase();
+    var html = data.map(function(item){
+      var val = item[campo] || '';
+      var escaped = val.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      var idx = val.toUpperCase().indexOf(queryUpper);
+      var display = escaped;
+      if(idx >= 0){
+        display = escaped.substring(0, idx) + '<span class="ac-match">' + escaped.substring(idx, idx + query.length) + '</span>' + escaped.substring(idx + query.length);
+      }
+      return '<div class="ac-item" data-value="' + escaped + '">' + display + '</div>';
+    }).join('');
+    lista.innerHTML = html;
+    lista.classList.add('open');
+    acActiveIdx[listId] = -1;
+    lista.querySelectorAll('.ac-item').forEach(function(el){
+      el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        document.getElementById(inputId).value = el.dataset.value;
+        lista.classList.remove('open');
+        acActiveIdx[listId] = -1;
+      });
+    });
+  } catch(ex){}
+}
+
+function iniciarAutocompletesPortaria(){
+  var h = getHeaders();
+  configurarAutocomplete('placa', 'acPlaca', 'placa', API + '/api/empresas-lista?', h);
+  configurarAutocomplete('empresa', 'acEmpresa', 'empresa', API + '/api/empresas-lista?', h);
+  configurarAutocomplete('cnh', 'acCnh', 'cnh', API + '/api/empresas-lista?', h);
 }
 function autoPreencherMotorista(){
   const nome = document.getElementById("motorista").value.trim().toUpperCase();
@@ -1798,33 +1912,17 @@ async function autoPreencher(tipo, valor){
 }
 
 async function carregarDatalistVisitantes(){
-  try {
-    const [resVisitantes, resCpfs] = await Promise.all([
-      fetch(API + '/api/visitantes-lista', { headers: getHeaders() }),
-      fetch(API + '/api/visitantes-lista?campo=cpf', { headers: getHeaders() })
-    ]);
-    if(resVisitantes.ok){
-      const lista = await resVisitantes.json();
-      const dl = document.getElementById("listaVisitantes");
-      dl.innerHTML = lista.map(v => `<option value="${esc(v.nome)}" data-cpf="${esc(v.cpf)}" data-empresa="${esc(v.empresa)}">`).join("");
-    }
-    if(resCpfs.ok){
-      const cpfs = await resCpfs.json();
-      const dlCpf = document.getElementById("listaCpfs");
-      if(dlCpf) dlCpf.innerHTML = cpfs.map(c => `<option value="${esc(c.cpf)}">`).join("");
-    }
-  } catch {}
+  // Agora usa autocomplete dinamico ao digitar
+}
+function iniciarAutocompletesVisitantes(){
+  var h = getHeaders();
+  configurarAutocomplete('vNome', 'acVisitante', 'nome', API + '/api/visitantes-lista?', h);
+  configurarAutocomplete('vCpf', 'acCpf', 'cpf', API + '/api/visitantes-lista?', h);
 }
 function autoPreencherVisitanteNome(){
   const nome = document.getElementById("vNome").value.trim().toUpperCase();
   if(!nome) return;
-  const opt = document.querySelector(`#listaVisitantes option[value="${nome.replace(/"/g,'\\"')}"]`);
-  if(opt){
-    if(opt.dataset.cpf) document.getElementById("vCpf").value = opt.dataset.cpf;
-    if(opt.dataset.empresa) document.getElementById("vEmpresa").value = opt.dataset.empresa;
-  } else {
-    autoPreencherVisitante("nome", nome);
-  }
+  autoPreencherVisitante("nome", nome);
 }
 function autoPreencherVisitanteCpf(){
   const cpf = document.getElementById("vCpf").value.trim();

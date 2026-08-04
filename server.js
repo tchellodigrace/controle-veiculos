@@ -400,24 +400,30 @@ app.get('/api/motoristas-lista', authMiddleware, apiLimiter, async (req, res) =>
 app.get('/api/empresas-lista', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const campo = req.query.campo;
+    const q = (req.query.q || '').trim();
     if (!campo) {
+      const filtro = q ? ` AND empresa ILIKE '%' || $2 || '%'` : '';
+      const params = q ? [req.usuario.cliente_id, q] : [req.usuario.cliente_id];
       const result = await pool.query(
-        `SELECT DISTINCT empresa FROM registros WHERE cliente_id = $1 AND empresa != '' ORDER BY empresa ASC`, [req.usuario.cliente_id]
+        `SELECT DISTINCT empresa FROM registros WHERE cliente_id = $1 AND empresa != ''${filtro} ORDER BY empresa ASC LIMIT 50`, params
       );
       return res.json(result.rows);
     }
     const camposPermitidos = ['empresa', 'placa', 'cnh', 'motorista', 'modelo'];
     if (!camposPermitidos.includes(campo)) return res.json([]);
+    const filtro = q ? ` AND ${campo} ILIKE '%' || $2 || '%'` : '';
+    const params = q ? [req.usuario.cliente_id, q] : [req.usuario.cliente_id];
     const result = await pool.query(
-      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [req.usuario.cliente_id]
+      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL${filtro} ORDER BY ${campo} ASC LIMIT 50`, params
     );
+    const preParams = q ? [req.usuario.cliente_id, q] : [req.usuario.cliente_id];
     const preResult = await pool.query(
-      `SELECT DISTINCT ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [req.usuario.cliente_id]
+      `SELECT DISTINCT ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL${filtro} ORDER BY ${campo} ASC LIMIT 50`, preParams
     );
     const todos = new Set();
     result.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
     preResult.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
-    res.json(Array.from(todos).sort().map(v => ({ [campo]: v })));
+    res.json(Array.from(todos).sort().slice(0, 50).map(v => ({ [campo]: v })));
   } catch (err) {
     console.error('Erro ao listar sugestoes:', err);
     res.status(500).json({ erro: 'Erro ao listar' });
@@ -429,21 +435,22 @@ app.get('/api/empresas-lista-pre', apiLimiter, async (req, res) => {
     const cid = req.query.cliente_id;
     if (!cid || !/^\d+$/.test(String(cid))) return res.json([]);
     const campo = req.query.campo;
+    const q = (req.query.q || '').trim();
     if (!campo) return res.json([]);
     const camposPermitidos = ['empresa', 'placa', 'cnh', 'motorista', 'modelo'];
     if (!camposPermitidos.includes(campo)) return res.json([]);
-    const tabela = campo === 'cnh' ? 'registros' : 'registros';
+    const filtro = q ? ` AND ${campo} ILIKE '%' || $2 || '%'` : '';
+    const params = q ? [cid, q] : [cid];
     const result = await pool.query(
-      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [cid]
+      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL${filtro} ORDER BY ${campo} ASC LIMIT 50`, params
     );
-    // Tambem buscar em pre_registros
     const preResult = await pool.query(
-      `SELECT DISTINCT ${campo === 'motorista' ? 'motorista' : campo} AS ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [cid]
+      `SELECT DISTINCT ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL${filtro} ORDER BY ${campo} ASC LIMIT 50`, params
     );
     const todos = new Set();
     result.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
     preResult.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
-    res.json(Array.from(todos).sort().map(v => ({ [campo]: v })));
+    res.json(Array.from(todos).sort().slice(0, 50).map(v => ({ [campo]: v })));
   } catch (err) {
     console.error('Erro ao listar sugestoes:', err);
     res.status(500).json({ erro: 'Erro ao buscar sugestoes' });
@@ -453,24 +460,27 @@ app.get('/api/empresas-lista-pre', apiLimiter, async (req, res) => {
 app.get('/api/visitantes-lista', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const campo = req.query.campo;
+    const q = (req.query.q || '').trim();
     if (campo && campo === 'cpf') {
+      const filtro = q ? ` AND cpf ILIKE '%' || $2 || '%'` : '';
+      const params = q ? [req.usuario.cliente_id, q] : [req.usuario.cliente_id];
       const result = await pool.query(
-        `SELECT DISTINCT cpf FROM visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL ORDER BY cpf ASC LIMIT 200`,
-        [req.usuario.cliente_id]
+        `SELECT DISTINCT cpf FROM visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL${filtro} ORDER BY cpf ASC LIMIT 50`, params
       );
       const preResult = await pool.query(
-        `SELECT DISTINCT cpf FROM pre_registros_visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL ORDER BY cpf ASC LIMIT 200`,
-        [req.usuario.cliente_id]
+        `SELECT DISTINCT cpf FROM pre_registros_visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL${filtro} ORDER BY cpf ASC LIMIT 50`, params
       );
       const todos = new Set();
       result.rows.forEach(r => { if(r.cpf) todos.add(r.cpf); });
       preResult.rows.forEach(r => { if(r.cpf) todos.add(r.cpf); });
-      return res.json(Array.from(todos).sort().map(v => ({ cpf: v })));
+      return res.json(Array.from(todos).sort().slice(0, 50).map(v => ({ cpf: v })));
     }
+    const filtro = q ? ` AND nome ILIKE '%' || $2 || '%'` : '';
+    const params = q ? [req.usuario.cliente_id, q] : [req.usuario.cliente_id];
     const result = await pool.query(
       `SELECT DISTINCT nome, cpf, empresa FROM visitantes
-       WHERE cliente_id = $1 AND nome != '' ORDER BY nome ASC`,
-      [req.usuario.cliente_id]
+       WHERE cliente_id = $1 AND nome != ''${filtro} ORDER BY nome ASC LIMIT 50`,
+      params
     );
     res.json(result.rows);
   } catch (err) {
