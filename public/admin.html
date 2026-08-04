@@ -583,13 +583,13 @@ async function verDetalhes(id){
     document.getElementById('modalDetalheBody').innerHTML = `
       <h3 style="margin:0 0 12px;font-size:16px;color:#1a1a2e">${esc(c.empresa)}</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;margin-bottom:14px">
-        <div><b>CNPJ:</b> ${esc(c.cnpj || '—'}</div>
-        <div><b>Responsavel:</b> ${esc(c.responsavel || '—'}</div>
+        <div><b>CNPJ:</b> ${esc(c.cnpj || '—')}</div>
+        <div><b>Responsavel:</b> ${esc(c.responsavel || '—')}</div>
         <div><b>Plano:</b> ${esc(c.plano)}</div>
         <div><b>Valor:</b> R$ ${(c.valor_mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}/mes</div>
         <div><b>Expira:</b> ${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</div>
-        <div><b>E-mail:</b> ${esc(c.email || '—'}</div>
-        <div><b>WhatsApp:</b> ${esc(c.telefone || '—'}</div>
+        <div><b>E-mail:</b> ${esc(c.email || '—')}</div>
+        <div><b>WhatsApp:</b> ${esc(c.telefone || '—')}</div>
         ${c.telefone_fixo ? '<div><b>Tel. Fixo:</b> ' + esc(c.telefone_fixo) + '</div>' : ''}
         <div><b>Status:</b> ${c.ativo ? 'Ativo' : 'Inativo'}</div>
       </div>
@@ -669,8 +669,8 @@ async function carregarClientes(){
       if(expirado && c.ativo) statusBadge = '<span class="badge-expirado">Expirado</span>';
       return `<tr>
         <td><b>${esc(c.empresa)}</b></td>
-        <td>${esc(c.cnpj || '—'}</td>
-        <td>${esc(c.responsavel || '—'}</td>
+        <td>${esc(c.cnpj || '—')}</td>
+        <td>${esc(c.responsavel || '—')}</td>
         <td>${esc(c.plano)}</td>
         <td>R$ ${(c.valor_mensal || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
         <td>${c.data_expiracao ? new Date(c.data_expiracao).toLocaleDateString('pt-BR') : '—'}</td>
@@ -699,8 +699,8 @@ async function carregarFaturamento(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.data_pagamento).toLocaleDateString('pt-BR')}</td>
-      <td><b>${esc(d.empresa || '—'}</b></td>
-      <td>${esc(d.descricao || '—'}</td>
+      <td><b>${esc(d.empresa || '—')}</b></td>
+      <td>${esc(d.descricao || '—')}</td>
       <td>R$ ${(d.valor || 0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
     </tr>`).join('');
   } catch {}
@@ -794,7 +794,7 @@ async function carregarChamados(){
     const priCores = { baixa: '#718096', media: '#d69e2e', alta: '#e53e3e' };
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${d.id}</td>
-      <td><b>${esc(d.empresa || 'Geral'}</b></td>
+      <td><b>${esc(d.empresa || 'Geral')}</b></td>
       <td>${esc(d.titulo)}</td>
       <td><span style="color:${priCores[d.prioridade]||'#718096'};font-weight:600">${d.prioridade}</span></td>
       <td><span style="background:${statusCores[d.status]||'#718096'};color:#fff;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600">${d.status}</span></td>
@@ -874,9 +874,9 @@ async function carregarHistorico(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
-      <td>${esc(d.admin_usuario || '—'}</td>
+      <td>${esc(d.admin_usuario || '—')}</td>
       <td><b>${esc(d.acao)}</b></td>
-      <td style="max-width:300px;word-break:break-word">${esc(d.detalhes || '—'}</td>
+      <td style="max-width:300px;word-break:break-word">${esc(d.detalhes || '—')}</td>
     </tr>`).join('');
   } catch {}
 }
@@ -892,7 +892,7 @@ async function carregarLogs(){
     vazio.style.display = 'none';
     tbody.innerHTML = dados.map(d => `<tr>
       <td>${new Date(d.criado_em).toLocaleString('pt-BR')}</td>
-      <td>${esc(d.admin_usuario || '—'}</td>
+      <td>${esc(d.admin_usuario || '—')}</td>
       <td><b>${esc(d.acao)}</b></td>
       <td style="font-size:11px;color:#718096">${d.ip || '—'}</td>
     </tr>`).join('');
@@ -916,8 +916,8 @@ async function carregarConfig(){
     const el = document.getElementById('listaConfig');
     el.innerHTML = dados.map(d => `
       <div class="form-group">
-        <label>${esc(d.descricao || d.chave}</label>
-        <input type="text" data-chave="${d.chave}" value="${esc(d.valor || ''}" style="width:100%">
+        <label>${esc(d.descricao || d.chave)}</label>
+        <input type="text" data-chave="${d.chave}" value="${esc(d.valor || '')}" style="width:100%">
       </div>`).join('');
   } catch {}
 }
