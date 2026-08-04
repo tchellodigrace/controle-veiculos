@@ -335,11 +335,23 @@ app.put('/api/registros/:id/saida', authMiddleware, apiLimiter, async (req, res)
   if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
   try {
     const hora = new Date().toLocaleTimeString('pt-BR'); // Sempre do servidor
-    const result = await pool.query(
-      'UPDATE registros SET saida = $1 WHERE id = $2 AND saida = $3 AND cliente_id = $4 RETURNING id, cliente_id, placa, modelo, saida',
-      [hora, req.params.id, '', req.usuario.cliente_id]
+    // Primeiro buscar o registro completo para pegar placa, finalidade, etc.
+    const regInfo = await pool.query(
+      'SELECT id, cliente_id, placa, motorista, finalidade FROM registros WHERE id = $1 AND saida = $2 AND cliente_id = $3',
+      [req.params.id, '', req.usuario.cliente_id]
     );
-    if (result.rows.length === 0) return res.status(404).json({ erro: 'Registro não encontrado ou já possui saída' });
+    if (regInfo.rows.length === 0) return res.status(404).json({ erro: 'Registro não encontrado ou já possui saída' });
+    const reg = regInfo.rows[0];
+    const result = await pool.query(
+      'UPDATE registros SET saida = $1 WHERE id = $2 RETURNING id, cliente_id, placa, modelo, saida',
+      [hora, req.params.id]
+    );
+    // Marcar saida_logistica na localizacao do motorista (para logistica mostrar como concluido)
+    // Busca pela placa no mesmo cliente, onde ainda não marcou saida
+    await pool.query(
+      'UPDATE localizacoes_motoristas SET saida_logistica = TRUE, finalidade_tipo = $1, saida_em = NOW(), atualizado_em = NOW() WHERE cliente_id = $2 AND placa = $3 AND saida_logistica = FALSE',
+      [reg.finalidade || '', req.usuario.cliente_id, reg.placa]
+    );
     res.json(result.rows[0]);
     logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Saida', 'veiculo', result.rows[0].placa, 'Saida registrada as ' + hora);
   } catch (err) {
@@ -831,7 +843,7 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
     const result = await pool.query(`
       SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, atualizado_em
       FROM localizacoes_motoristas
-      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE) AND atualizado_em > NOW() - INTERVAL '2 hours'
+      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE) AND saida_logistica = FALSE AND atualizado_em > NOW() - INTERVAL '2 hours'
       ORDER BY chegou ASC, atualizado_em DESC
     `, [req.usuario.cliente_id]);
     res.json(result.rows);
@@ -1677,7 +1689,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros] = await Promise.all([
-      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE) AND atualizado_em > NOW() - INTERVAL '2 hours' ORDER BY chegou ASC, atualizado_em DESC", [cid]),
+      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, finalidade_tipo, saida_em, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid])
     ]);
     console.log('[LOGISTICA] Resultado:', localizacoes.rows.length, 'motoristas,', preRegistros.rows.length, 'pre-registros');
@@ -1790,6 +1802,9 @@ async function iniciar() {
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS rua VARCHAR(200) DEFAULT ''",
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS chegou BOOLEAN DEFAULT FALSE",
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS chegada_em TIMESTAMP DEFAULT NULL",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS saida_logistica BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS finalidade_tipo VARCHAR(50) DEFAULT ''",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS saida_em TIMESTAMP DEFAULT NULL",
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",

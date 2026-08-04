@@ -45,7 +45,7 @@
   .mapa-vazio svg{ width:48px; height:48px; opacity:.3; }
 
   /* Lista lateral */
-  .lista-section{ display:flex; flex-direction:column; gap:12px; max-height:560px; overflow-y:auto; padding:12px; }
+  .lista-section{ display:flex; flex-direction:column; gap:12px; max-height:620px; overflow-y:auto; padding:12px; }
   .motorista-card{
     background:#f7f9fb; border:1px solid #e0e3e7; border-radius:10px;
     padding:12px; cursor:pointer; transition:.15s;
@@ -58,6 +58,14 @@
   .motorista-card .mc-rua{ color:#4a5568; }
   .motorista-card .mc-tempo{ color:#9aa4ad; font-size:10px; margin-top:4px; }
   .motorista-card.chegou-card{ background:#e8f0fe; border-color:#2196F3; }
+  .motorista-card.concluido-card{ background:#e8f5e9; border-color:#4caf50; opacity:.85; }
+  .motorista-card.concluido-card:hover{ opacity:1; }
+
+  /* Badge de status */
+  .status-badge{ font-size:10px; color:#fff; padding:2px 8px; border-radius:10px; font-weight:700; white-space:nowrap; }
+  .status-badge.a-caminho{ background:#ff9800; }
+  .status-badge.chegou{ background:#2196F3; }
+  .status-badge.concluido{ background:#4caf50; }
 
   /* Pre-registros */
   .pr-card{
@@ -68,6 +76,9 @@
   .pr-card .pr-motorista{ font-weight:700; color:#1a1a2e; font-size:12px; }
   .pr-card .pr-info{ color:#6b7685; line-height:1.6; }
   .pr-card .pr-info b{ color:#4a5568; }
+
+  /* Separador de secao */
+  .separador{ text-align:center; font-size:11px; color:#9aa4ad; padding:6px 0 2px; border-top:1px dashed #ddd; margin-top:4px; }
 
   /* Leaflet */
   .leaflet-popup-content{ font-size:13px; line-height:1.5; }
@@ -107,13 +118,13 @@
     <div class="card">
       <div class="card-header">
         <h3>&#x1F4CD; Rastreamento ao Vivo</h3>
-        <span class="count" id="motoristaCount">0 motoristas a caminho</span>
+        <span class="count" id="motoristaCount">0 motoristas</span>
       </div>
       <div style="position:relative">
         <div id="mapaContainer"></div>
         <div class="mapa-vazio" id="mapaVazio">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Nenhum motorista a caminho no momento
+          Nenhum motorista no momento
         </div>
       </div>
     </div>
@@ -162,12 +173,28 @@ function iniciarMapa(){
 
 var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e63','#795548','#607d8b','#3f51b5'];
 
+function getStatusInfo(d){
+  if(d.saida_logistica){
+    // Concluido - determinar se foi coleta ou entrega
+    var tipo = (d.finalidade_tipo || '').toLowerCase();
+    var tipoLabel = 'Concluida';
+    if(tipo.indexOf('coleta') >= 0) tipoLabel = 'Coleta Concluida';
+    else if(tipo.indexOf('entrega') >= 0) tipoLabel = 'Entrega Concluida';
+    else if(tipo.indexOf('retorno') >= 0) tipoLabel = 'Retorno Concluido';
+    else tipoLabel = 'Visita Concluida';
+    return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#4caf50' };
+  }
+  if(d.chegou){
+    return { label: 'Chegou', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
+  }
+  return { label: 'A caminho', css: '', badge: 'a-caminho', cor: '#ff9800' };
+}
+
 function carregarDados(){
   if(!TOKEN) return;
   fetch(API + '/api/logistica/' + TOKEN)
     .then(function(res){
       if(!res.ok){
-        // Se deu erro, mostrar no painel
         document.getElementById('listaContainer').innerHTML = '<div style="text-align:center;color:#cc0000;font-size:13px;padding:20px">Erro ao carregar dados (HTTP ' + res.status + '). Verifique o link ou recarregue a pagina.</div>';
         return null;
       }
@@ -178,41 +205,82 @@ function carregarDados(){
       var motoristas = data.motoristas || [];
       var preRegistros = data.preRegistros || [];
 
-      // Atualizar count
-      var aCaminhoCount = motoristas.filter(function(d){ return d.a_caminho; }).length;
-      var chegouCount = motoristas.filter(function(d){ return d.chegou; }).length;
-      document.getElementById('motoristaCount').textContent = aCaminhoCount + ' a caminho' + (chegouCount > 0 ? ', ' + chegouCount + ' chegou' : '');
+      // Contadores
+      var aCaminhoCount = 0, chegouCount = 0, concluidoCount = 0;
+      motoristas.forEach(function(d){
+        if(d.saida_logistica) concluidoCount++;
+        else if(d.chegou) chegouCount++;
+        else if(d.a_caminho) aCaminhoCount++;
+      });
+
+      var countParts = [];
+      if(aCaminhoCount > 0) countParts.push(aCaminhoCount + ' a caminho');
+      if(chegouCount > 0) countParts.push(chegouCount + ' chegou');
+      if(concluidoCount > 0) countParts.push(concluidoCount + ' concluido');
+      document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
+
       var vazioEl = document.getElementById('mapaVazio');
       if(motoristas.length > 0){ vazioEl.style.display = 'none'; } else { vazioEl.style.display = 'flex'; }
 
       // Montar lista lateral
       var listaHtml = '';
+      var temAtivos = false, temConcluidos = false;
 
-      // Motoristas
+      // Motoristas ativos (a_caminho ou chegou, sem saida_logistica)
       motoristas.forEach(function(d, idx){
+        if(d.saida_logistica){ temConcluidos = true; return; }
+        temAtivos = true;
+        var st = getStatusInfo(d);
         var cor = cores[idx % cores.length];
-        var chegou = !!d.chegou;
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
         listaHtml +=
-          '<div class="motorista-card' + (chegou ? ' chegou-card' : '') + '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
+          '<div class="motorista-card ' + st.css + '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
             '<div class="mc-topo">' +
-              '<div class="mc-cor" style="background:' + (chegou ? '#2196F3' : cor) + '"></div>' +
+              '<div class="mc-cor" style="background:' + st.cor + '"></div>' +
               '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
-              (chegou ? '<div style="font-size:10px;background:#2196F3;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Chegou</div>' : '') +
+              '<div class="status-badge ' + st.badge + '">' + st.label + '</div>' +
             '</div>' +
             '<div class="mc-info">' +
               (d.placa ? '<div>Placa: <b>' + esc(d.placa) + '</b></div>' : '') +
               (d.empresa ? '<div>Empresa: ' + esc(d.empresa) + '</div>' : '') +
               (d.rua ? '<div class="mc-rua">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
-              '<div class="mc-tempo">' + (chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>' +
+              '<div class="mc-tempo">' + (d.chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>' +
             '</div>' +
           '</div>';
       });
 
-      // Separador
+      // Separador: Concluidos
+      if(temConcluidos && temAtivos){
+        listaHtml += '<div class="separador">&#x2705; CONCLUIDAS (' + concluidoCount + ')</div>';
+      }
+
+      // Motoristas concluidos
+      motoristas.forEach(function(d, idx){
+        if(!d.saida_logistica) return;
+        var st = getStatusInfo(d);
+        var horaSaida = d.saida_em ? new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
+        var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+        listaHtml +=
+          '<div class="motorista-card concluido-card' + (d.lat ? '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')"' : '"') + '>' +
+            '<div class="mc-topo">' +
+              '<div class="mc-cor" style="background:' + st.cor + '"></div>' +
+              '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
+              '<div class="status-badge concluido">' + st.label + '</div>' +
+            '</div>' +
+            '<div class="mc-info">' +
+              (d.placa ? '<div>Placa: <b>' + esc(d.placa) + '</b></div>' : '') +
+              (d.empresa ? '<div>Empresa: ' + esc(d.empresa) + '</div>' : '') +
+              (horaChegada ? '<div>Chegou: ' + horaChegada + '</div>' : '') +
+              (horaSaida ? '<div><b>Saida: ' + horaSaida + '</b></div>' : '') +
+              '<div class="mc-tempo">' + (d.rua ? '&#x1F4CD; ' + esc(d.rua) : '') + '</div>' +
+            '</div>' +
+          '</div>';
+      });
+
+      // Separador: Pre-registros
       if(motoristas.length > 0 && preRegistros.length > 0){
-        listaHtml += '<div style="text-align:center;font-size:11px;color:#9aa4ad;padding:4px;border-top:1px dashed #ddd">&#x1F4E6; PRE-REGISTROS PENDENTES (' + preRegistros.length + ')</div>';
+        listaHtml += '<div class="separador">&#x1F4E6; PRE-REGISTROS PENDENTES (' + preRegistros.length + ')</div>';
       }
 
       // Pre-registros
@@ -240,33 +308,47 @@ function carregarDados(){
 
       document.getElementById('listaContainer').innerHTML = listaHtml;
 
-      // Atualizar mapa
+      // Atualizar mapa (so mostra ativos com coordenadas)
       if(!mapa) return;
       marcadores.forEach(function(m){ mapa.removeLayer(m); });
       marcadores = [];
       var bounds = [];
+      var markerIdx = 0;
       motoristas.forEach(function(d, idx){
         if(d.lat == null || d.lng == null) return;
-        var cor = cores[idx % cores.length];
+        // Concluidos aparecem no mapa com estilo diferente
+        var st = getStatusInfo(d);
+        var cor = cores[markerIdx % cores.length];
+        markerIdx++;
+
+        var pinBg = st.cor;
         var icone = L.divIcon({
           className: '',
           html: '<div style="position:relative;width:38px;height:38px">' +
-            '<div style="width:38px;height:38px;background:' + cor + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.3)"></div>' +
-            '<div style="position:absolute;top:7px;left:50%;transform:translateX(-50%) rotate(45deg);color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)">' + (idx + 1) + '</div>' +
+            '<div style="width:38px;height:38px;background:' + pinBg + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.3)"></div>' +
+            '<div style="position:absolute;top:7px;left:50%;transform:translateX(-50%) rotate(45deg);color:#fff;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)">' + (d.saida_logistica ? '&#x2714;' : (idx + 1)) + '</div>' +
           '</div>',
           iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -38]
         });
         var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapa);
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
-        var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">&#x1F69A; A caminho</span>' : '<span style="color:#2196F3;font-weight:700">&#x2705; Chegou</span>';
-        var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+        var statusPopup = '';
+        if(d.saida_logistica){
+          var horaSaida = d.saida_em ? ' as ' + new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
+          statusPopup = '<span style="color:#4caf50;font-weight:700">&#x2705; ' + st.label + '</span>' + horaSaida;
+        } else {
+          var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+          statusPopup = d.a_caminho
+            ? '<span style="color:#ff9800;font-weight:700">&#x1F69A; A caminho</span>'
+            : '<span style="color:#2196F3;font-weight:700">&#x1F4CD; Chegou</span>' + horaChegada;
+        }
         marker.bindPopup(
           '<div style="min-width:200px">' +
             '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-              '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
+              '<div style="width:14px;height:14px;border-radius:50%;background:' + pinBg + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
               '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
             '</div>' +
-            statusText + horaChegada + '<br>' +
+            statusPopup + '<br>' +
             (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
             (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
             (d.rua ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0;color:#2a6f7e">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
@@ -277,9 +359,10 @@ function carregarDados(){
         // Label
         var labelText = esc(d.nome || 'Motorista');
         if(d.rua) labelText += ' &middot; ' + esc(d.rua);
+        if(d.saida_logistica) labelText = '&#x2705; ' + labelText;
         var labelIcon = L.divIcon({
           className: '',
-          html: '<div style="background:#fff;color:#333;font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap;border:1px solid #ddd;max-width:240px;overflow:hidden;text-overflow:ellipsis"><span style="color:' + cor + ';font-weight:800">#' + (idx+1) + '</span> ' + labelText + '</div>',
+          html: '<div style="background:#fff;color:#333;font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap;border:1px solid #ddd;max-width:240px;overflow:hidden;text-overflow:ellipsis"><span style="color:' + pinBg + ';font-weight:800">#' + (d.saida_logistica ? '&#x2714;' : (idx+1)) + '</span> ' + labelText + '</div>',
           iconSize: [240, 24], iconAnchor: [120, 44]
         });
         var label = L.marker([d.lat, d.lng], { icon: labelIcon, interactive: false }).addTo(mapa);
