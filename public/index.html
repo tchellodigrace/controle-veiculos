@@ -606,7 +606,8 @@
           <div class="grid-inputs">
             <div class="campo">
               <label>Placa do Veículo</label>
-              <input id="placa" placeholder="Ex.: ABC1D23" maxlength="8">
+              <input id="placa" list="listaPlacas" placeholder="Ex.: ABC1D23" maxlength="8">
+              <datalist id="listaPlacas"></datalist>
             </div>
             <div class="campo">
               <label>Modelo do Veículo</label>
@@ -647,7 +648,8 @@
             </div>
             <div class="campo">
               <label>CNH</label>
-              <input id="cnh" placeholder="Informe a CNH" maxlength="20">
+              <input id="cnh" list="listaCnh" placeholder="Informe a CNH" maxlength="20">
+              <datalist id="listaCnh"></datalist>
             </div>
             <div class="campo">
               <label>Nota Fiscal / RT</label>
@@ -769,7 +771,8 @@
             </div>
             <div class="campo">
               <label>CPF</label>
-              <input id="vCpf" placeholder="000.000.000-00" maxlength="14">
+              <input id="vCpf" list="listaCpfs" placeholder="000.000.000-00" maxlength="14">
+              <datalist id="listaCpfs"></datalist>
             </div>
             <div class="campo">
               <label>Empresa</label>
@@ -1735,11 +1738,21 @@ async function carregarDatalist(){
 }
 async function carregarDatalistEmpresas(){
   try {
-    const res = await fetch(API + '/api/empresas-lista', { headers: getHeaders() });
-    if(!res.ok) return;
-    const lista = await res.json();
-    const dl = document.getElementById("listaEmpresas");
-    dl.innerHTML = lista.map(e => `<option value="${e.empresa}">`).join("");
+    const campos = [
+      { campo: 'empresa', datalistId: 'listaEmpresas' },
+      { campo: 'placa', datalistId: 'listaPlacas' },
+      { campo: 'cnh', datalistId: 'listaCnh' }
+    ];
+    const promises = campos.map(c =>
+      fetch(API + '/api/empresas-lista?campo=' + c.campo, { headers: getHeaders() })
+        .then(res => res.ok ? res.json() : [])
+        .then(lista => {
+          const dl = document.getElementById(c.datalistId);
+          if(dl) dl.innerHTML = lista.map(e => `<option value="${e[c.campo]}">`).join("");
+        })
+        .catch(() => {})
+    );
+    await Promise.all(promises);
   } catch {}
 }
 function autoPreencherMotorista(){
@@ -1786,11 +1799,20 @@ async function autoPreencher(tipo, valor){
 
 async function carregarDatalistVisitantes(){
   try {
-    const res = await fetch(API + '/api/visitantes-lista', { headers: getHeaders() });
-    if(!res.ok) return;
-    const lista = await res.json();
-    const dl = document.getElementById("listaVisitantes");
-    dl.innerHTML = lista.map(v => `<option value="${esc(v.nome)}" data-cpf="${esc(v.cpf)}" data-empresa="${esc(v.empresa)}">`).join("");
+    const [resVisitantes, resCpfs] = await Promise.all([
+      fetch(API + '/api/visitantes-lista', { headers: getHeaders() }),
+      fetch(API + '/api/visitantes-lista?campo=cpf', { headers: getHeaders() })
+    ]);
+    if(resVisitantes.ok){
+      const lista = await resVisitantes.json();
+      const dl = document.getElementById("listaVisitantes");
+      dl.innerHTML = lista.map(v => `<option value="${esc(v.nome)}" data-cpf="${esc(v.cpf)}" data-empresa="${esc(v.empresa)}">`).join("");
+    }
+    if(resCpfs.ok){
+      const cpfs = await resCpfs.json();
+      const dlCpf = document.getElementById("listaCpfs");
+      if(dlCpf) dlCpf.innerHTML = cpfs.map(c => `<option value="${esc(c.cpf)}">`).join("");
+    }
   } catch {}
 }
 function autoPreencherVisitanteNome(){

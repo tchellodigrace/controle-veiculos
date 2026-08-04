@@ -399,15 +399,28 @@ app.get('/api/motoristas-lista', authMiddleware, apiLimiter, async (req, res) =>
 
 app.get('/api/empresas-lista', authMiddleware, apiLimiter, async (req, res) => {
   try {
+    const campo = req.query.campo;
+    if (!campo) {
+      const result = await pool.query(
+        `SELECT DISTINCT empresa FROM registros WHERE cliente_id = $1 AND empresa != '' ORDER BY empresa ASC`, [req.usuario.cliente_id]
+      );
+      return res.json(result.rows);
+    }
+    const camposPermitidos = ['empresa', 'placa', 'cnh', 'motorista', 'modelo'];
+    if (!camposPermitidos.includes(campo)) return res.json([]);
     const result = await pool.query(
-      `SELECT DISTINCT empresa FROM registros
-       WHERE cliente_id = $1 AND empresa != '' ORDER BY empresa ASC`,
-      [req.usuario.cliente_id]
+      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [req.usuario.cliente_id]
     );
-    res.json(result.rows);
+    const preResult = await pool.query(
+      `SELECT DISTINCT ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [req.usuario.cliente_id]
+    );
+    const todos = new Set();
+    result.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
+    preResult.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
+    res.json(Array.from(todos).sort().map(v => ({ [campo]: v })));
   } catch (err) {
-    console.error('Erro ao listar empresas:', err);
-    res.status(500).json({ erro: 'Erro ao listar empresas' });
+    console.error('Erro ao listar sugestoes:', err);
+    res.status(500).json({ erro: 'Erro ao listar' });
   }
 });
 
@@ -415,18 +428,45 @@ app.get('/api/empresas-lista-pre', apiLimiter, async (req, res) => {
   try {
     const cid = req.query.cliente_id;
     if (!cid || !/^\d+$/.test(String(cid))) return res.json([]);
+    const campo = req.query.campo;
+    if (!campo) return res.json([]);
+    const camposPermitidos = ['empresa', 'placa', 'cnh', 'motorista', 'modelo'];
+    if (!camposPermitidos.includes(campo)) return res.json([]);
+    const tabela = campo === 'cnh' ? 'registros' : 'registros';
     const result = await pool.query(
-      `SELECT DISTINCT empresa FROM registros WHERE cliente_id = $1 AND empresa != '' ORDER BY empresa ASC`, [cid]
+      `SELECT DISTINCT ${campo} FROM registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [cid]
     );
-    res.json(result.rows);
+    // Tambem buscar em pre_registros
+    const preResult = await pool.query(
+      `SELECT DISTINCT ${campo === 'motorista' ? 'motorista' : campo} AS ${campo} FROM pre_registros WHERE cliente_id = $1 AND ${campo} != '' AND ${campo} IS NOT NULL ORDER BY ${campo} ASC LIMIT 200`, [cid]
+    );
+    const todos = new Set();
+    result.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
+    preResult.rows.forEach(r => { if(r[campo]) todos.add(r[campo]); });
+    res.json(Array.from(todos).sort().map(v => ({ [campo]: v })));
   } catch (err) {
-    console.error('Erro ao listar empresas:', err);
-    res.status(500).json({ erro: 'Erro ao listar empresas' });
+    console.error('Erro ao listar sugestoes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar sugestoes' });
   }
 });
 
 app.get('/api/visitantes-lista', authMiddleware, apiLimiter, async (req, res) => {
   try {
+    const campo = req.query.campo;
+    if (campo && campo === 'cpf') {
+      const result = await pool.query(
+        `SELECT DISTINCT cpf FROM visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL ORDER BY cpf ASC LIMIT 200`,
+        [req.usuario.cliente_id]
+      );
+      const preResult = await pool.query(
+        `SELECT DISTINCT cpf FROM pre_registros_visitantes WHERE cliente_id = $1 AND cpf != '' AND cpf IS NOT NULL ORDER BY cpf ASC LIMIT 200`,
+        [req.usuario.cliente_id]
+      );
+      const todos = new Set();
+      result.rows.forEach(r => { if(r.cpf) todos.add(r.cpf); });
+      preResult.rows.forEach(r => { if(r.cpf) todos.add(r.cpf); });
+      return res.json(Array.from(todos).sort().map(v => ({ cpf: v })));
+    }
     const result = await pool.query(
       `SELECT DISTINCT nome, cpf, empresa FROM visitantes
        WHERE cliente_id = $1 AND nome != '' ORDER BY nome ASC`,

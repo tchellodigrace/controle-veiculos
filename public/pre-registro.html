@@ -162,8 +162,9 @@
         <datalist id="listaEmpresas"></datalist>
       </div>
       <div class="campo">
-        <label>Placa do Veículo *</label>
-        <input type="text" id="placa" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
+        <label>Placa do Veiculo *</label>
+        <input type="text" id="placa" list="listaPlacas" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
+        <datalist id="listaPlacas"></datalist>
       </div>
       <div class="campo">
         <label>Modelo do Veículo</label>
@@ -194,7 +195,8 @@
       </div>
       <div class="campo">
         <label>CNH</label>
-        <input type="text" id="cnh" placeholder="Número da CNH">
+        <input type="text" id="cnh" list="listaCnh" placeholder="Numero da CNH">
+        <datalist id="listaCnh"></datalist>
       </div>
       <div class="campo">
         <label>Nota Fiscal / RT</label>
@@ -325,16 +327,26 @@ function mostrarTelaForm(){
   document.getElementById("sucesso").style.display = "none";
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
-  carregarEmpresas();
+  carregarSugestoes();
 }
 
-async function carregarEmpresas(){
+async function carregarSugestoes(){
   try {
-    var res = await fetch(API + '/api/empresas-lista-pre?cliente_id=' + CLIENTE_ID);
-    if(!res.ok) return;
-    var lista = await res.json();
-    var dl = document.getElementById("listaEmpresas");
-    dl.innerHTML = lista.map(function(e){ return '<option value="' + e.empresa + '">'; }).join("");
+    var campos = [
+      { campo: 'empresa', datalistId: 'listaEmpresas' },
+      { campo: 'placa', datalistId: 'listaPlacas' },
+      { campo: 'cnh', datalistId: 'listaCnh' }
+    ];
+    var promises = campos.map(function(c){
+      return fetch(API + '/api/empresas-lista-pre?cliente_id=' + CLIENTE_ID + '&campo=' + c.campo)
+        .then(function(res){ return res.ok ? res.json() : []; })
+        .then(function(lista){
+          var dl = document.getElementById(c.datalistId);
+          if(dl) dl.innerHTML = lista.map(function(e){ return '<option value="' + e[c.campo] + '">'; }).join("");
+        })
+        .catch(function(){});
+    });
+    await Promise.all(promises);
   } catch(ex) {}
 }
 
@@ -544,7 +556,7 @@ function mostrarTelaForm(){
   document.getElementById("formPre").style.display = "block";
   document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
   document.getElementById("gpsPanel").style.display = "block";
-  carregarEmpresas();
+  carregarSugestoes();
 }
 
 function sairSilencioso(){
