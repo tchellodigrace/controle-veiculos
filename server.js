@@ -1041,21 +1041,36 @@ app.post('/api/admin/login', loginLimiter, async (req, res) => {
 
 app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const { senha_atual, nova_senha } = req.body;
-    if (!senha_atual || !nova_senha) return res.status(400).json({ erro: 'Senha atual e nova senha sao obrigatorias' });
-    if (nova_senha.length < 8) return res.status(400).json({ erro: 'Nova senha deve ter pelo menos 8 caracteres' });
-    const errC = validarComplexidadeSenha(nova_senha);
-    if (errC) return res.status(400).json({ erro: errC });
+    const { senha_atual, nova_senha, novo_usuario } = req.body;
+    if (!senha_atual) return res.status(400).json({ erro: 'Senha atual e obrigatoria' });
     const result = await pool.query('SELECT senha FROM admin_users WHERE id = $1', [req.admin.id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Admin nao encontrado' });
     const senhaValida = await bcrypt.compare(senha_atual, result.rows[0].senha);
     if (!senhaValida) return res.status(401).json({ erro: 'Senha atual incorreta' });
-    const senhaHash = await bcrypt.hash(nova_senha, 10);
-    await pool.query('UPDATE admin_users SET senha = $1, trocar_senha = FALSE WHERE id = $2', [senhaHash, req.admin.id]);
-    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso' });
+    if (novo_usuario) {
+      if (novo_usuario.length < 3) return res.status(400).json({ erro: 'Usuario deve ter pelo menos 3 caracteres' });
+      if (!/^[a-z0-9_]+$/.test(novo_usuario)) return res.status(400).json({ erro: 'Usuario deve conter apenas letras minusculas, numeros e underline' });
+      const dup = await pool.query('SELECT id FROM admin_users WHERE usuario = $1 AND id != $2', [novo_usuario.toLowerCase(), req.admin.id]);
+      if (dup.rows.length > 0) return res.status(400).json({ erro: 'Este usuario ja esta em uso' });
+    }
+    if (nova_senha) {
+      if (nova_senha.length < 8) return res.status(400).json({ erro: 'Nova senha deve ter pelo menos 8 caracteres' });
+      const errC = validarComplexidadeSenha(nova_senha);
+      if (errC) return res.status(400).json({ erro: errC });
+    }
+    if (novo_usuario && nova_senha) {
+      const senhaHash = await bcrypt.hash(nova_senha, 10);
+      await pool.query('UPDATE admin_users SET usuario = $1, senha = $2, trocar_senha = FALSE WHERE id = $3', [novo_usuario.toLowerCase(), senhaHash, req.admin.id]);
+    } else if (novo_usuario) {
+      await pool.query('UPDATE admin_users SET usuario = $1 WHERE id = $2', [novo_usuario.toLowerCase(), req.admin.id]);
+    } else if (nova_senha) {
+      const senhaHash = await bcrypt.hash(nova_senha, 10);
+      await pool.query('UPDATE admin_users SET senha = $1, trocar_senha = FALSE WHERE id = $2', [senhaHash, req.admin.id]);
+    }
+    res.json({ sucesso: true, mensagem: 'Configuracoes alteradas com sucesso' });
   } catch (err) {
-    console.error('Erro ao alterar senha admin:', err);
-    res.status(500).json({ erro: 'Erro ao alterar senha' });
+    console.error('Erro ao alterar config admin:', err);
+    res.status(500).json({ erro: 'Erro ao alterar configuracoes' });
   }
 });
 
