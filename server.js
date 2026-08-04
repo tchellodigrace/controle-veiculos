@@ -9,6 +9,34 @@ const path = require('path');
 const rateLimit = require('express-rate-limit');
 const uuid = () => crypto.randomBytes(16).toString('hex');
 
+// Cache de reverse geocoding para evitar chamadas excessivas ao Nominatim
+const geoCache = new Map();
+const GEO_CACHE_TTL = 5 * 60 * 1000; // 5 minutos
+
+async function obterRua(lat, lng) {
+  try {
+    const key = Math.round(lat * 10000) + ',' + Math.round(lng * 10000);
+    const cached = geoCache.get(key);
+    if (cached && (Date.now() - cached.t) < GEO_CACHE_TTL) return cached.rua;
+
+    const res = await fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=pt-BR&zoom=18', {
+      headers: { 'User-Agent': 'ControlePortariaDSRH/1.0' }
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const rua = data.address?.road || data.address?.street || data.address?.pedestrian || data.address?.residential || data.display_name?.split(',')[0] || '';
+    const resultado = rua.substring(0, 200);
+    geoCache.set(key, { r: resultado, t: Date.now() });
+    if (geoCache.size > 500) {
+      const first = geoCache.keys().next().value;
+      geoCache.delete(first);
+    }
+    return resultado;
+  } catch (e) {
+    return '';
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const APP_VERSION = require('./package.json')?.version || '1.0.0';
@@ -698,10 +726,26 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
     if (isNaN(latNum) || isNaN(lngNum)) return res.status(400).json({ erro: 'Coordenadas inválidas' });
+    // Verificar última posição para só fazer geocoding se mudou > 100m
+    const ultima = await pool.query('SELECT lat, lng FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
+    var rua = '';
+    if (ultima.rows.length > 0) {
+      const dlat = latNum - ultima.rows[0].lat;
+      const dlng = lngNum - ultima.rows[0].lng;
+      const dist = Math.sqrt(dlat * dlat + dlng * dlng) * 111000;
+      if (dist > 100) {
+        rua = await obterRua(latNum, lngNum);
+      } else {
+        const lastRua = await pool.query('SELECT rua FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
+        rua = lastRua.rows[0]?.rua || '';
+      }
+    } else {
+      rua = await obterRua(latNum, lngNum);
+    }
     await pool.query('DELETE FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
     await pool.query(
-      `INSERT INTO localizacoes_motoristas (motorista_id, cliente_id, nome, placa, empresa, lat, lng, a_caminho, atualizado_em)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW())`,
+      `INSERT INTO localizacoes_motoristas (motorista_id, cliente_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, NOW())`,
       [
       req.motorista.id,
       req.motorista.cliente_id,
@@ -709,7 +753,8 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
       sanitizarString(placa || '').substring(0, 20),
       sanitizarString(empresa || '').substring(0, 200),
       latNum,
-      lngNum
+      lngNum,
+      sanitizarString(rua).substring(0, 200)
     ]);
     res.json({ ok: true });
   } catch (err) {
@@ -734,7 +779,7 @@ app.post('/api/motorista/cheguei', motoristaAuthMiddleware, apiLimiter, async (r
 app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT motorista_id, nome, placa, empresa, lat, lng, a_caminho, atualizado_em
+      SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em
       FROM localizacoes_motoristas
       WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours'
       ORDER BY atualizado_em DESC
@@ -1630,8 +1675,9 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')",
       "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS mural (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, texto TEXT DEFAULT '', prioridade VARCHAR(20) DEFAULT 'normal', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-      "CREATE TABLE IF NOT EXISTS localizacoes_motoristas (id SERIAL PRIMARY KEY, motorista_id INTEGER, cliente_id INTEGER, nome VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', lat DOUBLE PRECISION, lng DOUBLE PRECISION, a_caminho BOOLEAN DEFAULT TRUE, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS localizacoes_motoristas (id SERIAL PRIMARY KEY, motorista_id INTEGER, cliente_id INTEGER, nome VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', lat DOUBLE PRECISION, lng DOUBLE PRECISION, rua VARCHAR(200) DEFAULT '', a_caminho BOOLEAN DEFAULT TRUE, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE INDEX IF NOT EXISTS idx_localizacoes_cliente ON localizacoes_motoristas(cliente_id, a_caminho)",
+      "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS rua VARCHAR(200) DEFAULT ''",
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",

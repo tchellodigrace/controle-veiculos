@@ -492,6 +492,12 @@
   #mapaContainer{ width:100%; height:500px; border-radius:10px; overflow:hidden; border:1px solid var(--cinza-borda); background:#e8e8e8; }
   .leaflet-popup-content{ font-size:13px; line-height:1.5; }
   .leaflet-popup-content b{ color:#2a6f7e; }
+  .rua-label{
+    background:#fff; color:#333; font-size:11px; font-weight:600;
+    padding:3px 8px; border-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,.25);
+    white-space:nowrap; border:1px solid #ccc; pointer-events:none;
+  }
+  .rua-label .rua-icon{ color:#2a6f7e; margin-right:4px; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
     aside{ display:none; }
@@ -2183,13 +2189,26 @@ async function carregarLocalizacoes(){
       var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapaRastreamento);
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
       var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">A caminho</span>' : '<span style="color:#2196F3;font-weight:700">Chegou</span>';
+      var ruaText = d.rua ? '<span class="rua-icon">📍</span>' + esc(d.rua) : '';
       marker.bindPopup(
         '<b>' + esc(d.nome || 'Motorista') + '</b><br>' +
         statusText + '<br>' +
         (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
         (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
+        (ruaText ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0">' + ruaText + '</div>' : '') +
         'Atualizado: ' + tempo
       );
+      // Label com nome da rua fixo no mapa
+      if(d.rua){
+        var labelIcon = L.divIcon({
+          className: '',
+          html: '<div class="rua-label"><span class="rua-icon">📍</span>' + esc(d.rua) + '</div>',
+          iconSize: [200, 24],
+          iconAnchor: [100, 40]
+        });
+        var label = L.marker([d.lat, d.lng], { icon: labelIcon, interactive: false }).addTo(mapaRastreamento);
+        marcadoresRastreamento.push(label);
+      }
       marcadoresRastreamento.push(marker);
       bounds.push([d.lat, d.lng]);
     });
