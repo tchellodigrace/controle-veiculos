@@ -126,11 +126,24 @@
       </div>
       <div class="campo">
         <label>Senha *</label>
-        <input type="password" id="cadSenha" placeholder="Escolha uma senha" required>
+        <input type="password" id="cadSenha" placeholder="Escolha uma senha" required oninput="verificarForcaSenha()">
+        <div id="forcaSenha" style="font-size:11px;margin-top:4px;color:#8b93a1;">Mínimo 8 caracteres. Deve conter letras e números.</div>
       </div>
       <button type="submit" id="btnCadastrar">Criar Conta</button>
     </form>
     <p class="info">Já tem conta? <a href="#" onclick="mostrarTelaLogin(event)" style="color:#2a6f7e;font-weight:700">Voltar ao login</a></p>
+  </div>
+
+  <div id="telaAguardando" style="display:none">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#e08a1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+    <h1 style="color:#e08a1e">Conta Aguardando Ativação</h1>
+    <p class="sub">Sua conta foi criada com sucesso e está aguardando a portaria ativar seu acesso.</p>
+    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:16px;margin:16px 0;font-size:13px;color:#5d4037;text-align:center">
+      <b>Próximo passo:</b> Entre em contato com a portaria e solicite a ativação do seu cadastro.
+    </div>
+    <button onclick="mostrarTelaLogin2(event)" style="background:#6c757d">Voltar ao Login</button>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -275,10 +288,7 @@ async function criarConta(e){
     if(!res.ok){ var err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
     document.getElementById("formCadastro").reset();
     document.getElementById("telaCadastro").style.display = "none";
-    document.getElementById("telaLogin").style.display = "block";
-    var msg = document.getElementById("msgSucesso");
-    msg.textContent = "Conta criada com sucesso! Aguarde a portaria ativar seu acesso.";
-    msg.style.display = "block";
+    document.getElementById("telaAguardando").style.display = "block";
     btn.disabled = false; btn.textContent = "Criar Conta";
   } catch(ex) { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
 }
@@ -380,6 +390,32 @@ function resetar(){
 
 document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
+
+function verificarForcaSenha(){
+  var s = document.getElementById('cadSenha').value;
+  var el = document.getElementById('forcaSenha');
+  var temMinuscula = /[a-z]/.test(s);
+  var temMaiuscula = /[A-Z]/.test(s);
+  var temNumero = /[0-9]/.test(s);
+  var tipos = (temMinuscula?1:0) + (temMaiuscula?1:0) + (temNumero?1:0);
+  if(s.length < 8){
+    el.style.color = '#cc0000';
+    el.textContent = 'Mínimo 8 caracteres (faltam ' + (8 - s.length) + ')';
+  } else if(tipos < 2){
+    el.style.color = '#e08a1e';
+    el.textContent = 'Falta: ' + (!temMinuscula?'letra minúscula, ':'') + (!temMaiuscula?'letra maiúscula, ':'') + (!temNumero?'número, ':'');
+    el.textContent = el.textContent.replace(/, $/, '');
+  } else {
+    el.style.color = '#28a745';
+    el.textContent = 'Senha forte!';
+  }
+}
+
+function mostrarTelaLogin2(e){
+  if(e) e.preventDefault();
+  document.getElementById('telaAguardando').style.display = 'none';
+  document.getElementById('telaLogin').style.display = 'block';
+}
 
 // === GPS RASTREAMENTO ===
 var gpsWatchId = null;
@@ -527,5 +563,6 @@ function sair(){
   btn.classList.remove('parando');
   btn.onclick = function(){ iniciarRastreamento(); };
 }
+</script>
 </body>
 </html>
