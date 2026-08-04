@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="Sistema de Controle de Portaria - Gestao de entrada e saida de veiculos e visitantes">
 <link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <title>Controle de Portaria</title>
 <style>
   /* Skip link para acessibilidade */
@@ -488,12 +489,16 @@
   .usuario-item em{ font-size:11px; color:var(--verde-escuro); }
   .usuario-status{ font-size:10px; background:#e0e3e7; padding:2px 8px; border-radius:10px; }
   .badge-admin{ background:var(--verde-escuro); color:#fff; }
+  #mapaContainer{ width:100%; height:500px; border-radius:10px; overflow:hidden; border:1px solid var(--cinza-borda); background:#e8e8e8; }
+  .leaflet-popup-content{ font-size:13px; line-height:1.5; }
+  .leaflet-popup-content b{ color:#2a6f7e; }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
     aside{ display:none; }
     .grid-inputs{ grid-template-columns:repeat(2,1fr); }
     .campo-obs{ grid-column:span 2; }
     .painel-topo{ grid-template-columns:1fr; }
+    #mapaContainer{ height:400px; }
   }
 </style>
 </head>
@@ -529,6 +534,11 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       Visitantes
       <span class="nav-badge" id="badgeVisitantes" style="display:none">0</span>
+    </div>
+    <div class="nav-item" id="navRastreamento">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Rastreamento
+      <span class="nav-badge" id="badgeRastreamento" style="display:none;background:#ff5722">0</span>
     </div>
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
@@ -826,6 +836,20 @@
         </div>
       </div>
     </div>
+    <div id="viewRastreamento" style="display:none">
+      <div class="card" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">&#x1F4CD; RASTREAMENTO AO VIVO</h3>
+          <span id="rastreamentoCount" style="font-size:13px;color:#666">0 motoristas a caminho</span>
+        </div>
+        <div id="mapaContainer" style="position:relative">
+          <div id="mapaVazio" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#e8e8e8;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#9aa4ad;font-size:15px;border-radius:10px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Nenhum motorista a caminho no momento
+          </div>
+        </div>
+      </div>
+    </div>
     <div id="viewMural" style="display:none">
       <div class="tabela-card card">
         <div class="tabela-topo">
@@ -1039,6 +1063,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const API = window.location.origin;
 let usuarioLogado = null;
@@ -1601,6 +1626,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     if(localStorage.getItem("activeView") === "visitantes") mostrarVisitantes();
     if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
     if(localStorage.getItem("activeView") === "mural") mostrarMural();
+    if(localStorage.getItem("activeView") === "rastreamento") mostrarRastreamento();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     atualizar();
@@ -1608,7 +1634,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     verificarBadges();
     // Timer unificado - reduz de 5 para 2 timers (relogio + dados)
     setInterval(async function(){
-      await Promise.all([atualizar(), atualizarVisitantes(), atualizarPreRegistros(), verificarBadges()]);
+      await Promise.all([atualizar(), atualizarVisitantes(), atualizarPreRegistros(), verificarBadges(), atualizarBadgeRastreamento()]);
     }, 30000);
   } catch(e) {
     mostrarErroAuth('Erro ao inicializar: ' + e.message);
@@ -1775,37 +1801,61 @@ async function autoPreencherVisitante(tipo, valor){
 function mostrarVeiculos(){
   document.getElementById("navVeiculos").classList.add("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  pararPollingRastreamento();
   localStorage.setItem("activeView", "veiculos");
 }
 function mostrarVisitantes(){
   document.getElementById("navVisitantes").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  pararPollingRastreamento();
   localStorage.setItem("activeView", "visitantes");
   document.getElementById("vNome").focus();
   atualizarVisitantes();
   atualizarPreRegistrosVisitantes();
 }
+function mostrarRastreamento(){
+  document.getElementById("navRastreamento").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
+  document.getElementById("viewRastreamento").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
+  localStorage.setItem("activeView", "rastreamento");
+  iniciarMapaRastreamento();
+  iniciarPollingRastreamento();
+}
 function mostrarAuditoria(){
   document.getElementById("navAuditoria").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAuditoria").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  pararPollingRastreamento();
   localStorage.setItem("activeView", "auditoria");
   carregarAuditoria();
 }
@@ -1813,11 +1863,14 @@ function mostrarMural(){
   document.getElementById("navMural").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewMural").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
+  pararPollingRastreamento();
   localStorage.setItem("activeView", "mural");
   carregarMural();
 }
@@ -1967,6 +2020,7 @@ async function excluirPreRegistroVisitante(id){
 }
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
+document.getElementById("navRastreamento").addEventListener("click", mostrarRastreamento);
 document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
 document.getElementById("navMural").addEventListener("click", mostrarMural);
 
@@ -2059,6 +2113,113 @@ async function excluirVisitante(id){
 }
 
 // === Verificacao periodica de expiracao do token JWT ===
+// === RASTREAMENTO GPS (MAPA) ===
+var mapaRastreamento = null;
+var marcadoresRastreamento = [];
+var pollingRastreamento = null;
+var mapaIniciado = false;
+
+function iniciarMapaRastreamento(){
+  if(mapaIniciado){
+    setTimeout(function(){ if(mapaRastreamento) mapaRastreamento.invalidateSize(); }, 100);
+    return;
+  }
+  mapaIniciado = true;
+  var container = document.getElementById('mapaContainer');
+  mapaRastreamento = L.map('mapaContainer', { zoomControl: true }).setView([-15.78, -47.93], 5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(mapaRastreamento);
+  setTimeout(function(){ mapaRastreamento.invalidateSize(); }, 200);
+}
+
+function iniciarPollingRastreamento(){
+  pararPollingRastreamento();
+  carregarLocalizacoes();
+  pollingRastreamento = setInterval(carregarLocalizacoes, 10000);
+}
+
+function pararPollingRastreamento(){
+  if(pollingRastreamento){ clearInterval(pollingRastreamento); pollingRastreamento = null; }
+}
+
+async function carregarLocalizacoes(){
+  try {
+    var res = await fetch(API + '/api/localizacoes', { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    var countEl = document.getElementById('rastreamentoCount');
+    var vazioEl = document.getElementById('mapaVazio');
+    var badgeEl = document.getElementById('badgeRastreamento');
+    countEl.textContent = dados.length + ' motorista' + (dados.length !== 1 ? 's' : '') + ' a caminho';
+    if(dados.length > 0){
+      badgeEl.textContent = dados.length;
+      badgeEl.style.display = 'inline';
+      vazioEl.style.display = 'none';
+    } else {
+      badgeEl.style.display = 'none';
+      vazioEl.style.display = 'flex';
+    }
+    if(!mapaRastreamento) return;
+    // Limpar marcadores antigos
+    marcadoresRastreamento.forEach(function(m){ mapaRastreamento.removeLayer(m); });
+    marcadoresRastreamento = [];
+    if(dados.length === 0) return;
+    var bounds = [];
+    dados.forEach(function(d){
+      if(d.lat == null || d.lng == null) return;
+      var iconeVerde = L.divIcon({
+        className: '',
+        html: '<div style="width:32px;height:32px;background:#28a745;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
+        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
+      });
+      var iconeAzul = L.divIcon({
+        className: '',
+        html: '<div style="width:32px;height:32px;background:#2196F3;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
+        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
+      });
+      var icone = d.a_caminho ? iconeVerde : iconeAzul;
+      var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapaRastreamento);
+      var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
+      var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">A caminho</span>' : '<span style="color:#2196F3;font-weight:700">Chegou</span>';
+      marker.bindPopup(
+        '<b>' + esc(d.nome || 'Motorista') + '</b><br>' +
+        statusText + '<br>' +
+        (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
+        (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
+        'Atualizado: ' + tempo
+      );
+      marcadoresRastreamento.push(marker);
+      bounds.push([d.lat, d.lng]);
+    });
+    if(bounds.length > 0){
+      if(bounds.length === 1){
+        mapaRastreamento.setView(bounds[0], 14);
+      } else {
+        mapaRastreamento.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+      }
+    }
+  } catch(e){}
+}
+
+async function atualizarBadgeRastreamento(){
+  try {
+    // Só atualiza badge se não está na aba de rastreamento (para evitar duplicidade)
+    if(document.getElementById('viewRastreamento').style.display !== 'none') return;
+    var res = await fetch(API + '/api/localizacoes', { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    var badgeEl = document.getElementById('badgeRastreamento');
+    if(dados.length > 0){
+      badgeEl.textContent = dados.length;
+      badgeEl.style.display = 'inline';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  } catch(e){}
+}
+
 function verificarExpiracaoToken() {
   try {
     const token = getToken();

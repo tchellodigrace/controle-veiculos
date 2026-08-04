@@ -101,8 +101,8 @@ app.use((req, res, next) => {
   res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.set('Cache-Control', 'no-store');
   res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'");
-  res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: https://unpkg.com; font-src 'self' https://unpkg.com; connect-src 'self'");
+  res.set('Permissions-Policy', 'camera=(), microphone=(), payment=()');
   next();
 });
 
@@ -671,6 +671,78 @@ app.post('/api/login-motorista', loginLimiter, async (req, res) => {
   } catch (err) {
     console.error('Erro no login motorista:', err);
     res.status(500).json({ erro: 'Erro ao fazer login' });
+  }
+});
+
+// === MOTORISTA AUTH MIDDLEWARE ===
+function motoristaAuthMiddleware(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ erro: 'Token não fornecido' });
+  }
+  try {
+    const decoded = jwt.verify(header.split(' ')[1], JWT_SECRET);
+    if (decoded.admin) return res.status(401).json({ erro: 'Token inválido' });
+    req.motorista = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ erro: 'Token inválido ou expirado' });
+  }
+}
+
+// === MOTORISTA LOCALIZACAO (GPS) ===
+app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const { lat, lng, placa, empresa } = req.body;
+    if (lat === undefined || lng === undefined) return res.status(400).json({ erro: 'Coordenadas obrigatórias' });
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (isNaN(latNum) || isNaN(lngNum)) return res.status(400).json({ erro: 'Coordenadas inválidas' });
+    await pool.query('DELETE FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
+    await pool.query(
+      `INSERT INTO localizacoes_motoristas (motorista_id, cliente_id, nome, placa, empresa, lat, lng, a_caminho, atualizado_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, NOW())`,
+      [
+      req.motorista.id,
+      req.motorista.cliente_id,
+      sanitizarString(req.motorista.nome || '').substring(0, 200),
+      sanitizarString(placa || '').substring(0, 20),
+      sanitizarString(empresa || '').substring(0, 200),
+      latNum,
+      lngNum
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao salvar localizacao:', err);
+    res.status(500).json({ erro: 'Erro ao salvar localização' });
+  }
+});
+
+app.post('/api/motorista/cheguei', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
+  try {
+    await pool.query('UPDATE localizacoes_motoristas SET a_caminho = FALSE, atualizado_em = NOW() WHERE motorista_id = $1 AND cliente_id = $2', [
+      req.motorista.id,
+      req.motorista.cliente_id
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao marcar chegada:', err);
+    res.status(500).json({ erro: 'Erro ao marcar chegada' });
+  }
+});
+
+app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT motorista_id, nome, placa, empresa, lat, lng, a_caminho, atualizado_em
+      FROM localizacoes_motoristas
+      WHERE cliente_id = $1 AND a_caminho = TRUE AND atualizado_em > NOW() - INTERVAL '2 hours'
+      ORDER BY atualizado_em DESC
+    `, [req.usuario.cliente_id]);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar localizacoes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar localizações' });
   }
 });
 
@@ -1558,6 +1630,8 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')",
       "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS mural (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, texto TEXT DEFAULT '', prioridade VARCHAR(20) DEFAULT 'normal', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS localizacoes_motoristas (id SERIAL PRIMARY KEY, motorista_id INTEGER, cliente_id INTEGER, nome VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', lat DOUBLE PRECISION, lng DOUBLE PRECISION, a_caminho BOOLEAN DEFAULT TRUE, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE INDEX IF NOT EXISTS idx_localizacoes_cliente ON localizacoes_motoristas(cliente_id, a_caminho)",
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",

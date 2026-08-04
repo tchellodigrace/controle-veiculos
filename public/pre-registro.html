@@ -56,6 +56,32 @@
   }
   .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .topbar .nome{ font-size:13px; color:#2a6f7e; font-weight:700; }
+  .gps-panel{ margin-top:16px; padding-top:16px; border-top:2px solid #e3e7eb; }
+  .gps-panel h2{ margin:0 0 6px; font-size:16px; color:#2a6f7e; text-align:center; }
+  .gps-panel .sub{ margin:0 0 16px; font-size:12px; color:#8b93a1; text-align:center; }
+  .btn-caminho{
+    width:100%; padding:18px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#28a745,#20c997); color:#fff;
+    font-size:18px; font-weight:800; cursor:pointer; transition:.2s;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    box-shadow:0 4px 15px rgba(40,167,69,.35);
+  }
+  .btn-caminho:hover{ transform:translateY(-1px); box-shadow:0 6px 20px rgba(40,167,69,.45); }
+  .btn-caminho:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+  .btn-caminho.parando{ background:linear-gradient(135deg,#e08a1e,#f0ad4e); box-shadow:0 4px 15px rgba(224,138,30,.35); }
+  .btn-caminho.parando:hover{ box-shadow:0 6px 20px rgba(224,138,30,.45); }
+  .gps-status{
+    display:none; text-align:center; padding:14px; margin-top:12px;
+    background:#d4edda; border-radius:10px; font-size:13px; color:#155724;
+    align-items:center; justify-content:center; gap:8px;
+  }
+  .gps-status.ativo{ display:flex; }
+  .gps-ponto{
+    width:12px; height:12px; border-radius:50%; background:#28a745;
+    animation:pulsar 1.5s ease-in-out infinite;
+  }
+  @keyframes pulsar{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.6); opacity:.4; } }
+  .gps-erro{ display:none; text-align:center; padding:10px; margin-top:8px; background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px; font-size:12px; color:#cc0000; }
 </style>
 </head>
 <body>
@@ -166,6 +192,17 @@
       </div>
       <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
     </form>
+  </div>
+
+  <div id="gpsPanel" class="gps-panel" style="display:none">
+    <h2>📍 Rastreamento GPS</h2>
+    <p class="sub">Informe sua localização em tempo real para a portaria</p>
+    <button class="btn-caminho" id="btnCaminho" onclick="iniciarRastreamento()">🚛 Estou a Caminho</button>
+    <div class="gps-status" id="gpsStatus">
+      <div class="gps-ponto"></div>
+      <span>Rastreamento ativo... Enviando localização</span>
+    </div>
+    <div class="gps-erro" id="gpsErro"></div>
   </div>
 
   <div class="sucesso" id="sucesso">
@@ -343,6 +380,152 @@ function resetar(){
 
 document.getElementById("placa").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
-</script>
+
+// === GPS RASTREAMENTO ===
+var gpsWatchId = null;
+var gpsIntervalo = null;
+var gpsUltimaPos = null;
+
+function mostrarErroGPS(msg){
+  var el = document.getElementById('gpsErro');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(function(){ el.style.display = 'none'; }, 8000);
+}
+
+async function iniciarRastreamento(){
+  var btn = document.getElementById('btnCaminho');
+  if(btn.disabled) return;
+
+  if(gpsWatchId !== null){
+    // Ja esta rastreando - parar
+    pararRastreamento();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Obtendo GPS...';
+
+  if(!navigator.geolocation){
+    mostrarErroGPS('Seu navegador não suporta geolocalização.');
+    btn.disabled = false;
+    btn.textContent = '🚛 Estou a Caminho';
+    return;
+  }
+
+  try{
+    var pos = await new Promise(function(resolve, reject){
+      navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+    });
+    gpsUltimaPos = pos.coords;
+    await enviarLocalizacao(pos.coords);
+
+    // Sucesso - mudar botao para "Cheguei"
+    btn.disabled = false;
+    btn.textContent = '📍 Cheguei';
+    btn.classList.add('parando');
+    btn.onclick = function(){ cheguei(); };
+    document.getElementById('gpsStatus').classList.add('ativo');
+
+    // Watch position para atualizar continuamente
+    gpsWatchId = navigator.geolocation.watchPosition(
+      function(p){ gpsUltimaPos = p.coords; },
+      function(){},
+      { enableHighAccuracy:true, maximumAge:10000, timeout:15000 }
+    );
+
+    // Enviar a cada 15 segundos
+    gpsIntervalo = setInterval(function(){
+      if(gpsUltimaPos) enviarLocalizacao(gpsUltimaPos);
+    }, 15000);
+
+    // Auto-stop ao fechar a pagina
+    window.addEventListener('beforeunload', pararRastreamento);
+
+  } catch(erro){
+    if(erro.code === 1){
+      mostrarErroGPS('Permissão de localização negada. Habilite nas configurações do navegador.');
+    } else if(erro.code === 2){
+      mostrarErroGPS('Não foi possível determinar sua localização. Verifique o GPS do dispositivo.');
+    } else if(erro.code === 3){
+      mostrarErroGPS('Tempo esgotado ao obter localização. Tente novamente.');
+    } else {
+      mostrarErroGPS('Erro ao obter localização: ' + erro.message);
+    }
+    btn.disabled = false;
+    btn.textContent = '🚛 Estou a Caminho';
+  }
+}
+
+async function enviarLocalizacao(coords){
+  try{
+    var empresa = document.getElementById('empresa') ? document.getElementById('empresa').value.trim() : '';
+    var placa = document.getElementById('placa') ? document.getElementById('placa').value.trim() : '';
+    await fetch(API + '/api/motorista/localizacao', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista },
+      body: JSON.stringify({ lat: coords.latitude, lng: coords.longitude, placa: placa, empresa: empresa })
+    });
+  } catch(e){ /* erro silencioso - nao interromper o rastreamento */ }
+}
+
+async function cheguei(){
+  // Enviar ultima posicao
+  if(gpsUltimaPos) await enviarLocalizacao(gpsUltimaPos);
+  // Marcar chegada no servidor
+  try{
+    await fetch(API + '/api/motorista/cheguei', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista }
+    });
+  } catch(e){}
+  pararRastreamento();
+  // Mostrar feedback
+  var btn = document.getElementById('btnCaminho');
+  btn.textContent = '✅ Chegada registrada!';
+  btn.disabled = true;
+  setTimeout(function(){
+    btn.disabled = false;
+    btn.textContent = '🚛 Estou a Caminho';
+    btn.classList.remove('parando');
+    btn.onclick = function(){ iniciarRastreamento(); };
+  }, 3000);
+}
+
+function pararRastreamento(){
+  if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+  if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
+  gpsUltimaPos = null;
+  document.getElementById('gpsStatus').classList.remove('ativo');
+  window.removeEventListener('beforeunload', pararRastreamento);
+}
+
+function mostrarTelaForm(){
+  document.getElementById("telaLogin").style.display = "none";
+  document.getElementById("telaForm").style.display = "block";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("formPre").style.display = "block";
+  document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
+  document.getElementById("gpsPanel").style.display = "block";
+  carregarEmpresas();
+}
+
+function sair(){
+  pararRastreamento();
+  tokenMotorista = null;
+  motoristaLogado = null;
+  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
+  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
+  document.getElementById("telaLogin").style.display = "block";
+  document.getElementById("telaForm").style.display = "none";
+  document.getElementById("sucesso").style.display = "none";
+  document.getElementById("gpsPanel").style.display = "none";
+  document.getElementById("formLogin").reset();
+  var btn = document.getElementById('btnCaminho');
+  btn.disabled = false;
+  btn.textContent = '🚛 Estou a Caminho';
+  btn.classList.remove('parando');
+  btn.onclick = function(){ iniciarRastreamento(); };
+}
 </body>
 </html>

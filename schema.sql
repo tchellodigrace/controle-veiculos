@@ -208,3 +208,17 @@ CREATE TABLE IF NOT EXISTS mural (
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS localizacoes_motoristas (
+  id SERIAL PRIMARY KEY,
+  motorista_id INTEGER,
+  cliente_id INTEGER,
+  nome VARCHAR(200) DEFAULT '',
+  placa VARCHAR(20) DEFAULT '',
+  empresa VARCHAR(200) DEFAULT '',
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  a_caminho BOOLEAN DEFAULT TRUE,
+  atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_localizacoes_cliente ON localizacoes_motoristas(cliente_id, a_caminho);
