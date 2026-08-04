@@ -434,14 +434,38 @@ app.get('/api/auto-preenchimento-visitante', authMiddleware, apiLimiter, async (
 
 app.get('/api/resumo', authMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT
-        COUNT(*)::int AS total,
-        COUNT(*) FILTER (WHERE saida = '')::int AS aguardando,
-        COUNT(*) FILTER (WHERE saida != '')::int AS saidas
-      FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE
-    `, [req.usuario.cliente_id]);
-    res.json(result.rows[0]);
+    const [result, visitResult, motoristasResult] = await Promise.all([
+      pool.query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE saida = '')::int AS aguardando,
+          COUNT(*) FILTER (WHERE saida != '')::int AS saidas
+        FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE
+      `, [req.usuario.cliente_id]),
+      pool.query(`
+        SELECT
+          COUNT(*)::int AS visitantes_total,
+          COUNT(*) FILTER (WHERE saida = '')::int AS visitantes_aguardando,
+          COUNT(*) FILTER (WHERE saida != '')::int AS visitantes_saidas
+        FROM visitantes WHERE cliente_id = $1 AND data_registro = CURRENT_DATE
+      `, [req.usuario.cliente_id]),
+      pool.query(
+        'SELECT COUNT(*)::int AS total_motoristas FROM contas_motoristas WHERE cliente_id = $1 AND ativo = TRUE',
+        [req.usuario.cliente_id]
+      )
+    ]);
+    const dados = result.rows[0];
+    const vis = visitResult.rows[0];
+    const mot = motoristasResult.rows[0];
+    res.json({
+      total: dados.total,
+      aguardando: dados.aguardando,
+      saidas: dados.saidas,
+      visitantes_total: vis.visitantes_total,
+      visitantes_aguardando: vis.visitantes_aguardando,
+      visitantes_saidas: vis.visitantes_saidas,
+      total_motoristas: mot.total_motoristas
+    });
   } catch (err) {
     console.error('Erro ao buscar resumo:', err);
     res.status(500).json({ erro: 'Erro ao buscar resumo' });

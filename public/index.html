@@ -279,7 +279,7 @@
     align-items:center;
     gap:8px;
   }
-  .resumo-grid{ display:flex; flex-direction:row; gap:14px; }
+  .resumo-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(130px,1fr)); gap:10px; }
   .resumo-item{ flex:1; }
   .resumo-item{
     border-radius:8px;
@@ -300,6 +300,15 @@
   .r-aguardando{ background:var(--laranja-claro); }
   .r-aguardando .num{ color:var(--laranja); }
   .r-aguardando .lbl{ color:#b9700f; }
+  .r-visitantes{ background:#e8f5e9; }
+  .r-visitantes .num{ color:#2e7d32; }
+  .r-visitantes .lbl{ color:#388e3c; }
+  .r-visitantes-aguardando{ background:#fff3e0; }
+  .r-visitantes-aguardando .num{ color:#e65100; }
+  .r-visitantes-aguardando .lbl{ color:#bf360c; }
+  .r-motoristas{ background:#e3f2fd; }
+  .r-motoristas .num{ color:#1565c0; }
+  .r-motoristas .lbl{ color:#1976d2; }
   .tabela-card{ padding:0; overflow:hidden; }
   .pre-card{ border:2px solid #ffc107; margin-bottom:14px; }
   .pre-card h3{ margin:0; padding:12px 16px; background:#fff8e1; color:#856404; font-size:13px; }
@@ -687,19 +696,31 @@
         </div>
       </div>
       <div class="card resumo-card">
-        <h3>&#x1F4CA; RESUMO DO DIA</h3>
+        <h3>&#x1F4CA; PAINEL AO VIVO</h3>
         <div class="resumo-grid">
           <div class="resumo-item r-entradas">
             <div class="num" id="numEntradas">0</div>
-            <div class="lbl">ENTRADAS</div>
+            <div class="lbl">ENTRADAS HOJE</div>
           </div>
           <div class="resumo-item r-saidas">
             <div class="num" id="numSaidas">0</div>
-            <div class="lbl">SAÍDAS</div>
+            <div class="lbl">SAÍDAS HOJE</div>
           </div>
           <div class="resumo-item r-aguardando">
             <div class="num" id="numAguardando">0</div>
-            <div class="lbl">AGUARDANDO SAÍDA</div>
+            <div class="lbl">VEÍCULOS DENTRO</div>
+          </div>
+          <div class="resumo-item r-visitantes">
+            <div class="num" id="numVisitantes">0</div>
+            <div class="lbl">VISITANTES HOJE</div>
+          </div>
+          <div class="resumo-item r-visitantes-aguardando">
+            <div class="num" id="numVisitantesAguardando">0</div>
+            <div class="lbl">VISITANTES DENTRO</div>
+          </div>
+          <div class="resumo-item r-motoristas">
+            <div class="num" id="numMotoristas">0</div>
+            <div class="lbl">MOTORISTAS CAD.</div>
           </div>
         </div>
       </div>
@@ -1232,6 +1253,9 @@ async function atualizar(){
     document.getElementById("numEntradas").textContent = resumo.total || 0;
     document.getElementById("numSaidas").textContent = resumo.saidas || 0;
     document.getElementById("numAguardando").textContent = resumo.aguardando || 0;
+    document.getElementById("numVisitantes").textContent = resumo.visitantes_total || 0;
+    document.getElementById("numVisitantesAguardando").textContent = resumo.visitantes_aguardando || 0;
+    document.getElementById("numMotoristas").textContent = resumo.total_motoristas || 0;
     const tabela = document.getElementById("tabela");
     tabela.innerHTML = "";
     if(dados.length === 0){
