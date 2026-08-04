@@ -498,6 +498,21 @@
     white-space:nowrap; border:1px solid #ccc; pointer-events:none;
   }
   .rua-label .rua-icon{ color:#2a6f7e; margin-right:4px; }
+  .motorista-card{
+    background:#f7f9fb; border:1px solid #e0e3e7; border-radius:8px;
+    padding:10px 12px; cursor:pointer; transition:.15s; font-size:13px;
+  }
+  .motorista-card:hover{ background:#eef3f7; border-color:#4FB0C6; }
+  .motorista-card .mc-topo{ display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+  .motorista-card .mc-cor{ width:12px; height:12px; border-radius:50%; flex-shrink:0; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+  .motorista-card .mc-nome{ font-weight:700; color:#26313a; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .motorista-card .mc-placa{ font-size:11px; color:#6b7685; }
+  .motorista-card .mc-rua{ font-size:11px; color:#4a5568; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .motorista-card .mc-tempo{ font-size:10px; color:#9aa4ad; margin-top:2px; }
+  @media (max-width:800px){
+    #rastreamentoGrid{ grid-template-columns:1fr !important; }
+    #listaMotoristasRastreamento{ order:2; max-height:200px; }
+  }
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; grid-template-areas:"header" "main" "footer"; }
     aside{ display:none; }
@@ -848,10 +863,18 @@
           <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">&#x1F4CD; RASTREAMENTO AO VIVO</h3>
           <span id="rastreamentoCount" style="font-size:13px;color:#666">0 motoristas a caminho</span>
         </div>
-        <div id="mapaContainer" style="position:relative">
-          <div id="mapaVazio" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#e8e8e8;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#9aa4ad;font-size:15px;border-radius:10px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Nenhum motorista a caminho no momento
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:12px" id="rastreamentoGrid">
+          <!-- Lista lateral de motoristas -->
+          <div id="listaMotoristasRastreamento" style="display:none">
+            <div style="font-size:12px;font-weight:700;color:#26313a;margin-bottom:8px;text-transform:uppercase">Motoristas a caminho</div>
+            <div id="motoristaListaContainer" style="display:flex;flex-direction:column;gap:6px;max-height:460px;overflow-y:auto"></div>
+          </div>
+          <!-- Mapa -->
+          <div id="mapaContainer" style="position:relative">
+            <div id="mapaVazio" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#e8e8e8;z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:#9aa4ad;font-size:15px;border-radius:10px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;opacity:.4"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Nenhum motorista a caminho no momento
+            </div>
           </div>
         </div>
       </div>
@@ -2158,57 +2181,89 @@ async function carregarLocalizacoes(){
     var countEl = document.getElementById('rastreamentoCount');
     var vazioEl = document.getElementById('mapaVazio');
     var badgeEl = document.getElementById('badgeRastreamento');
+    var listaEl = document.getElementById('listaMotoristasRastreamento');
+    var listaContainerEl = document.getElementById('motoristaListaContainer');
     countEl.textContent = dados.length + ' motorista' + (dados.length !== 1 ? 's' : '') + ' a caminho';
     if(dados.length > 0){
       badgeEl.textContent = dados.length;
       badgeEl.style.display = 'inline';
       vazioEl.style.display = 'none';
+      listaEl.style.display = 'block';
     } else {
       badgeEl.style.display = 'none';
       vazioEl.style.display = 'flex';
+      listaEl.style.display = 'none';
     }
+    // Montar lista lateral
+    var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e63','#795548','#607d8b','#3f51b5'];
+    listaContainerEl.innerHTML = '';
+    dados.forEach(function(d, idx){
+      var cor = cores[idx % cores.length];
+      var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
+      var card = document.createElement('div');
+      card.className = 'motorista-card';
+      card.innerHTML =
+        '<div class="mc-topo">' +
+          '<div class="mc-cor" style="background:' + cor + '"></div>' +
+          '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
+        '</div>' +
+        (d.placa ? '<div class="mc-placa">Placa: ' + esc(d.placa) + '</div>' : '') +
+        (d.rua ? '<div class="mc-rua">📍 ' + esc(d.rua) + '</div>' : '') +
+        '<div class="mc-tempo">Atualizado: ' + tempo + '</div>';
+      card.onclick = (function(dd, lat, lng){
+        return function(){
+          if(mapaRastreamento){
+            mapaRastreamento.setView([lat, lng], 16, { animate: true });
+          }
+        };
+      })(d, d.lat, d.lng);
+      listaContainerEl.appendChild(card);
+    });
     if(!mapaRastreamento) return;
     // Limpar marcadores antigos
     marcadoresRastreamento.forEach(function(m){ mapaRastreamento.removeLayer(m); });
     marcadoresRastreamento = [];
     if(dados.length === 0) return;
     var bounds = [];
-    dados.forEach(function(d){
+    dados.forEach(function(d, idx){
       if(d.lat == null || d.lng == null) return;
-      var iconeVerde = L.divIcon({
+      var cor = cores[idx % cores.length];
+      var icone = L.divIcon({
         className: '',
-        html: '<div style="width:32px;height:32px;background:#28a745;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
-        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
+        html: '<div style="position:relative;width:36px;height:36px">' +
+          '<div style="width:36px;height:36px;background:' + cor + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>' +
+          '<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%) rotate(45deg);color:#fff;font-size:12px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)">' + (idx + 1) + '</div>' +
+        '</div>',
+        iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
       });
-      var iconeAzul = L.divIcon({
-        className: '',
-        html: '<div style="width:32px;height:32px;background:#2196F3;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
-        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32]
-      });
-      var icone = d.a_caminho ? iconeVerde : iconeAzul;
       var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapaRastreamento);
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
       var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">A caminho</span>' : '<span style="color:#2196F3;font-weight:700">Chegou</span>';
-      var ruaText = d.rua ? '<span class="rua-icon">📍</span>' + esc(d.rua) : '';
+      var ruaText = d.rua ? '<span style="color:#2a6f7e">📍</span> ' + esc(d.rua) : '';
       marker.bindPopup(
-        '<b>' + esc(d.nome || 'Motorista') + '</b><br>' +
-        statusText + '<br>' +
-        (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
-        (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
-        (ruaText ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0">' + ruaText + '</div>' : '') +
-        'Atualizado: ' + tempo
+        '<div style="min-width:180px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+            '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
+            '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
+          '</div>' +
+          statusText + '<br>' +
+          (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
+          (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
+          (ruaText ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0">' + ruaText + '</div>' : '') +
+          'Atualizado: ' + tempo +
+        '</div>'
       );
-      // Label com nome da rua fixo no mapa
-      if(d.rua){
-        var labelIcon = L.divIcon({
-          className: '',
-          html: '<div class="rua-label"><span class="rua-icon">📍</span>' + esc(d.rua) + '</div>',
-          iconSize: [200, 24],
-          iconAnchor: [100, 40]
-        });
-        var label = L.marker([d.lat, d.lng], { icon: labelIcon, interactive: false }).addTo(mapaRastreamento);
-        marcadoresRastreamento.push(label);
-      }
+      // Label com nome do motorista e rua
+      var labelText = esc(d.nome || 'Motorista');
+      if(d.rua) labelText += ' · ' + esc(d.rua);
+      var labelIcon = L.divIcon({
+        className: '',
+        html: '<div style="background:#fff;color:#333;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.2);white-space:nowrap;border:1px solid #ddd;max-width:220px;overflow:hidden;text-overflow:ellipsis"><span style="color:' + cor + ';font-weight:800">#' + (idx+1) + '</span> ' + labelText + '</div>',
+        iconSize: [220, 24],
+        iconAnchor: [110, 42]
+      });
+      var label = L.marker([d.lat, d.lng], { icon: labelIcon, interactive: false }).addTo(mapaRastreamento);
+      marcadoresRastreamento.push(label);
       marcadoresRastreamento.push(marker);
       bounds.push([d.lat, d.lng]);
     });
