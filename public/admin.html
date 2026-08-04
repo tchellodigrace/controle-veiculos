@@ -488,7 +488,7 @@ async function verDetalhes(id){
     const c = clientes.find(x => x.id == id);
     if(!c) return;
     const baseUrl = window.location.origin;
-    const portariaUrl = baseUrl;
+    const portariaUrl = baseUrl + '/login.html';
     const preMotoristaUrl = baseUrl + '/p/' + c.id;
     const preVisitanteUrl = baseUrl + '/v/' + c.id;
 
