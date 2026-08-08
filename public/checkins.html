@@ -583,6 +583,7 @@
               <th>Telefone</th>
               <th>Previsão</th>
               <th>Horário</th>
+              <th>Confirmar</th>
               <th></th>
             </tr>
           </thead>
@@ -612,6 +613,7 @@ var token = localStorage.getItem('token');
 var usuario = null;
 var empresa = '';
 var autoRefreshInterval = null;
+var checkinsData = [];
 
 // === Init ===
 (function init(){
@@ -673,6 +675,8 @@ function fazerLogin(e){
   .catch(function(ex){
     erroEl.textContent = ex.message || 'Erro de conexão';
     erroEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
   })
   .finally(function(){
     btn.disabled = false;
@@ -812,6 +816,7 @@ async function carregarCheckins(){
     if(!res.ok) return;
     var dados = await res.json();
     if(!Array.isArray(dados)) dados = [];
+    checkinsData = dados;
 
     // Atualizar contadores
     var hoje = new Date().toLocaleDateString('en-CA');
@@ -832,7 +837,7 @@ async function carregarCheckins(){
     }
     vazio.style.display = 'none';
 
-    dados.forEach(function(d){
+    dados.forEach(function(d, i){
       var tipoClass = d.tipo_checkin === 'partida' ? 'badge-partida' : 'badge-chegada';
       var tipoText = d.tipo_checkin === 'partida' ? '🚛 Partida' : '📍 Chegada';
       var statusClass = 'badge-aguardando';
@@ -857,52 +862,55 @@ async function carregarCheckins(){
         '<td>' + esc(telefone) + '</td>' +
         '<td>' + previsao + '</td>' +
         '<td>' + dataHora + '</td>' +
-        '<td><span class="detalhe-btn" onclick="verDetalhes(' + d.id + ')" title="Ver detalhes">📋</span></td>' +
+        '<td>' + (d.status_checkin !== 'confirmado' ? '<button class="btn" style="padding:4px 10px;font-size:10px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:6px;cursor:pointer;font-weight:700" onclick="confirmarCheckin(' + d.id + ')" title="Confirmar chegada">✅ Confirmar</button>' : '<span style="color:#2e7d32;font-size:11px">✅</span>') + '</td>' +
+        '<td><span class="detalhe-btn" onclick="verDetalhes(' + i + ')" title="Ver detalhes">📋</span></td>' +
       '</tr>';
     });
   } catch(e){}
 }
 
 // === MODAL DE DETALHES ===
-async function verDetalhes(id){
+function verDetalhes(idx){
   var modal = document.getElementById('modalDetalhes');
   var body = document.getElementById('modalBody');
-  body.innerHTML = '<div style="text-align:center;padding:20px;color:#5b6672">Carregando...</div>';
-  modal.classList.add('mostrar');
-  try {
-    var res = await fetch(API + '/api/checkins', { headers: getHeaders() });
-    if(!res.ok) return;
-    var dados = await res.json();
-    var d = dados.find(function(item){ return item.id === id; });
-    if(!d){
-      body.innerHTML = '<div style="text-align:center;padding:20px;color:#5b6672">Registro não encontrado</div>';
-      return;
-    }
-    var linhas = [
-      { label: 'Tipo', valor: d.tipo_checkin === 'partida' ? '🚛 Partida (Em trânsito)' : '📍 Chegada (Na portaria)' },
-      { label: 'Status', valor: d.status_checkin === 'em_transito' ? '🚀 Em Trânsito' : d.status_checkin === 'confirmado' ? '✅ Confirmado' : '📍 Aguardando' }
-    ];
-    if(d.motorista) linhas.push({ label: 'Motorista', valor: d.motorista });
-    if(d.cnh) linhas.push({ label: 'CNH', valor: d.cnh });
-    if(d.telefone_motorista) linhas.push({ label: 'Telefone', valor: d.telefone_motorista });
-    if(d.placa) linhas.push({ label: 'Placa', valor: d.placa });
-    if(d.modelo) linhas.push({ label: 'Modelo', valor: d.modelo });
-    if(d.empresa) linhas.push({ label: 'Empresa', valor: d.empresa });
-    if(d.finalidade) linhas.push({ label: 'Finalidade', valor: d.finalidade });
-    if(d.nota) linhas.push({ label: 'Nota Fiscal', valor: d.nota });
-    if(d.descricao_material) linhas.push({ label: 'Material', valor: d.descricao_material });
-    if(d.quantidade_peso) linhas.push({ label: 'Qtd/Peso', valor: d.quantidade_peso });
-    if(d.nome_recebedor) linhas.push({ label: 'Recebedor', valor: d.nome_recebedor });
-    if(d.data_previsao) linhas.push({ label: 'Previsão', valor: new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR') });
-    if(d.criado_em) linhas.push({ label: 'Check-in em', valor: new Date(d.criado_em).toLocaleString('pt-BR') });
-    if(d.obs) linhas.push({ label: 'Observação', valor: d.obs });
+  var d = checkinsData[idx];
+  if(!d){ body.innerHTML = '<div style="text-align:center;padding:20px;color:#5b6672">Registro não encontrado</div>'; modal.classList.add('mostrar'); return; }
+  var linhas = [
+    { label: 'Tipo', valor: d.tipo_checkin === 'partida' ? '🚛 Partida (Em trânsito)' : '📍 Chegada (Na portaria)' },
+    { label: 'Status', valor: d.status_checkin === 'em_transito' ? '🚀 Em Trânsito' : d.status_checkin === 'confirmado' ? '✅ Confirmado' : '📍 Aguardando' }
+  ];
+  if(d.motorista) linhas.push({ label: 'Motorista', valor: d.motorista });
+  if(d.cnh) linhas.push({ label: 'CNH', valor: d.cnh });
+  if(d.telefone_motorista) linhas.push({ label: 'Telefone', valor: d.telefone_motorista });
+  if(d.placa) linhas.push({ label: 'Placa', valor: d.placa });
+  if(d.modelo) linhas.push({ label: 'Modelo', valor: d.modelo });
+  if(d.empresa) linhas.push({ label: 'Empresa', valor: d.empresa });
+  if(d.finalidade) linhas.push({ label: 'Finalidade', valor: d.finalidade });
+  if(d.nota) linhas.push({ label: 'Nota Fiscal', valor: d.nota });
+  if(d.descricao_material) linhas.push({ label: 'Material', valor: d.descricao_material });
+  if(d.quantidade_peso) linhas.push({ label: 'Qtd/Peso', valor: d.quantidade_peso });
+  if(d.nome_recebedor) linhas.push({ label: 'Recebedor', valor: d.nome_recebedor });
+  if(d.data_previsao) linhas.push({ label: 'Previsão', valor: new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR') });
+  if(d.criado_em) linhas.push({ label: 'Check-in em', valor: new Date(d.criado_em).toLocaleString('pt-BR') });
+  if(d.obs) linhas.push({ label: 'Observação', valor: d.obs });
 
-    body.innerHTML = linhas.map(function(l){
-      return '<div class="modal-linha"><div class="modal-label">' + esc(l.label) + '</div><div class="modal-valor">' + esc(l.valor) + '</div></div>';
-    }).join('');
-  } catch(e){
-    body.innerHTML = '<div style="text-align:center;padding:20px;color:#d64545">Erro ao carregar detalhes</div>';
-  }
+  body.innerHTML = linhas.map(function(l){
+    return '<div class="modal-linha"><div class="modal-label">' + esc(l.label) + '</div><div class="modal-valor">' + esc(l.valor) + '</div></div>';
+  }).join('');
+  modal.classList.add('mostrar');
+}
+
+async function confirmarCheckin(id){
+  if(!confirm('Confirmar este check-in?')) return;
+  try {
+    var res = await fetch(API + '/api/checkins/' + id + '/status', {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status_checkin: 'confirmado' })
+    });
+    if(!res.ok){ alert('Erro ao confirmar'); return; }
+    carregarCheckins();
+  } catch(e){ alert('Erro de conexão'); }
 }
 
 function fecharModal(){

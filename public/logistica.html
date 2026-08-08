@@ -192,7 +192,7 @@ function getStatusInfo(d){
 
 function carregarDados(){
   if(!TOKEN) return;
-  fetch(API + '/api/logistica/' + TOKEN)
+  fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN))
     .then(function(res){
       if(!res.ok){
         document.getElementById('listaContainer').innerHTML = '<div style="text-align:center;color:#cc0000;font-size:13px;padding:20px">Erro ao carregar dados (HTTP ' + res.status + '). Verifique o link ou recarregue a pagina.</div>';
@@ -375,7 +375,7 @@ function carregarDados(){
         else { mapa.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 }); }
       }
     })
-    .catch(function(){});
+    .catch(function(err){ console.error('Erro ao carregar dados:', err); });
 }
 
 function focarMapa(lat, lng){

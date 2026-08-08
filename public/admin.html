@@ -756,6 +756,7 @@ async function excluirCliente(id){
 }
 
 async function verDetalhes(id){
+  // TODO: otimizar — buscar apenas GET /api/admin/clientes/:id em vez de todos
   try {
     const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
     const clientes = await res.json();
@@ -1406,7 +1407,7 @@ async function abrirConfigWhatsapp(id){
   document.getElementById('waToken').value = c.whatsapp_token || '';
   document.getElementById('waUrl').value = c.whatsapp_url || '';
   document.getElementById('waInstancia').value = c.whatsapp_instancia || '';
-  document.getElementById('waRemetente').value = c.whatsapp_remetente || '';
+  document.getElementById('waRemetente').value = c.whatsapp_telefone || '';
   document.getElementById('waTelefoneNotif').value = c.whatsapp_telefone_notif || '';
   document.getElementById('waTesteResult').innerHTML = '';
   toggleWhatsappCampos();
@@ -1524,10 +1525,10 @@ async function abrirConfigEmail(id){
   document.getElementById('emClienteNome').textContent = c.empresa;
   document.getElementById('emAtivo').checked = !!c.email_ativo;
   document.getElementById('emSmtpHost').value = c.email_smtp_host || '';
-  document.getElementById('emSmtpPorta').value = c.email_smtp_porta || '';
+  document.getElementById('emSmtpPorta').value = c.email_smtp_port || '';
   document.getElementById('emSmtpUser').value = c.email_smtp_user || '';
   document.getElementById('emSmtpPass').value = c.email_smtp_pass || '';
-  document.getElementById('emRemetenteNome').value = c.email_remetente_nome || '';
+  document.getElementById('emRemetenteNome').value = c.email_remetente || '';
   document.getElementById('emDestinatario').value = c.email_destinatario || '';
   document.getElementById('emTesteResult').innerHTML = '';
   toggleEmailCampos();
@@ -1548,10 +1549,10 @@ async function salvarConfigEmail(){
   const payload = {
     ativo: ativo,
     smtp_host: document.getElementById('emSmtpHost').value.trim(),
-    smtp_porta: parseInt(document.getElementById('emSmtpPorta').value) || 587,
+    smtp_port: parseInt(document.getElementById('emSmtpPorta').value) || 587,
     smtp_user: document.getElementById('emSmtpUser').value.trim(),
     smtp_pass: document.getElementById('emSmtpPass').value,
-    remetente_nome: document.getElementById('emRemetenteNome').value.trim(),
+    remetente: document.getElementById('emRemetenteNome').value.trim(),
     destinatario: document.getElementById('emDestinatario').value.trim()
   };
   if(ativo && !payload.smtp_host){ alert('Informe o SMTP Host.'); return; }
@@ -1577,7 +1578,7 @@ async function enviarTesteEmail(){
   resultadoEl.innerHTML = '<div class="wa-teste-erro">Enviando email de teste...</div>';
   try {
     const res = await fetch(API + '/api/admin/clientes/' + id + '/email-teste', {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ email: destino.trim() })
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ destinatario: destino.trim() })
     });
     const data = await res.json().catch(() => ({}));
     if(res.ok){

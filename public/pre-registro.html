@@ -344,16 +344,7 @@ async function fazerLogin(e){
   } catch(ex) { mostrarErro("erroLogin", "Erro de conexão"); btn.disabled = false; btn.textContent = "Entrar"; }
 }
 
-function mostrarTelaForm(){
-  document.getElementById("telaLogin").style.display = "none";
-  document.getElementById("telaForm").style.display = "block";
-  document.getElementById("sucesso").style.display = "none";
-  document.getElementById("formPre").style.display = "block";
-  document.getElementById("nomeMotorista").textContent = motoristaLogado?.nome || "Motorista";
-  carregarSugestoes();
-}
-
-async function carregarSugestoes(){
+function carregarSugestoes(){
   // Nao carrega mais tudo de uma vez — agora usa busca dinamica ao digitar
 }
 
@@ -374,7 +365,7 @@ function configurarAutocomplete(inputId, listId, campo){
 
   input.addEventListener('input', function(){
     var val = this.value.trim();
-    if(val.length < 1){ lista.classList.remove('open'); lista.innerHTML = ''; return; }
+    if(val.length < 2){ lista.style.display = 'none'; return; }
     fecharTodasListasAc(listId);
     acActiveIdx[listId] = -1;
     clearTimeout(acTimers[campo]);
@@ -456,17 +447,6 @@ function iniciarAutocompletes(){
   configurarAutocomplete('empresa', 'acEmpresa', 'empresa');
   configurarAutocomplete('placa', 'acPlaca', 'placa');
   configurarAutocomplete('cnh', 'acCnh', 'cnh');
-}
-
-function sair(){
-  tokenMotorista = null;
-  motoristaLogado = null;
-  localStorage.removeItem('tokenMotorista_' + CLIENTE_ID);
-  localStorage.removeItem('motoristaLogado_' + CLIENTE_ID);
-  document.getElementById("telaLogin").style.display = "block";
-  document.getElementById("telaForm").style.display = "none";
-  document.getElementById("sucesso").style.display = "none";
-  document.getElementById("formLogin").reset();
 }
 
 async function enviar(e){

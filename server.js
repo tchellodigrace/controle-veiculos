@@ -19,7 +19,7 @@ async function obterRua(lat, lng) {
   try {
     const key = Math.round(lat * 10000) + ',' + Math.round(lng * 10000);
     const cached = geoCache.get(key);
-    if (cached && (Date.now() - cached.t) < GEO_CACHE_TTL) return cached.rua;
+    if (cached && (Date.now() - cached.t) < GEO_CACHE_TTL) return cached.r;
 
     const res = await fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lng + '&format=json&accept-language=pt-BR&zoom=18', {
       headers: { 'User-Agent': 'ControlePortariaDSRH/1.0' }
@@ -56,8 +56,11 @@ function validarEnv() {
 }
 validarEnv();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'arcatech-controle-portaria-2026-fallback-key';
-if (!process.env.JWT_SECRET) console.warn('AVISO: JWT_SECRET nao definido. Usando fallback. Defina JWT_SECRET no ambiente!');
+const JWT_SECRET = process.env.JWT_SECRET || '';
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET nao definido no ambiente. Defina a variavel e reinicie.');
+  process.exit(1);
+}
 
 // Remover header X-Powered-By do Express
 app.disable('x-powered-by');
@@ -131,7 +134,7 @@ app.use((req, res, next) => {
   res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.set('Cache-Control', 'no-store');
   res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: https://unpkg.com; font-src 'self' https://unpkg.com; connect-src 'self'");
+  res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: https://unpkg.com; font-src 'self' https://unpkg.com; connect-src 'self'"); // connect-src 'self' restringe fetch/XHR ao mesmo origem; ajustar se houver APIs externas necessarias
   res.set('Permissions-Policy', 'camera=(), microphone=(), payment=()');
   next();
 });
@@ -797,7 +800,7 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
     const lngNum = parseFloat(lng);
     if (isNaN(latNum) || isNaN(lngNum)) return res.status(400).json({ erro: 'Coordenadas inválidas' });
     // Verificar última posição para só fazer geocoding se mudou > 100m
-    const ultima = await pool.query('SELECT lat, lng FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
+    const ultima = await pool.query('SELECT lat, lng, rua FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
     var rua = '';
     if (ultima.rows.length > 0) {
       const dlat = latNum - ultima.rows[0].lat;
@@ -806,8 +809,7 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
       if (dist > 100) {
         rua = await obterRua(latNum, lngNum);
       } else {
-        const lastRua = await pool.query('SELECT rua FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
-        rua = lastRua.rows[0]?.rua || '';
+        rua = ultima.rows[0].rua || '';
       }
     } else {
       rua = await obterRua(latNum, lngNum);
@@ -1293,7 +1295,7 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
 
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, criado_em FROM clientes ORDER BY criado_em DESC');
+    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_token, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_smtp_pass, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar clientes:', err);
@@ -1363,7 +1365,7 @@ app.put('/api/admin/clientes/:id', adminMiddleware, apiLimiter, async (req, res)
     if (valor_mensal !== undefined) { params.push(valor_mensal); updates.push(`valor_mensal = $${params.length}`); }
     if (data_expiracao !== undefined) { params.push(data_expiracao); updates.push(`data_expiracao = $${params.length}`); }
     if (dominio !== undefined) { params.push(dominio); updates.push(`dominio = $${params.length}`); }
-    if (ativo !== undefined) { params.push(ativo); updates.push(`ativo = $${params.length}`); }
+    if (ativo !== undefined) { params.push(ativo === true || ativo === 'true'); updates.push(`ativo = $${params.length}`); }
     if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
     params.push(req.params.id);
     await pool.query(`UPDATE clientes SET ${updates.join(', ')} WHERE id = $${params.length}`, params);
@@ -1942,6 +1944,26 @@ app.get('/api/checkins', authMiddleware, apiLimiter, async (req, res) => {
   }
 });
 
+// Atualizar status de check-in
+app.put('/api/checkins/:id/status', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const { status_checkin } = req.body;
+    if (!['em_transito', 'aguardando', 'confirmado'].includes(status_checkin)) {
+      return res.status(400).json({ erro: 'Status invalido' });
+    }
+    const result = await pool.query(
+      'UPDATE pre_registros SET status_checkin = $1 WHERE id = $2 AND cliente_id = $3 RETURNING *',
+      [status_checkin, req.params.id, req.usuario.cliente_id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Check-in não encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar status checkin:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
 // === AGENDAMENTOS ===
 app.get('/api/agendamentos', authMiddleware, apiLimiter, async (req, res) => {
   try {
@@ -2167,6 +2189,7 @@ async function iniciar() {
         ['SUPER ADMIN', 'superadmin', senhaSuper]
       );
       console.warn('AVISO: Senha padrao do admin e "admin123". ALTERE IMEDIATAMENTE apos o primeiro login!');
+      // TODO: trocar_senha = TRUE nao e forcado no fluxo de login admin. Implementar verificacao obrigatoria de troca de senha apos primeiro login.
     }
   } catch (err) {
     console.error('Erro ao conectar ao PostgreSQL:', err.message);

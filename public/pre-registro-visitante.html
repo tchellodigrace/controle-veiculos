@@ -278,6 +278,11 @@ async function enviar(e){
   var placa = document.getElementById("vPlaca").value.trim().toUpperCase();
   if(!tipo){ mostrarErro("erroForm", "Informe o tipo (Entrega ou Coleta)."); return; }
   if(!placa){ mostrarErro("erroForm", "Informe a placa do veículo."); return; }
+  var placaClean = placa.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  if (placaClean.length < 6 || placaClean.length > 8) {
+    mostrarErro("erroForm", "Placa inválida. Deve ter entre 6 e 8 caracteres.");
+    return;
+  }
   var btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   var payload = {

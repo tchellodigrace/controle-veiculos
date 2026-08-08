@@ -1217,6 +1217,7 @@
                 <th>Recebedor</th>
                 <th>Previsão</th>
                 <th>Horário Check-in</th>
+                <th>Confirmar</th>
                 <th>Detalhes</th>
               </tr>
             </thead>
@@ -1952,6 +1953,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 (async function init(){
   try {
     if (!await verificarAuth()) return;
+    // TODO: Recarregar datalists periodicamente ou após operações de registro
     carregarDatalist();
     carregarDatalistEmpresas();
     iniciarAutocompletesPortaria();
@@ -2050,7 +2052,7 @@ async function carregarDatalist(){
     const lista = await res.json();
     const dl = document.getElementById("listaMotoristas");
     dl.innerHTML = lista.map(m => `<option value="${esc(m.motorista)}" data-placa="${esc(m.placa)}" data-empresa="${esc(m.empresa)}" data-cnh="${esc(m.cnh)}">`).join("");
-  } catch {}
+  } catch(e){ console.error('Erro ao carregar datalist:', e); }
 }
 async function carregarDatalistEmpresas(){
   // Agora usa autocomplete dinamico ao digitar
@@ -2356,7 +2358,7 @@ async function carregarMural(){
         <div style="font-size:10px;color:#a0aec0;margin-top:8px">${new Date(d.criado_em).toLocaleString('pt-BR')}</div>
       </div>`;
     }).join('');
-  } catch {}
+  } catch(e){ console.error('Erro ao carregar mural:', e); }
 }
 function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
 function fecharModal(modal){ document.getElementById(modal).classList.remove('mostrar'); }
@@ -2419,7 +2421,7 @@ async function carregarAuditoria(){
       <td><b>${esc(d.alvo) || "—"}</b></td>
       <td style="font-size:12px;max-width:250px;word-break:break-word">${esc(d.detalhes) || "—"}</td>
     </tr>`).join('');
-  } catch {}
+  } catch(e){ console.error('Erro ao carregar auditoria:', e); }
 }
 
 async function atualizarPreRegistrosVisitantes(){
@@ -2451,14 +2453,13 @@ async function atualizarPreRegistrosVisitantes(){
         </td>
       </tr>`;
     });
-  } catch {}
+  } catch(e){ console.error('Erro ao atualizar pre-registros visitantes:', e); }
 }
 
 async function confirmarPreRegistroVisitante(id){
   try {
     const res = await fetch(API + '/api/pre-registros-visitantes/' + id + '/confirmar', {
-      method: 'POST', headers: { ...getHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hora: new Date().toLocaleTimeString('pt-BR'), data: new Date().toLocaleDateString('en-CA') })
+      method: 'POST', headers: { ...getHeaders(), 'Content-Type': 'application/json' }
     });
     if(!res.ok){ alert("Erro ao confirmar"); return; }
     atualizarPreRegistrosVisitantes();
@@ -2495,8 +2496,7 @@ async function registrarVisitante(){
     tipo: document.getElementById("vTipo").value,
     placa: document.getElementById("vPlaca").value.trim().toUpperCase(),
     nota: document.getElementById("vNota").value.trim(),
-    obs: document.getElementById("vObs").value.trim(),
-    hora: new Date().toLocaleTimeString('pt-BR')
+    obs: document.getElementById("vObs").value.trim()
   };
   try {
     const res = await fetch(API + '/api/visitantes', {
@@ -2775,6 +2775,7 @@ async function carregarCheckins(){
         '<td>' + esc(d.nome_recebedor || '-') + '</td>' +
         '<td>' + previsao + '</td>' +
         '<td>' + dataHora + '</td>' +
+        '<td>' + (d.status_checkin !== 'confirmado' ? '<button class="btn" style="padding:4px 10px;font-size:10px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:6px;cursor:pointer;font-weight:700" onclick="confirmarCheckin(' + d.id + ')" title="Confirmar chegada">✅ Confirmar</button>' : '<span style="color:#2e7d32;font-size:11px">✅</span>') + '</td>' +
         '<td>' + (obsText ? '<span title="' + obsText + '" style="cursor:help;font-size:16px">📋</span>' : '-') + '</td>' +
       '</tr>';
       tbody.innerHTML += tr;
@@ -2789,6 +2790,19 @@ async function carregarCheckins(){
       badge.style.display = 'none';
     }
   } catch(e){}
+}
+
+async function confirmarCheckin(id){
+  if(!confirm('Confirmar este check-in?')) return;
+  try {
+    var res = await fetch(API + '/api/checkins/' + id + '/status', {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ status_checkin: 'confirmado' })
+    });
+    if(!res.ok){ alert('Erro ao confirmar'); return; }
+    carregarCheckins();
+  } catch(e){ alert('Erro de conexão'); }
 }
 
 // === GERAR LINK DE CHECK-IN ===
