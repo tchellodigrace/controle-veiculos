@@ -279,7 +279,7 @@
       document.getElementById('empresaNome').textContent = data.empresa_destino || '---';
       document.title = 'Despacho — ' + (data.empresa_destino || 'Entrega');
       montarResumo(data);
-      atualizarStatusUI(data.status_checkin);
+      atualizarStatusUI(data.status_checkin, data.tipo_checkin);
     })
     .catch(function(){
       mostrarErro();
@@ -309,11 +309,12 @@
     document.getElementById('resumoContainer').innerHTML = html;
   }
 
-  function atualizarStatusUI(status){
+  function atualizarStatusUI(status, tipo){
     var badge = document.getElementById('statusBadge');
     var icon = document.getElementById('statusIcon');
     var label = document.getElementById('statusLabel');
     var btn = document.getElementById('btnIniciar');
+    var isChegada = (tipo === 'chegada');
 
     if(status === 'em_transito'){
       badge.className = 'status-badge em_transito';
@@ -329,7 +330,14 @@
       icon.innerHTML = '&#x2705;';
       label.textContent = 'Confirmado na portaria';
       btn.style.display = 'none';
+    } else if(isChegada){
+      // Chegada: motorista ja esta na portaria, nao precisa do botao
+      badge.className = 'status-badge aguardando';
+      icon.innerHTML = '&#x1F4CD;';
+      label.textContent = 'Aguardando na portaria';
+      btn.style.display = 'none';
     } else {
+      // Partida: aguardando saida
       badge.className = 'status-badge aguardando';
       icon.innerHTML = '&#x23F3;';
       label.textContent = 'Aguardando saida';
@@ -369,7 +377,7 @@
     })
     .then(function(data){
       checkinData.status_checkin = 'em_transito';
-      atualizarStatusUI('em_transito');
+      atualizarStatusUI('em_transito', checkinData.tipo_checkin);
       if(data.hora_inicio){
         document.getElementById('horaInicio').textContent = 'Inicio: ' + new Date(data.hora_inicio).toLocaleString('pt-BR');
       }

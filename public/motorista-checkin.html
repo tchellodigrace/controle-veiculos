@@ -531,7 +531,7 @@
       </button>
       <div id="linkMotoristaArea" style="margin-top:12px;display:none">
         <input type="text" id="linkMotoristaInput" readonly style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;color:#4a5568;background:#f7f9fb" onclick="this.select()">
-        <button type="button" onclick="copiarLinkMotorista()" style="width:100%;margin-top:6px;padding:8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#4a5568;font-size:13px;font-weight:600;cursor:pointer">
+        <button type="button" id="btnCopiarLink" onclick="copiarLinkMotorista(event)" style="width:100%;margin-top:6px;padding:8px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#4a5568;font-size:13px;font-weight:600;cursor:pointer">
           Copiar link do motorista
         </button>
       </div>
@@ -852,44 +852,48 @@
       document.getElementById('telaFormulario').style.display = 'none';
       document.getElementById('telaSucesso').style.display = 'block';
 
-      // Customize success screen
+      // Customize success screen por tipo
       var tituloSucesso = document.getElementById('sucessoTitulo');
       var destaqueSucesso = document.getElementById('sucessoDestaque');
-      tituloSucesso.textContent = 'Despacho registrado!';
-      destaqueSucesso.innerHTML = 'O despacho foi registrado com sucesso.<br>Envie o link abaixo para o motorista iniciar o trajeto.';
+      var btnArea = document.getElementById('btnAreaMotorista');
 
-      // Gerar link do motorista se veio token do backend
-      var motoristaToken = data.motorista_token;
-      if(motoristaToken){
-        var linkMotorista = window.location.origin + '/motorista-painel.html?token=' + encodeURIComponent(motoristaToken);
-        document.getElementById('linkMotoristaInput').value = linkMotorista;
-        document.getElementById('linkMotoristaArea').style.display = 'block';
+      if(tipoSelecionado === 'partida'){
+        tituloSucesso.textContent = 'Despacho registrado!';
+        destaqueSucesso.innerHTML = 'O despacho foi registrado com sucesso.<br>Envie o link abaixo para o motorista iniciar o trajeto.';
+        // Gerar link do motorista para partida
+        var motoristaToken = data.motorista_token;
+        if(motoristaToken){
+          var linkMotorista = window.location.origin + '/motorista-painel.html?token=' + encodeURIComponent(motoristaToken);
+          document.getElementById('linkMotoristaInput').value = linkMotorista;
+          document.getElementById('linkMotoristaArea').style.display = 'block';
 
-        // Armazenar dados para gerar WhatsApp
-        var motoristaNome = payload.motorista || '';
-        var motoristaTel = payload.telefone_motorista || '';
-        var empresaDestino = nomeEmpresa;
+          var motoristaNome = payload.motorista || '';
+          var motoristaTel = payload.telefone_motorista || '';
+          var empresaDestino = nomeEmpresa;
 
-        // WhatsApp: se tem telefone do motorista, preencher automaticamente
-        if(motoristaTel){
-          var telClean = motoristaTel.replace(/\D/g, '');
-          if(telClean.length >= 10){
-            var ddi = '55';
-            var numero = ddi + telClean;
-            var msg = encodeURIComponent(
-              'Ola ' + motoristaNome + '! Sua entrega para ' + empresaDestino + ' esta registrada.\n\nClique no link para iniciar o trajeto:\n' + linkMotorista + '\n\nControle de Portaria DSRH'
-            );
-            document.getElementById('btnWhatsAppMotorista').onclick = function(){
-              window.open('https://wa.me/' + numero + '?text=' + msg, '_blank');
-            };
+          if(motoristaTel){
+            var telClean = motoristaTel.replace(/\D/g, '');
+            if(telClean.length >= 10){
+              var ddi = '55';
+              var numero = ddi + telClean;
+              var msg = encodeURIComponent(
+                'Ola ' + motoristaNome + '! Sua entrega para ' + empresaDestino + ' esta registrada.\n\nClique no link para iniciar o trajeto:\n' + linkMotorista + '\n\nControle de Portaria DSRH'
+              );
+              document.getElementById('btnWhatsAppMotorista').onclick = function(){
+                window.open('https://wa.me/' + numero + '?text=' + msg, '_blank');
+              };
+            } else {
+              document.getElementById('linkMotoristaArea').style.display = 'block';
+            }
           } else {
-            // Telefone curto, mostrar area de link para copiar
             document.getElementById('linkMotoristaArea').style.display = 'block';
           }
-        } else {
-          // Sem telefone, mostrar link para copiar manualmente
-          document.getElementById('linkMotoristaArea').style.display = 'block';
         }
+      } else {
+        // Chegada - motorista ja esta na portaria
+        tituloSucesso.textContent = 'Pre-registro enviado!';
+        destaqueSucesso.innerHTML = 'Aguarde a portaria confirmar sua entrada.<br>Apresente-se ao porteiro na chegada.';
+        btnArea.style.display = 'none';
       }
 
       window.scrollTo(0, 0);
@@ -923,13 +927,12 @@
   };
 
   // Copiar link do motorista
-  window.copiarLinkMotorista = function(){
+  window.copiarLinkMotorista = function(evt){
     var linkInput = document.getElementById('linkMotoristaInput');
     linkInput.select();
-    document.execCommand('copy');
-    var btn = event.target;
-    btn.textContent = 'Link copiado!';
-    setTimeout(function(){ btn.textContent = 'Copiar link do motorista'; }, 2000);
+    try { navigator.clipboard.writeText(linkInput.value); } catch(e){ document.execCommand('copy'); }
+    var btn = evt ? evt.currentTarget || evt.target : document.getElementById('btnCopiarLink');
+    if(btn){ btn.textContent = 'Link copiado!'; setTimeout(function(){ btn.textContent = 'Copiar link do motorista'; }, 2000); }
   };
 
   // === Novo check-in ===
@@ -938,6 +941,11 @@
     document.getElementById('telaSucesso').style.display = 'none';
     document.getElementById('telaEscolha').style.display = 'block';
     document.getElementById('telaFormulario').style.display = 'none';
+    // Reset area do motorista
+    document.getElementById('btnAreaMotorista').style.display = 'block';
+    document.getElementById('linkMotoristaArea').style.display = 'none';
+    document.getElementById('linkMotoristaInput').value = '';
+    document.getElementById('btnWhatsAppMotorista').onclick = enviarWhatsappMotorista;
     tipoSelecionado = 'chegada';
     atualizarBarra(0);
     ocultarErro();

@@ -2001,6 +2001,21 @@ app.get('/api/motorista-despacho/:token', apiLimiter, async (req, res) => {
 // POST: motorista inicia transito (muda status para em_transito + salva GPS inicial)
 app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (req, res) => {
   try {
+    // Verificar se e partida - apenas partida pode iniciar transito
+    const checkTipo = await pool.query(
+      `SELECT id, tipo_checkin, status_checkin FROM pre_registros WHERE motorista_token = $1 AND origem = 'checkin_qr'`,
+      [req.params.token]
+    );
+    if (!checkTipo.rows.length) {
+      return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    }
+    if (checkTipo.rows[0].tipo_checkin !== 'partida') {
+      return res.status(400).json({ erro: 'Este check-in e de chegada. Inicio de transito nao se aplica.' });
+    }
+    if (checkTipo.rows[0].status_checkin === 'em_transito') {
+      return res.status(200).json({ id: checkTipo.rows[0].id, status_checkin: 'em_transito', ja_iniciado: true });
+    }
+
     const { lat, lng } = req.body;
     const result = await pool.query(
       `UPDATE pre_registros
@@ -2008,7 +2023,7 @@ app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (r
            transito_inicio = COALESCE(transito_inicio, NOW()),
            transito_lat = COALESCE(transito_lat, $2),
            transito_lng = COALESCE(transito_lng, $3)
-       WHERE motorista_token = $1 AND origem = 'checkin_qr'
+       WHERE motorista_token = $1 AND origem = 'checkin_qr' AND tipo_checkin = 'partida'
        RETURNING id, status_checkin, transito_inicio`,
       [req.params.token, lat || null, lng || null]
     );
@@ -2021,10 +2036,9 @@ app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (r
       `SELECT cliente_id, motorista, placa, empresa, finalidade FROM pre_registros WHERE id = $1`,
       [result.rows[0].id]
     );
-    if (despacho.rows.length) {
+    if (despacho.rows.length && lat && lng) {
       const d = despacho.rows[0];
       const motoristaId = result.rows[0].id;
-      // Delete existing + Insert nova localizacao
       await pool.query(
         `DELETE FROM localizacoes_motoristas WHERE cliente_id = $1 AND motorista_id = $2`,
         [d.cliente_id, motoristaId]
@@ -2032,7 +2046,7 @@ app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (r
       await pool.query(
         `INSERT INTO localizacoes_motoristas (cliente_id, motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, finalidade_tipo, atualizado_em)
          VALUES ($1, $2, $3, $4, $5, $6, $7, '', TRUE, FALSE, $8, NOW())`,
-        [d.cliente_id, motoristaId, d.motorista, d.placa, d.empresa, lat || 0, lng || 0, d.finalidade || 'Entrega']
+        [d.cliente_id, motoristaId, d.motorista, d.placa, d.empresa, lat, lng, d.finalidade || 'Entrega']
       ).catch(() => {});
     }
 
