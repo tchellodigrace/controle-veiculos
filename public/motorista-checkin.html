@@ -66,15 +66,29 @@
   .card select{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; cursor:pointer; }
 
   /* Botão */
-  .card button{
+  .card button.btn-primary{
     width:100%; padding:12px; border:none; border-radius:8px;
     background:#2a6f7e; color:#fff; font-size:15px; font-weight:700;
     cursor:pointer; transition:background .2s, transform .1s;
     margin-top:6px;
   }
-  .card button:hover{ background:#4FB0C6; }
-  .card button:active{ transform:scale(0.98); }
-  .card button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+  .card button.btn-primary:hover{ background:#4FB0C6; }
+  .card button.btn-primary:active{ transform:scale(0.98); }
+  .card button.btn-primary:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+  .card button.btn-secondary{
+    width:100%; padding:10px; border:1px solid #d1d5db; border-radius:8px;
+    background:#fff; color:#4a5568; font-size:14px; font-weight:600;
+    cursor:pointer; transition:background .2s;
+    margin-top:8px;
+  }
+  .card button.btn-secondary:hover{ background:#f7f8fa; }
+  .card button.btn-back{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border:1px solid #d1d5db; border-radius:8px;
+    background:#fff; color:#4a5568; font-size:13px; font-weight:600;
+    cursor:pointer; transition:background .2s; margin-bottom:16px;
+  }
+  .card button.btn-back:hover{ background:#f7f8fa; }
 
   /* Erro */
   .erro-msg{
@@ -128,6 +142,128 @@
     background:#4FB0C6; border-radius:2px;
   }
 
+  /* === STEP 1: Escolha === */
+  .step-1{ text-align:center; }
+  .step-1 .escolha-sub{
+    font-size:14px; color:#4a5568; margin-bottom:24px; line-height:1.5;
+  }
+  .escolha-botoes{ display:flex; flex-direction:column; gap:14px; }
+  .btn-escolha{
+    display:flex; align-items:center; gap:14px; width:100%;
+    padding:20px 20px; border:2px solid #e3e7eb; border-radius:14px;
+    background:#fff; cursor:pointer; transition:all .2s; text-align:left;
+    font-family:inherit;
+  }
+  .btn-escolha:hover{ border-color:#4FB0C6; background:#f0f9fb; transform:translateY(-1px); box-shadow:0 4px 16px rgba(79,176,198,.15); }
+  .btn-escolha:active{ transform:scale(0.98); }
+  .btn-escolha .icone{
+    width:52px; height:52px; border-radius:12px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    font-size:26px;
+  }
+  .btn-escolha .icone-partida{ background:linear-gradient(135deg,#fff3e0,#ffe0b2); }
+  .btn-escolha .icone-chegada{ background:linear-gradient(135deg,#e0f4f7,#b8e4ec); }
+  .btn-escolha .texto-escolha{ flex:1; }
+  .btn-escolha .texto-escolha .titulo-escolha{ font-size:16px; font-weight:700; color:#2a6f7e; margin-bottom:2px; }
+  .btn-escolha .texto-escolha .desc-escolha{ font-size:12px; color:#8b93a1; }
+  .btn-escolha .seta{ color:#b0b8c4; font-size:18px; flex-shrink:0; }
+
+  /* === PROGRESS BAR === */
+  .progress-container{
+    background:#f0f2f5; border-radius:20px; height:10px;
+    margin-bottom:20px; overflow:hidden; position:relative;
+  }
+  .progress-bar{
+    height:100%; border-radius:20px; transition:width .4s ease, background .4s ease;
+    width:0%; min-width:0%;
+  }
+  .progress-label{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:6px;
+  }
+  .progress-label span{ font-size:11px; color:#8b93a1; font-weight:600; }
+  .progress-label .pct{ color:#2a6f7e; font-weight:700; }
+
+  /* === TOOLTIP === */
+  .campo-label{
+    display:flex; align-items:center; gap:4px; margin-bottom:4px;
+  }
+  .campo-label label{ margin-bottom:0; }
+  .tooltip-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:16px; height:16px; border-radius:50%; background:#e3e7eb;
+    color:#8b93a1; font-size:10px; cursor:help; position:relative;
+    flex-shrink:0;
+  }
+  .tooltip-icon:hover .tooltip-text,
+  .tooltip-icon:focus .tooltip-text{
+    display:block;
+  }
+  .tooltip-text{
+    display:none; position:absolute; bottom:calc(100% + 6px); left:50%;
+    transform:translateX(-50%); background:#333; color:#fff;
+    padding:6px 10px; border-radius:6px; font-size:11px; font-weight:400;
+    white-space:nowrap; z-index:10; line-height:1.4;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
+  }
+  .tooltip-text::after{
+    content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:#333;
+  }
+
+  /* === CONFIRM DIALOG === */
+  .confirm-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+    z-index:100; align-items:center; justify-content:center; padding:16px;
+  }
+  .confirm-overlay.active{ display:flex; }
+  .confirm-card{
+    background:#fff; border-radius:16px; padding:24px; max-width:380px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); animation:scaleIn .25s ease;
+  }
+  .confirm-card h3{ font-size:16px; color:#2a6f7e; margin-bottom:12px; }
+  .confirm-card p{ font-size:13px; color:#4a5568; margin-bottom:6px; line-height:1.5; }
+  .confirm-card .campo-vazio{
+    background:#fff8e1; border:1px solid #ffe082; border-radius:8px;
+    padding:10px 12px; margin:12px 0; font-size:12px; color:#7a6600; line-height:1.6;
+  }
+  .confirm-card .campo-vazio b{ color:#e65100; }
+  .confirm-botoes{ display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+  .confirm-botoes button{
+    width:100%; padding:10px; border:none; border-radius:8px;
+    font-size:14px; font-weight:700; cursor:pointer; transition:background .2s;
+    font-family:inherit;
+  }
+  .confirm-botoes .btn-preencher{ background:#4FB0C6; color:#fff; }
+  .confirm-botoes .btn-preencher:hover{ background:#3a9bb0; }
+  .confirm-botoes .btn-enviar{ background:#f5f5f5; color:#4a5568; border:1px solid #d1d5db !important; }
+  .confirm-botoes .btn-enviar:hover{ background:#eaeaea; }
+
+  /* === STEP INDICATOR === */
+  .step-indicator{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-bottom:20px;
+  }
+  .step-dot{
+    width:10px; height:10px; border-radius:50%; background:#e3e7eb;
+    transition:background .3s;
+  }
+  .step-dot.active{ background:#2a6f7e; }
+  .step-dot.done{ background:#28a745; }
+  .step-line{
+    width:40px; height:2px; background:#e3e7eb; transition:background .3s;
+  }
+  .step-line.done{ background:#28a745; }
+
+  /* Tipo badge */
+  .tipo-badge{
+    display:inline-flex; align-items:center; gap:4px;
+    padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;
+    margin-bottom:16px;
+  }
+  .tipo-badge.partida{ background:#fff3e0; color:#e65100; }
+  .tipo-badge.chegada{ background:#e0f4f7; color:#2a6f7e; }
+
   @keyframes scaleIn{
     0%{ transform:scale(0); opacity:0; }
     60%{ transform:scale(1.15); }
@@ -138,8 +274,8 @@
 <body>
 <div class="card" id="cardPrincipal">
 
-  <!-- Tela do formulário -->
-  <div id="telaFormulario">
+  <!-- ==================== STEP 1: ESCOLHA ==================== -->
+  <div id="telaEscolha">
     <div class="logo-area">
       <div class="truck-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -154,7 +290,70 @@
     </div>
     <div class="empresa-nome" id="empresaNome"></div>
     <h1>Check-in de Motorista</h1>
-    <p class="sub">Preencha seus dados para a portaria</p>
+    <p class="sub">Selecione a opção que descreve sua situação</p>
+
+    <div class="step-indicator">
+      <div class="step-dot active"></div>
+      <div class="step-line"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="escolha-botoes">
+      <button type="button" class="btn-escolha" onclick="escolherTipo('partida')">
+        <div class="icone icone-partida">🚛</div>
+        <div class="texto-escolha">
+          <div class="titulo-escolha">Estou PARTINDO</div>
+          <div class="desc-escolha">Informar saída com previsão de chegada</div>
+        </div>
+        <div class="seta">›</div>
+      </button>
+      <button type="button" class="btn-escolha" onclick="escolherTipo('chegada')">
+        <div class="icone icone-chegada">📍</div>
+        <div class="texto-escolha">
+          <div class="titulo-escolha">Estou CHEGANDO na portaria</div>
+          <div class="desc-escolha">Pré-registro para entrada imediata</div>
+        </div>
+        <div class="seta">›</div>
+      </button>
+    </div>
+
+    <p class="rodape" style="margin-top:24px"><b>Controle de Portaria DSRH</b> — Sistema de gestão de acesso</p>
+  </div>
+
+  <!-- ==================== STEP 2: FORMULÁRIO ==================== -->
+  <div id="telaFormulario" style="display:none">
+    <div class="logo-area">
+      <div class="truck-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 3h15v13H1z"/>
+          <path d="M16 8h4l3 3v5h-7V8z"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+          <path d="M8 16v5"/>
+          <path d="M16 16v5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="empresa-nome" id="empresaNomeForm"></div>
+    <h1 id="tituloForm">Check-in de Motorista</h1>
+    <p class="sub" id="subtituloForm">Preencha seus dados para a portaria</p>
+
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-line done"></div>
+      <div class="step-dot active"></div>
+    </div>
+
+    <div id="tipoBadge" class="tipo-badge chegada">📍 Chegada</div>
+
+    <!-- Progress Bar -->
+    <div class="progress-label">
+      <span>Preenchimento</span>
+      <span class="pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
 
     <div class="erro-msg" id="erroMsg"></div>
 
@@ -169,8 +368,23 @@
       </div>
 
       <div class="campo">
-        <label>CNH</label>
+        <div class="campo-label">
+          <label>CNH</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Preencha a CNH ajuda na identificação na portaria</span>
+          </span>
+        </div>
         <input type="text" id="motoristaCnh" placeholder="Número da CNH" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <div class="campo-label">
+          <label>Telefone</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Número para contato durante o trajeto</span>
+          </span>
+        </div>
+        <input type="tel" id="motoristaTelefone" placeholder="(00) 00000-0000" autocomplete="tel">
       </div>
 
       <div class="separador"></div>
@@ -202,8 +416,8 @@
 
       <div class="separador"></div>
 
-      <!-- Seção: Dados da Visita -->
-      <div class="secao-titulo">Dados da Visita</div>
+      <!-- Seção: Dados da Carga -->
+      <div class="secao-titulo">Dados da Carga</div>
 
       <div class="campo">
         <label>Empresa Transportadora <span class="obrigatorio">*</span></label>
@@ -223,38 +437,96 @@
       </div>
 
       <div class="campo">
-        <label>Nota Fiscal / Ordem</label>
+        <div class="campo-label">
+          <label>Número da Nota Fiscal</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Preencher a nota fiscal agiliza o recebimento</span>
+          </span>
+        </div>
         <input type="text" id="notaFiscal" placeholder="Número da NF ou ordem de serviço" autocomplete="off">
       </div>
 
       <div class="campo">
-        <label>Observação</label>
+        <div class="campo-label">
+          <label>Descrição do Material / Equipamento</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Descreva o material ou equipamento transportado</span>
+          </span>
+        </div>
+        <textarea id="descricaoMaterial" placeholder="Ex.: Tubos de aço inox, 100 peças..." rows="2"></textarea>
+      </div>
+
+      <div class="campo">
+        <div class="campo-label">
+          <label>Quantidade / Peso</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Informe a quantidade ou peso da carga</span>
+          </span>
+        </div>
+        <input type="text" id="quantidadePeso" placeholder="Ex.: 5 toneladas, 200 unidades..." autocomplete="off">
+      </div>
+
+      <div class="separador"></div>
+
+      <!-- Seção: Outras Informações -->
+      <div class="secao-titulo">Outras Informações</div>
+
+      <div class="campo">
+        <div class="campo-label">
+          <label>Nome de quem está recebendo/entregando</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Nome do responsável no destino ou origem</span>
+          </span>
+        </div>
+        <input type="text" id="nomeRecebedor" placeholder="Nome do responsável" autocomplete="off">
+      </div>
+
+      <div class="campo" id="campoDataPrevisao" style="display:none">
+        <div class="campo-label">
+          <label>Data prevista de chegada</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Informe a data que pretende chegar ao destino</span>
+          </span>
+        </div>
+        <input type="date" id="dataPrevisao" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <div class="campo-label">
+          <label>Observação</label>
+          <span class="tooltip-icon" tabindex="0">?
+            <span class="tooltip-text">Informações adicionais que julgar relevante</span>
+          </span>
+        </div>
         <textarea id="observacao" placeholder="Informações adicionais (opcional)" rows="2"></textarea>
       </div>
 
-      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+      <button type="button" class="btn-back" onclick="voltarEscolha()">
+        ← Voltar
+      </button>
+      <button type="submit" class="btn-primary" id="btnEnviar">Enviar Pré-Registro</button>
     </form>
 
     <p class="rodape"><b>Controle de Portaria DSRH</b> — Sistema de gestão de acesso</p>
   </div>
 
-  <!-- Tela de sucesso -->
+  <!-- ==================== TELA DE SUCESSO ==================== -->
   <div class="sucesso" id="telaSucesso">
     <div class="check-circle">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="20 6 9 17 4 12"/>
       </svg>
     </div>
-    <h2>Pré-registro enviado!</h2>
-    <div class="destaque">
+    <h2 id="sucessoTitulo">Pré-registro enviado!</h2>
+    <div class="destaque" id="sucessoDestaque">
       Aguarde a portaria confirmar sua entrada.<br>
       Apresente-se ao porteiro na chegada.
     </div>
-    <button type="button" onclick="novoCheckin()">Novo Check-in</button>
+    <button type="button" class="btn-primary" onclick="novoCheckin()">Novo Check-in</button>
     <p class="rodape" style="margin-top:20px"><b>Controle de Portaria DSRH</b></p>
   </div>
 
-  <!-- Tela de link inválido -->
+  <!-- ==================== LINK INVÁLIDO ==================== -->
   <div class="link-invalido" id="telaInvalido" style="display:none">
     <div class="erro-icon">
       <svg viewBox="0 0 24 24" fill="none" stroke="#cc0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -269,6 +541,20 @@
 
 </div>
 
+<!-- ==================== DIÁLOGO DE CONFIRMAÇÃO ==================== -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-card">
+    <h3>⚠️ Campos opcionais não preenchidos</h3>
+    <p>Os seguintes campos estão vazios:</p>
+    <div class="campo-vazio" id="confirmCampos"></div>
+    <p style="font-size:12px;color:#8b93a1">Deseja preencher ou enviar assim mesmo?</p>
+    <div class="confirm-botoes">
+      <button type="button" class="btn-preencher" id="btnPreencher">Preencher agora</button>
+      <button type="button" class="btn-enviar" id="btnEnviarAssim">Enviar assim mesmo</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   // === Ler query params ===
@@ -280,16 +566,18 @@
   var nomeEmpresa = EMPRESA ? decodeURIComponent(EMPRESA) : 'Portaria';
   document.title = 'Check-in — ' + nomeEmpresa;
 
-  // === Mostrar nome da empresa no card ===
-  var elEmpresaNome = document.getElementById('empresaNome');
+  // === Mostrar nome da empresa nos cards ===
   if(EMPRESA){
-    elEmpresaNome.textContent = nomeEmpresa;
+    document.getElementById('empresaNome').textContent = nomeEmpresa;
+    document.getElementById('empresaNomeForm').textContent = nomeEmpresa;
   } else {
-    elEmpresaNome.style.display = 'none';
+    document.getElementById('empresaNome').style.display = 'none';
+    document.getElementById('empresaNomeForm').style.display = 'none';
   }
 
   // === Validar cliente_id ===
   if(!CLIENTE_ID){
+    document.getElementById('telaEscolha').style.display = 'none';
     document.getElementById('telaFormulario').style.display = 'none';
     document.getElementById('telaSucesso').style.display = 'none';
     document.getElementById('telaInvalido').style.display = 'block';
@@ -297,12 +585,95 @@
   }
 
   var API = window.location.origin;
+  var tipoSelecionado = 'chegada'; // padrão
+
+  // === Definição dos campos para progresso e validação ===
+  var camposObrigatorios = ['motoristaNome','veiculoPlaca','empresaTransportadora','finalidade'];
+  var camposOpcionais = ['motoristaCnh','motoristaTelefone','veiculoModelo','notaFiscal','descricaoMaterial','quantidadePeso','nomeRecebedor','dataPrevisao','observacao'];
+  var nomesCamposOpcionais = {
+    'motoristaCnh': 'CNH',
+    'motoristaTelefone': 'Telefone',
+    'veiculoModelo': 'Modelo do Veículo',
+    'notaFiscal': 'Nota Fiscal',
+    'descricaoMaterial': 'Descrição do Material',
+    'quantidadePeso': 'Quantidade / Peso',
+    'nomeRecebedor': 'Nome do recebedor/entregador',
+    'dataPrevisao': 'Data prevista de chegada',
+    'observacao': 'Observação'
+  };
+  var todosCampos = camposObrigatorios.concat(camposOpcionais);
 
   // === Placa automática em maiúsculas ===
-  var placaInput = document.getElementById('veiculoPlaca');
-  placaInput.addEventListener('input', function(){
+  document.getElementById('veiculoPlaca').addEventListener('input', function(){
     this.value = this.value.toUpperCase();
   });
+
+  // === Máscara de telefone ===
+  document.getElementById('motoristaTelefone').addEventListener('input', function(){
+    var v = this.value.replace(/\D/g,'');
+    if(v.length > 11) v = v.substring(0,11);
+    if(v.length > 6){
+      this.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+    } else if(v.length > 2){
+      this.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
+    } else if(v.length > 0){
+      this.value = '(' + v;
+    } else {
+      this.value = '';
+    }
+  });
+
+  // === Progress calculation ===
+  function calcularProgresso(){
+    // Only count camposOpcionais that are visible (dataPrevisao only visible for partida)
+    var camposVisiveis = camposObrigatorios.slice();
+    var opcionaisVisiveis = [];
+    for(var i = 0; i < camposOpcionais.length; i++){
+      var id = camposOpcionais[i];
+      var el = document.getElementById(id);
+      if(el && el.offsetParent !== null){
+        opcionaisVisiveis.push(id);
+        camposVisiveis.push(id);
+      }
+    }
+    var total = camposVisiveis.length;
+    var preenchidos = 0;
+    for(var j = 0; j < camposVisiveis.length; j++){
+      var campo = document.getElementById(camposVisiveis[j]);
+      if(campo && campo.value.trim() !== ''){
+        preenchidos++;
+      }
+    }
+    var pct = Math.round((preenchidos / total) * 100);
+    atualizarBarra(pct);
+  }
+
+  function atualizarBarra(pct){
+    var bar = document.getElementById('progressBar');
+    var label = document.getElementById('progressPct');
+    bar.style.width = pct + '%';
+    label.textContent = pct + '%';
+    if(pct < 30){
+      bar.style.background = '#e74c3c';
+    } else if(pct < 60){
+      bar.style.background = '#f39c12';
+    } else if(pct < 90){
+      bar.style.background = '#f1c40f';
+    } else {
+      bar.style.background = '#28a745';
+    }
+  }
+
+  // Add input listeners for progress
+  for(var k = 0; k < todosCampos.length; k++){
+    (function(id){
+      var el = document.getElementById(id);
+      if(el){
+        el.addEventListener('input', calcularProgresso);
+        el.addEventListener('change', calcularProgresso);
+      }
+    })(todosCampos[k]);
+  }
 
   // === Funções de erro ===
   function mostrarErro(msg){
@@ -314,6 +685,48 @@
     document.getElementById('erroMsg').style.display = 'none';
   }
 
+  // === Escolher tipo (partida/chegada) ===
+  window.escolherTipo = function(tipo){
+    tipoSelecionado = tipo;
+    document.getElementById('telaEscolha').style.display = 'none';
+    document.getElementById('telaFormulario').style.display = 'block';
+
+    var badge = document.getElementById('tipoBadge');
+    var tituloForm = document.getElementById('tituloForm');
+    var subtituloForm = document.getElementById('subtituloForm');
+    var btnEnviar = document.getElementById('btnEnviar');
+    var campoData = document.getElementById('campoDataPrevisao');
+
+    if(tipo === 'partida'){
+      badge.className = 'tipo-badge partida';
+      badge.textContent = '🚛 Partida';
+      tituloForm.textContent = 'Registro de Partida';
+      subtituloForm.textContent = 'Informe os dados da sua partida';
+      btnEnviar.textContent = 'Registrar Partida';
+      campoData.style.display = 'block';
+    } else {
+      badge.className = 'tipo-badge chegada';
+      badge.textContent = '📍 Chegada';
+      tituloForm.textContent = 'Check-in de Motorista';
+      subtituloForm.textContent = 'Preencha seus dados para a portaria';
+      btnEnviar.textContent = 'Enviar Pré-Registro';
+      campoData.style.display = 'none';
+      document.getElementById('dataPrevisao').value = '';
+    }
+
+    // Calcular progresso inicial
+    calcularProgresso();
+    window.scrollTo(0, 0);
+  };
+
+  // === Voltar para escolha ===
+  window.voltarEscolha = function(){
+    document.getElementById('telaFormulario').style.display = 'none';
+    document.getElementById('telaEscolha').style.display = 'block';
+    ocultarErro();
+    window.scrollTo(0, 0);
+  };
+
   // === Enviar check-in ===
   window.enviarCheckin = function(e){
     e.preventDefault();
@@ -321,32 +734,94 @@
 
     var nome      = document.getElementById('motoristaNome').value.trim();
     var cnh       = document.getElementById('motoristaCnh').value.trim();
+    var telefone  = document.getElementById('motoristaTelefone').value.trim();
     var placa     = document.getElementById('veiculoPlaca').value.trim().toUpperCase();
     var modelo    = document.getElementById('veiculoModelo').value;
     var transp    = document.getElementById('empresaTransportadora').value.trim();
     var finalid   = document.getElementById('finalidade').value;
     var nota      = document.getElementById('notaFiscal').value.trim();
+    var descMat   = document.getElementById('descricaoMaterial').value.trim();
+    var qtdPeso   = document.getElementById('quantidadePeso').value.trim();
+    var nomeRec   = document.getElementById('nomeRecebedor').value.trim();
+    var dataPrev  = document.getElementById('dataPrevisao').value;
     var obs       = document.getElementById('observacao').value.trim();
 
+    // Validar obrigatórios
     if(!nome){ mostrarErro('Informe o nome do motorista.'); return; }
     if(!placa){ mostrarErro('Informe a placa do veículo.'); return; }
     if(!transp){ mostrarErro('Informe a empresa transportadora.'); return; }
     if(!finalid){ mostrarErro('Selecione a finalidade da visita.'); return; }
 
+    // Verificar opcionais vazios (visíveis)
+    var opcionaisVazios = [];
+    var opcionaisVisiveis = [];
+    for(var i = 0; i < camposOpcionais.length; i++){
+      var id = camposOpcionais[i];
+      var el = document.getElementById(id);
+      if(el && el.offsetParent !== null){
+        opcionaisVisiveis.push(id);
+        var val = el.value.trim();
+        if(val === ''){
+          opcionaisVazios.push(id);
+        }
+      }
+    }
+
+    // Se há opcionais vazios, mostrar diálogo de confirmação
+    if(opcionaisVazios.length > 0){
+      var listaHTML = '';
+      for(var j = 0; j < opcionaisVazios.length; j++){
+        listaHTML += '<b>• ' + nomesCamposOpcionais[opcionaisVazios[j]] + '</b><br>';
+      }
+      document.getElementById('confirmCampos').innerHTML = listaHTML;
+      document.getElementById('confirmOverlay').classList.add('active');
+
+      // Store submit function for "Enviar assim mesmo"
+      document.getElementById('btnEnviarAssim').onclick = function(){
+        document.getElementById('confirmOverlay').classList.remove('active');
+        realizarEnvio();
+      };
+
+      // "Preencher agora" - scroll to first empty optional field
+      document.getElementById('btnPreencher').onclick = function(){
+        document.getElementById('confirmOverlay').classList.remove('active');
+        var firstEmpty = document.getElementById(opcionaisVazios[0]);
+        if(firstEmpty){
+          firstEmpty.scrollIntoView({ behavior:'smooth', block:'center' });
+          setTimeout(function(){ firstEmpty.focus(); }, 400);
+        }
+      };
+      return;
+    }
+
+    realizarEnvio();
+  };
+
+  function realizarEnvio(){
     var btn = document.getElementById('btnEnviar');
     btn.disabled = true;
-    btn.textContent = 'Enviando...';
+    if(tipoSelecionado === 'partida'){
+      btn.textContent = 'Registrando...';
+    } else {
+      btn.textContent = 'Enviando...';
+    }
 
     var payload = {
       cliente_id: parseInt(CLIENTE_ID),
-      motorista: nome,
-      cnh: cnh,
-      placa: placa,
-      modelo: modelo,
-      empresa: transp,
-      finalidade: finalid,
-      nota: nota,
-      obs: obs
+      motorista: document.getElementById('motoristaNome').value.trim(),
+      cnh: document.getElementById('motoristaCnh').value.trim(),
+      telefone_motorista: document.getElementById('motoristaTelefone').value.trim(),
+      placa: document.getElementById('veiculoPlaca').value.trim().toUpperCase(),
+      modelo: document.getElementById('veiculoModelo').value,
+      empresa: document.getElementById('empresaTransportadora').value.trim(),
+      finalidade: document.getElementById('finalidade').value,
+      nota: document.getElementById('notaFiscal').value.trim(),
+      descricao_material: document.getElementById('descricaoMaterial').value.trim(),
+      quantidade_peso: document.getElementById('quantidadePeso').value.trim(),
+      nome_recebedor: document.getElementById('nomeRecebedor').value.trim(),
+      data_previsao: document.getElementById('dataPrevisao').value || null,
+      obs: document.getElementById('observacao').value.trim(),
+      tipo_checkin: tipoSelecionado
     };
 
     fetch(API + '/api/checkin-portaria', {
@@ -361,23 +836,51 @@
     .then(function(){
       document.getElementById('telaFormulario').style.display = 'none';
       document.getElementById('telaSucesso').style.display = 'block';
+
+      // Customize success screen
+      var tituloSucesso = document.getElementById('sucessoTitulo');
+      var destaqueSucesso = document.getElementById('sucessoDestaque');
+      if(tipoSelecionado === 'partida'){
+        tituloSucesso.textContent = 'Partida registrada!';
+        destaqueSucesso.innerHTML = 'Sua partida foi informada com sucesso.<br>A transportadora foi notificada. Boa viagem! 🚛';
+      } else {
+        tituloSucesso.textContent = 'Pré-registro enviado!';
+        destaqueSucesso.innerHTML = 'Aguarde a portaria confirmar sua entrada.<br>Apresente-se ao porteiro na chegada.';
+      }
+
+      window.scrollTo(0, 0);
     })
     .catch(function(ex){
       mostrarErro(ex.message || 'Erro de conexão. Verifique sua internet e tente novamente.');
     })
     .finally(function(){
       btn.disabled = false;
-      btn.textContent = 'Enviar Pré-Registro';
+      if(tipoSelecionado === 'partida'){
+        btn.textContent = 'Registrar Partida';
+      } else {
+        btn.textContent = 'Enviar Pré-Registro';
+      }
     });
-  };
+  }
 
   // === Novo check-in ===
   window.novoCheckin = function(){
     document.getElementById('formCheckin').reset();
     document.getElementById('telaSucesso').style.display = 'none';
-    document.getElementById('telaFormulario').style.display = 'block';
+    document.getElementById('telaEscolha').style.display = 'block';
+    document.getElementById('telaFormulario').style.display = 'none';
+    tipoSelecionado = 'chegada';
+    atualizarBarra(0);
     ocultarErro();
+    window.scrollTo(0, 0);
   };
+
+  // === Fechar overlay ao clicar fora ===
+  document.getElementById('confirmOverlay').addEventListener('click', function(e){
+    if(e.target === this){
+      this.classList.remove('active');
+    }
+  });
 
 })();
 </script>

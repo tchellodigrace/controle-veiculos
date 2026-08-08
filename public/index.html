@@ -562,6 +562,11 @@
   .badge-agendado{background:var(--azul-claro);color:var(--azul);}
   .badge-confirmado{background:#e6f9ee;color:#1b7a3d;}
   .badge-cancelado{background:#fde8e8;color:var(--vermelho);}
+  .badge-em-transito{background:#fff3e0;color:#e65100;}
+  .badge-aguardando{background:#e3f2fd;color:#1565c0;}
+  .badge-confirmado-checkin{background:#e8f5e9;color:#2e7d32;}
+  .badge-partida{background:#fff3e0;color:#e65100;}
+  .badge-chegada{background:#e3f2fd;color:#1565c0;}
   .badge-qr-code{
     display:inline-block;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;
     font-size:10px;font-weight:700;margin-left:6px;
@@ -681,6 +686,11 @@
     <div class="nav-item" id="navAgendamentos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
       Agendamentos
+    </div>
+    <div class="nav-item" id="navCheckins">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Check-ins
+      <span class="nav-badge" id="badgeCheckins" style="display:none;background:#ff5722">0</span>
     </div>
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
@@ -1129,6 +1139,54 @@
             </thead>
             <tbody id="tabelaAgendamentos"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+    <div id="viewCheckins" style="display:none">
+      <div class="card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">📩 CHECK-INS DA TRANSPORTADORA
+          </h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="checkinsFiltroStatus" onchange="carregarCheckins()" style="padding:6px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer">
+              <option value="">Todos</option>
+              <option value="em_transito">🚀 Em Trânsito</option>
+              <option value="aguardando">📍 Aguardando</option>
+              <option value="confirmado">✅ Confirmado</option>
+            </select>
+            <button class="btn btn-secundario" onclick="carregarCheckins()" style="padding:6px 14px;font-size:12px">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Atualizar
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="card tabela-card" style="margin-top:16px">
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Status</th>
+                <th>Motorista</th>
+                <th>Placa</th>
+                <th>Modelo</th>
+                <th>Empresa</th>
+                <th>Finalidade</th>
+                <th>NF</th>
+                <th>Material</th>
+                <th>Telefone</th>
+                <th>Recebedor</th>
+                <th>Previsão</th>
+                <th>Horário Check-in</th>
+                <th>Detalhes</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaCheckins"></tbody>
+          </table>
+        </div>
+        <div class="vazio" id="vazioCheckins" style="display:none;text-align:center;padding:24px;color:#5b6672">
+          Nenhum check-in recebido de transportadora.
         </div>
       </div>
     </div>
@@ -1878,6 +1936,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     if(localStorage.getItem("activeView") === "mural") mostrarMural();
     if(localStorage.getItem("activeView") === "rastreamento") mostrarRastreamento();
     if(localStorage.getItem("activeView") === "agendamentos") mostrarAgendamentos();
+    if(localStorage.getItem("activeView") === "checkins") mostrarCheckins();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     atualizar();
@@ -2142,12 +2201,14 @@ function mostrarVeiculos(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -2158,12 +2219,14 @@ function mostrarVisitantes(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -2177,12 +2240,14 @@ function mostrarRastreamento(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewRastreamento").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "rastreamento");
@@ -2195,12 +2260,14 @@ function mostrarAuditoria(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAuditoria").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "auditoria");
@@ -2212,12 +2279,14 @@ function mostrarMural(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewMural").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "mural");
@@ -2371,6 +2440,7 @@ document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
 document.getElementById("navRastreamento").addEventListener("click", mostrarRastreamento);
 document.getElementById("navAgendamentos").addEventListener("click", mostrarAgendamentos);
+document.getElementById("navCheckins").addEventListener("click", mostrarCheckins);
 document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
 document.getElementById("navMural").addEventListener("click", mostrarMural);
 
@@ -2469,12 +2539,14 @@ function mostrarAgendamentos(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAgendamentos").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "agendamentos");
@@ -2593,6 +2665,92 @@ async function excluirAgendamento(id){
     if(!res.ok){ alert('Erro ao excluir agendamento'); return; }
     carregarAgendamentos();
   } catch(e){ alert('Erro ao excluir agendamento'); }
+}
+
+// === CHECK-INS DA TRANSPORTADORA ===
+function mostrarCheckins(){
+  document.getElementById("navCheckins").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
+  document.getElementById("viewCheckins").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
+  pararPollingRastreamento();
+  localStorage.setItem("activeView", "checkins");
+  carregarCheckins();
+}
+
+async function carregarCheckins(){
+  var status = document.getElementById('checkinsFiltroStatus').value;
+  var tbody = document.getElementById('tabelaCheckins');
+  tbody.innerHTML = '';
+  var vazio = document.getElementById('vazioCheckins');
+  try {
+    var url = API + '/api/checkins';
+    if(status) url += '?status=' + encodeURIComponent(status);
+    var res = await fetch(url, { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    if(!Array.isArray(dados)) dados = [];
+    if(dados.length === 0){
+      tbody.innerHTML = '';
+      vazio.style.display = 'block';
+      return;
+    }
+    vazio.style.display = 'none';
+    dados.forEach(function(d){
+      // Tipo badge
+      var tipoClass = d.tipo_checkin === 'partida' ? 'badge-partida' : 'badge-chegada';
+      var tipoText = d.tipo_checkin === 'partida' ? '🚛 Partida' : '📍 Chegada';
+      // Status badge
+      var statusClass = 'badge-aguardando';
+      var statusText = 'Aguardando';
+      if(d.status_checkin === 'em_transito'){ statusClass = 'badge-em-transito'; statusText = '🚀 Em Trânsito'; }
+      else if(d.status_checkin === 'confirmado'){ statusClass = 'badge-confirmado-checkin'; statusText = '✅ Confirmado'; }
+      else if(d.status_checkin === 'aguardando'){ statusClass = 'badge-aguardando'; statusText = '📍 Aguardando'; }
+      // Format date/time
+      var dataHora = d.criado_em ? new Date(d.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+      var previsao = d.data_previsao ? new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '-';
+      // Observação
+      var obsText = d.obs ? esc(d.obs) : '';
+      // Descricao material (truncate)
+      var material = d.descricao_material ? esc(d.descricao_material.substring(0,40)) + (d.descricao_material.length > 40 ? '...' : '') : '-';
+      var tr = '<tr>' +
+        '<td><span class="badge-status ' + tipoClass + '">' + tipoText + '</span></td>' +
+        '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
+        '<td><b>' + esc(d.motorista || '-') + '</b></td>' +
+        '<td><b>' + esc(d.placa || '-') + '</b></td>' +
+        '<td>' + esc(d.modelo || '-') + '</td>' +
+        '<td>' + esc(d.empresa || '-') + '</td>' +
+        '<td>' + esc(d.finalidade || '-') + '</td>' +
+        '<td>' + esc(d.nota || '-') + '</td>' +
+        '<td title="' + esc(d.descricao_material || '') + '">' + material + '</td>' +
+        '<td>' + esc(d.telefone_motorista || '-') + '</td>' +
+        '<td>' + esc(d.nome_recebedor || '-') + '</td>' +
+        '<td>' + previsao + '</td>' +
+        '<td>' + dataHora + '</td>' +
+        '<td>' + (obsText ? '<span title="' + obsText + '" style="cursor:help;font-size:16px">📋</span>' : '-') + '</td>' +
+      '</tr>';
+      tbody.innerHTML += tr;
+    });
+    // Update badge
+    var emTransitoCount = dados.filter(function(d){ return d.status_checkin === 'em_transito'; }).length;
+    var badge = document.getElementById('badgeCheckins');
+    if(emTransitoCount > 0){
+      badge.textContent = emTransitoCount;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e){}
 }
 
 // === Verificacao periodica de expiracao do token JWT ===

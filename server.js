@@ -1901,10 +1901,12 @@ app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
     if (!/^\d+$/.test(String(cliente_id))) return res.status(400).json({ erro: 'ID de cliente invalido' });
     const placaClean = placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (placaClean.length < 6 || placaClean.length > 8) return res.status(400).json({ erro: 'Placa invalida' });
+    const tipoCheckin = (req.body.tipo_checkin === 'partida') ? 'partida' : 'chegada';
+    const statusCheckin = tipoCheckin === 'partida' ? 'em_transito' : 'aguardando';
     const result = await pool.query(
-      `INSERT INTO pre_registros (cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'checkin_qr') RETURNING id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em`,
-      [cliente_id, sanitizarString(empresa).toUpperCase(), sanitizarString(motorista).toUpperCase(), sanitizarString(cnh).substring(0,20), placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,50), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500)]
+      `INSERT INTO pre_registros (cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'checkin_qr', $10, $11, $12, $13, $14, $15, $16) RETURNING id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em`,
+      [cliente_id, sanitizarString(empresa).toUpperCase(), sanitizarString(motorista).toUpperCase(), sanitizarString(cnh).substring(0,20), placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,100), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), sanitizarString(req.body.telefone_motorista||'').substring(0,30), sanitizarString(req.body.descricao_material||'').substring(0,1000), sanitizarString(req.body.quantidade_peso||'').substring(0,100), sanitizarString(req.body.nome_recebedor||'').substring(0,200), req.body.data_previsao || null, tipoCheckin, statusCheckin]
     );
     logAuditoria(cliente_id, 'Motorista (Check-in QR)', 'Pré-registro via QR Code', 'veiculo', placa.toUpperCase(), 'Motorista: ' + motorista + ' | Empresa: ' + empresa);
     res.status(201).json(result.rows[0]);
@@ -1913,10 +1915,30 @@ app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
     // Notificar via Email (check-in QR)
     email.notificarCheckinQR(pool, cliente_id, { empresa, motorista, placa, finalidade }).catch(() => {});
     // Criar notificação no sistema
-    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cliente_id, 'checkin_qr', 'Check-in via QR Code', 'Motorista: ' + motorista + ' | Placa: ' + placa + ' | Empresa: ' + empresa]).catch(() => {});
+    const tipoLabel = tipoCheckin === 'partida' ? '🚛 Em trânsito' : '📱 Chegando na portaria';
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cliente_id, 'checkin_qr', tipoLabel, 'Motorista: ' + motorista + ' | Placa: ' + placa + ' | Empresa: ' + empresa]).catch(() => {});
   } catch (err) {
     console.error('Erro no checkin-portaria:', err);
     res.status(500).json({ erro: 'Erro ao realizar check-in' });
+  }
+});
+
+// Listar check-ins com filtro de status
+app.get('/api/checkins', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const status = req.query.status || '';
+    let query = 'SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\'';
+    const params = [req.usuario.cliente_id];
+    if (status) {
+      query += ' AND status_checkin = $2';
+      params.push(status);
+    }
+    query += ' ORDER BY criado_em DESC LIMIT 200';
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar checkins:', err);
+    res.status(500).json({ erro: 'Erro ao buscar check-ins' });
   }
 });
 
@@ -2102,7 +2124,14 @@ async function iniciar() {
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_remetente VARCHAR(200) DEFAULT ''",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_destinatario VARCHAR(200) DEFAULT ''",
       "CREATE TABLE IF NOT EXISTS notificacoes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, tipo VARCHAR(30) NOT NULL, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', lida BOOLEAN DEFAULT FALSE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-      "CREATE INDEX IF NOT EXISTS idx_notificacoes_cliente ON notificacoes(cliente_id, lida, criado_em DESC)"
+      "CREATE INDEX IF NOT EXISTS idx_notificacoes_cliente ON notificacoes(cliente_id, lida, criado_em DESC)",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS telefone_motorista VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS descricao_material TEXT DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS quantidade_peso VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS nome_recebedor VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS data_previsao DATE DEFAULT NULL",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS tipo_checkin VARCHAR(20) DEFAULT 'chegada'",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS status_checkin VARCHAR(20) DEFAULT 'aguardando'"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}
