@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
+const whatsapp = require('./services/whatsapp');
 const uuid = () => crypto.randomBytes(16).toString('hex');
 
 // Cache de reverse geocoding para evitar chamadas excessivas ao Nominatim
@@ -354,6 +355,8 @@ app.put('/api/registros/:id/saida', authMiddleware, apiLimiter, async (req, res)
     );
     res.json(result.rows[0]);
     logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Saida', 'veiculo', result.rows[0].placa, 'Saida registrada as ' + hora);
+    // Notificar logística via WhatsApp (saída registrada)
+    whatsapp.notificarSaida(pool, req.usuario.cliente_id, { empresa: '', motorista: reg.motorista, placa: reg.placa, finalidade: reg.finalidade, hora }).catch(() => {});
   } catch (err) {
     console.error('Erro ao marcar saída:', err);
     res.status(500).json({ erro: 'Erro ao marcar saída' });
@@ -888,6 +891,8 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     res.status(201).json(registro.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
+    // Notificar logística via WhatsApp (entrada confirmada)
+    whatsapp.notificarEntrada(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade, hora }).catch(() => {});
   } catch (err) {
     console.error('Erro ao confirmar pre-registro:', err);
     res.status(500).json({ erro: 'Erro ao confirmar pré-registro' });
@@ -1535,6 +1540,64 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
   }
 });
 
+// === WHATSAPP CONFIG (ADMIN) ===
+app.put('/api/admin/clientes/:id/whatsapp', adminMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const { ativo, provedor, token, telefone, telefone_notif, url, instancia } = req.body;
+    const id = parseInt(req.params.id);
+    await pool.query(
+      `UPDATE clientes SET 
+        whatsapp_ativo = $1,
+        whatsapp_provedor = $2,
+        whatsapp_token = $3,
+        whatsapp_telefone = $4,
+        whatsapp_telefone_notif = $5,
+        whatsapp_url = $6,
+        whatsapp_instancia = $7
+      WHERE id = $8`,
+      [!!ativo, sanitizarString(provedor||'').substring(0,20), sanitizarString(token||'').substring(0,500), sanitizarString(telefone||'').substring(0,30), sanitizarString(telefone_notif||'').substring(0,30), sanitizarString(url||'').substring(0,300), sanitizarString(instancia||'').substring(0,200), id]
+    );
+    whatsapp.limparCacheConfig(id);
+    res.json({ ok: true });
+    logAuditoria(id, 'Admin', 'Config WhatsApp atualizada', 'whatsapp', 'Provedor: ' + (provedor||'') + ' | Ativo: ' + !!ativo);
+  } catch (err) {
+    console.error('Erro ao salvar config WhatsApp:', err);
+    res.status(500).json({ erro: 'Erro ao salvar configuração' });
+  }
+});
+
+app.post('/api/admin/clientes/:id/whatsapp-teste', adminMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const { telefone } = req.body;
+    if (!telefone) return res.status(400).json({ erro: 'Telefone de destino é obrigatório' });
+    const id = parseInt(req.params.id);
+    whatsapp.limparCacheConfig(id);
+    const resultado = await whatsapp.enviar(pool, id, telefone, '🧪 *TESTE DE CONEXÃO*\n\nMensagem de teste do Sistema de Portaria DSRH.\nSe você recebeu esta mensagem, a integração está funcionando!\n\n— Sistema Portaria DSRH');
+    res.json(resultado);
+  } catch (err) {
+    console.error('Erro no teste WhatsApp:', err);
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
+// === WHATSAPP CONFIG (CLIENTE) ===
+app.get('/api/whatsapp-config', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT whatsapp_ativo, whatsapp_provedor, whatsapp_telefone_notif FROM clientes WHERE id = $1',
+      [req.usuario.cliente_id]
+    );
+    if (result.rows.length === 0) return res.json({ ativo: false });
+    const c = result.rows[0];
+    res.json({ ativo: !!c.whatsapp_ativo, provedor: c.whatsapp_provedor, telefone_notif: c.whatsapp_telefone_notif });
+  } catch (err) {
+    console.error('Erro ao buscar config WhatsApp:', err);
+    res.status(500).json({ erro: 'Erro ao buscar configuração' });
+  }
+});
+
 // === CHAMADOS (SUPORTE) ===
 app.get('/api/admin/chamados', adminMiddleware, apiLimiter, async (req, res) => {
   try {
@@ -1749,6 +1812,8 @@ app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
     );
     logAuditoria(cliente_id, 'Motorista (Check-in QR)', 'Pré-registro via QR Code', 'veiculo', placa.toUpperCase(), 'Motorista: ' + motorista + ' | Empresa: ' + empresa);
     res.status(201).json(result.rows[0]);
+    // Notificar logística via WhatsApp (novo check-in QR recebido)
+    whatsapp.notificarCheckinQR(pool, cliente_id, { empresa, motorista, placa, finalidade }).catch(() => {});
   } catch (err) {
     console.error('Erro no checkin-portaria:', err);
     res.status(500).json({ erro: 'Erro ao realizar check-in' });
@@ -1921,7 +1986,14 @@ async function iniciar() {
       "ALTER TABLE registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
       "CREATE TABLE IF NOT EXISTS agendamentos (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, motorista VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', finalidade VARCHAR(50) DEFAULT '', data_agendada DATE NOT NULL, horario VARCHAR(10) DEFAULT '', doca VARCHAR(50) DEFAULT '', nota VARCHAR(500) DEFAULT '', status VARCHAR(20) DEFAULT 'agendado', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
-      "CREATE INDEX IF NOT EXISTS idx_agendamentos_cliente ON agendamentos(cliente_id, data_agendada)"
+      "CREATE INDEX IF NOT EXISTS idx_agendamentos_cliente ON agendamentos(cliente_id, data_agendada)",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_ativo BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_provedor VARCHAR(20) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_token VARCHAR(500) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_telefone VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_telefone_notif VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_url VARCHAR(300) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_instancia VARCHAR(200) DEFAULT ''"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

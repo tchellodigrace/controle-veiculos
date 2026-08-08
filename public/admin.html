@@ -91,6 +91,28 @@
   .qr-url-bar input:focus{border-color:#2a6f7e;}
   .qr-url-bar button{padding:9px 16px;background:#2a6f7e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .qr-url-bar button:hover{background:#4FB0C6;}
+  /* ===== WHATSAPP CONFIG ===== */
+  .wa-toggle{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+  .wa-toggle input{opacity:0;width:0;height:0}
+  .wa-toggle .slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e0;border-radius:24px;transition:.2s}
+  .wa-toggle .slider:before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+  .wa-toggle input:checked+.slider{background:#38a169}
+  .wa-toggle input:checked+.slider:before{transform:translateX(20px)}
+  .wa-badge-ativo{background:#c6f6d5;color:#276749;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+  .wa-badge-inativo{background:#edf2f7;color:#a0aec0;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+  .wa-btn-config{padding:6px 14px;border:none;border-radius:6px;background:#25d366;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:opacity .2s}
+  .wa-btn-config:hover{opacity:.85}
+  .wa-btn-teste{padding:8px 18px;border:none;border-radius:8px;background:#e08a1e;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s}
+  .wa-btn-teste:hover{opacity:.85}
+  .wa-btn-teste:disabled{opacity:.5;cursor:not-allowed}
+  .wa-help{background:#f0fff4;border:1px solid #c6f6d5;border-radius:8px;padding:12px 14px;font-size:11px;color:#276749;line-height:1.5;margin-bottom:14px}
+  .wa-help b{color:#22543d}
+  .wa-provided-fields{display:none}
+  .wa-provided-fields.visivel{display:block}
+  .wa-teste-result{margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:600}
+  .wa-teste-ok{background:#c6f6d5;color:#276749}
+  .wa-teste-erro{background:#fed7d7;color:#9b2c2c}
+  /* ===== FIM WHATSAPP CONFIG ===== */
 </style>
 </head>
 <body>
@@ -140,6 +162,10 @@
     <button class="tab" onclick="trocarAba(this,'abaQrCode')">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="14" y1="21" x2="17" y2="21"/></svg>
       QR Code Portaria
+    </button>
+    <button class="tab" onclick="trocarAba(this,'abaWhatsapp')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="#25d366" style="vertical-align:-2px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WhatsApp
     </button>
   </div>
 
@@ -257,6 +283,30 @@
         <button class="btn-acao" style="background:#38a169;padding:10px 18px" onclick="exportarTabela('chamados')">Chamados</button>
       </div>
       <div id="exportStatus" style="margin-top:16px;font-size:13px;color:#4a5568"></div>
+    </div>
+  </div>
+
+<div id="abaWhatsapp" style="display:none">
+    <div class="section">
+      <h2>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="#25d366" style="vertical-align:-3px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Configuracao WhatsApp por Cliente
+      </h2>
+      <p style="font-size:13px;color:#4a5568;margin-bottom:16px">Configure a integracao com WhatsApp para notificacoes de cada cliente. Selecione o provedor e insira as credenciais.</p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Provedor</th>
+              <th>WhatsApp</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaWhatsapp"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioWhatsapp" style="display:none">Nenhum cliente cadastrado</div>
     </div>
   </div>
 
@@ -421,6 +471,79 @@
   </div>
 </div>
 
+<!-- MODAL WHATSAPP CONFIG -->
+<div class="modal-overlay" id="modalWhatsapp">
+  <div class="modal-content" style="max-width:540px">
+    <div class="modal-header">
+      <h3 id="waModalTitulo">Configurar WhatsApp</h3>
+      <button class="modal-close" onclick="fecharModal('modalWhatsapp')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="waClienteId">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:#f0fff4;border-radius:8px;border:1px solid #c6f6d5">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1a1a2e" id="waClienteNome">—</div>
+          <div style="font-size:11px;color:#276749">Ativar notificacoes via WhatsApp</div>
+        </div>
+        <label class="wa-toggle">
+          <input type="checkbox" id="waAtivo" onchange="toggleWhatsappCampos()">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="waCamposConfig" style="opacity:.4;pointer-events:none;transition:opacity .2s">
+        <div class="form-group">
+          <label>Provedor *</label>
+          <select id="waProvedor" onchange="toggleWhatsappCampos()">
+            <option value="evolution">Evolution API</option>
+            <option value="zapi">Z-API</option>
+            <option value="twilio">Twilio</option>
+          </select>
+        </div>
+        <div id="waHelpEvolution" class="wa-help visivel">
+          <b>Evolution API:</b> URL da sua instancia Evolution API (ex: http://localhost:8080). Instancia e token sao gerados na Evolution API.
+        </div>
+        <div id="waHelpZapi" class="wa-help">
+          <b>Z-API:</b> Token disponivel em z-api.io. Basta informar o token gerado no painel da Z-API.
+        </div>
+        <div id="waHelpTwilio" class="wa-help">
+          <b>Twilio:</b> Formato do token: AccountSID:AuthToken. Telefone remetente no formato whatsapp:+55XXXXXXXXXXX.
+        </div>
+        <div class="form-group">
+          <label>Token *</label>
+          <input type="password" id="waToken" placeholder="Token de autenticacao">
+        </div>
+        <div id="waFieldsEvolution" class="wa-provided-fields visivel">
+          <div class="form-group">
+            <label>URL Base</label>
+            <input type="text" id="waUrl" placeholder="http://localhost:8080">
+          </div>
+          <div class="form-group">
+            <label>Instancia</label>
+            <input type="text" id="waInstancia" placeholder="Nome da instancia">
+          </div>
+        </div>
+        <div id="waFieldsTwilio" class="wa-provided-fields">
+          <div class="form-group">
+            <label>Telefone Remetente</label>
+            <input type="text" id="waRemetente" placeholder="whatsapp:+55XXXXXXXXXXX">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Telefone para Notificacoes</label>
+          <input type="text" id="waTelefoneNotif" placeholder="5511999999999">
+          <small style="font-size:10px;color:#8b93a1">Numero que recebe as notificacoes (ex: logistica). Somente numeros com pais e DDD.</small>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button type="button" class="btn-salvar" style="flex:1" onclick="salvarConfigWhatsapp()">Salvar Configuracao</button>
+          <button type="button" class="wa-btn-teste" style="flex:1" onclick="enviarTesteWhatsapp()">Enviar Teste</button>
+        </div>
+        <div id="waTesteResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- FIM MODAL WHATSAPP -->
+
 <script>
 const API = window.location.origin;
 const token = localStorage.getItem('tokenAdmin');
@@ -442,7 +565,7 @@ function sair(){
 function trocarAba(btn, id){
   document.querySelectorAll('.tab').forEach(b => { b.classList.remove('active'); });
   btn.classList.add('active');
-  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup','abaQrCode'].forEach(a => {
+  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup','abaQrCode','abaWhatsapp'].forEach(a => {
     document.getElementById(a).style.display = a === id ? 'block' : 'none';
   });
   if(id === 'abaAlertas') carregarAlertas();
@@ -451,6 +574,7 @@ function trocarAba(btn, id){
   if(id === 'abaLogs') carregarLogs();
   if(id === 'abaConfig') carregarConfig();
   if(id === 'abaQrCode') initQrCode();
+  if(id === 'abaWhatsapp') carregarWhatsapp();
 }
 
 function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
@@ -1125,6 +1249,126 @@ function baixarQrCode(btn, empresa, qrApiUrl){
   img.src = qrApiUrl;
 }
 /* ===== FIM QR CODE PORTARIA ===== */
+
+/* ===== WHATSAPP CONFIG ===== */
+let waClientesCache = [];
+
+async function carregarWhatsapp(){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const clientes = await res.json();
+    waClientesCache = clientes;
+    const tbody = document.getElementById('tabelaWhatsapp');
+    const vazio = document.getElementById('vazioWhatsapp');
+    if(clientes.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    const provedores = { evolution: 'Evolution API', zapi: 'Z-API', twilio: 'Twilio' };
+    tbody.innerHTML = clientes.map(c => {
+      const ativo = !!c.whatsapp_ativo;
+      const provedor = provedores[c.whatsapp_provedor] || '—';
+      return `<tr>
+        <td><b>${esc(c.empresa)}</b></td>
+        <td>${esc(provedor)}</td>
+        <td>${ativo
+          ? '<span class="wa-badge-ativo"><svg viewBox="0 0 24 24" width="12" height="12" fill="#38a169"><circle cx="12" cy="12" r="10"/></svg> Ativo</span>'
+          : '<span class="wa-badge-inativo"><svg viewBox="0 0 24 24" width="12" height="12" fill="#cbd5e0"><circle cx="12" cy="12" r="10"/></svg> Inativo</span>'
+        }</td>
+        <td>
+          <div class="acoes-col">
+            <button class="wa-btn-config" onclick="abrirConfigWhatsapp(${c.id})">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Configurar
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+async function abrirConfigWhatsapp(id){
+  const c = waClientesCache.find(x => x.id == id);
+  if(!c) return;
+  document.getElementById('waClienteId').value = c.id;
+  document.getElementById('waClienteNome').textContent = c.empresa;
+  document.getElementById('waAtivo').checked = !!c.whatsapp_ativo;
+  document.getElementById('waProvedor').value = c.whatsapp_provedor || 'evolution';
+  document.getElementById('waToken').value = c.whatsapp_token || '';
+  document.getElementById('waUrl').value = c.whatsapp_url || '';
+  document.getElementById('waInstancia').value = c.whatsapp_instancia || '';
+  document.getElementById('waRemetente').value = c.whatsapp_remetente || '';
+  document.getElementById('waTelefoneNotif').value = c.whatsapp_telefone_notif || '';
+  document.getElementById('waTesteResult').innerHTML = '';
+  toggleWhatsappCampos();
+  abrirModal('modalWhatsapp');
+}
+
+function toggleWhatsappCampos(){
+  const ativo = document.getElementById('waAtivo').checked;
+  const campos = document.getElementById('waCamposConfig');
+  campos.style.opacity = ativo ? '1' : '.4';
+  campos.style.pointerEvents = ativo ? 'auto' : 'none';
+
+  const provedor = document.getElementById('waProvedor').value;
+  document.getElementById('waHelpEvolution').style.display = provedor === 'evolution' ? 'block' : 'none';
+  document.getElementById('waHelpZapi').style.display = provedor === 'zapi' ? 'block' : 'none';
+  document.getElementById('waHelpTwilio').style.display = provedor === 'twilio' ? 'block' : 'none';
+
+  const fieldsEvo = document.getElementById('waFieldsEvolution');
+  const fieldsTwi = document.getElementById('waFieldsTwilio');
+  fieldsEvo.className = provedor === 'evolution' ? 'wa-provided-fields visivel' : 'wa-provided-fields';
+  fieldsTwi.className = provedor === 'twilio' ? 'wa-provided-fields visivel' : 'wa-provided-fields';
+}
+
+async function salvarConfigWhatsapp(){
+  const id = document.getElementById('waClienteId').value;
+  if(!id){ alert('Cliente nao identificado'); return; }
+  const ativo = document.getElementById('waAtivo').checked;
+  const payload = {
+    ativo: ativo,
+    provedor: document.getElementById('waProvedor').value,
+    token: document.getElementById('waToken').value.trim(),
+    telefone_notif: document.getElementById('waTelefoneNotif').value.trim(),
+    url: document.getElementById('waUrl').value.trim(),
+    instancia: document.getElementById('waInstancia').value.trim(),
+    telefone: document.getElementById('waRemetente').value.trim()
+  };
+  if(ativo && !payload.token){ alert('Informe o token do provedor.'); return; }
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + id + '/whatsapp', {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json().catch(() => ({})); alert(err.erro || 'Erro ao salvar configuracao.'); return; }
+    const data = await res.json().catch(() => ({}));
+    alert(data.mensagem || 'Configuracao salva com sucesso!');
+    fecharModal('modalWhatsapp');
+    carregarWhatsapp();
+  } catch { alert('Erro de conexao ao salvar.'); }
+}
+
+async function enviarTesteWhatsapp(){
+  const id = document.getElementById('waClienteId').value;
+  if(!id){ alert('Cliente nao identificado'); return; }
+  const destino = prompt('Digite o numero de destino para o teste (ex: 5511999999999):');
+  if(!destino || !destino.trim()) return;
+  const resultadoEl = document.getElementById('waTesteResult');
+  resultadoEl.innerHTML = '<div class="wa-teste-erro">Enviando mensagem de teste...</div>';
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + id + '/whatsapp-teste', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ telefone: destino.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(res.ok){
+      resultadoEl.innerHTML = '<div class="wa-teste-ok">Mensagem enviada com sucesso! Verifique o WhatsApp de destino.</div>';
+    } else {
+      resultadoEl.innerHTML = '<div class="wa-teste-erro">Erro: ' + esc(data.erro || 'Nao foi possivel enviar a mensagem.') + '</div>';
+    }
+  } catch {
+    resultadoEl.innerHTML = '<div class="wa-teste-erro">Erro de conexao. Verifique se o servidor esta acessivel.</div>';
+  }
+}
+/* ===== FIM WHATSAPP CONFIG ===== */
 
 function abrirTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.add('mostrar'); }
 function fecharTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.remove('mostrar'); }
