@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<title>Check-ins — Controle de Portaria</title>
+<meta name="description" content="Painel simplificado para setor de almoxarifado/compras — Gerenciar check-ins de transportadoras">
+<style>
+  :root{
+    --verde-escuro:#2a6f7e;
+    --verde-primario:#4FB0C6;
+    --verde-claro:#e0f4f7;
+    --azul:#2f6fb0;
+    --azul-claro:#e9f1fa;
+    --laranja:#e08a1e;
+    --laranja-claro:#fdf1e2;
+    --vermelho:#d64545;
+    --cinza-texto:#5b6672;
+    --cinza-borda:#e3e7eb;
+    --cinza-fundo:#f2f4f6;
+    --branco:#ffffff;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:var(--cinza-fundo);
+    color:#26313a;
+    min-height:100vh;
+  }
+
+  /* Header */
+  .header{
+    background:var(--branco);
+    border-bottom:1px solid var(--cinza-borda);
+    padding:16px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    position:sticky;
+    top:0;
+    z-index:100;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .header-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .header-logo{
+    width:36px; height:36px;
+    border-radius:8px;
+    object-fit:contain;
+  }
+  .header-titulo h1{
+    font-size:16px;
+    color:var(--verde-escuro);
+    font-weight:700;
+  }
+  .header-titulo .empresa{
+    font-size:12px;
+    color:var(--cinza-texto);
+  }
+  .header-right{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .header-usuario{
+    font-size:12px;
+    color:var(--cinza-texto);
+  }
+  .btn-sair{
+    padding:6px 14px;
+    border:1px solid var(--cinza-borda);
+    background:var(--branco);
+    color:var(--vermelho);
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  .btn-sair:hover{ background:#fef2f2; border-color:var(--vermelho); }
+
+  /* Conteúdo */
+  .container{
+    max-width:1200px;
+    margin:0 auto;
+    padding:20px 24px;
+  }
+
+  /* Cards */
+  .card{
+    background:var(--branco);
+    border-radius:12px;
+    padding:20px 24px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom:16px;
+  }
+  .card-titulo{
+    font-size:14px;
+    color:#26313a;
+    font-weight:700;
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card-desc{
+    font-size:13px;
+    color:var(--cinza-texto);
+    line-height:1.5;
+    margin-bottom:16px;
+  }
+
+  /* Grid do link */
+  .link-grid{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    align-items:end;
+  }
+  .campo{
+    margin-bottom:12px;
+  }
+  .campo label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:#4a5568;
+    margin-bottom:4px;
+  }
+  .campo input,
+  .campo select{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--cinza-borda);
+    border-radius:8px;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .2s;
+  }
+  .campo input:focus,
+  .campo select:focus{
+    border-color:var(--verde-primario);
+    box-shadow:0 0 0 3px rgba(79,176,198,.12);
+  }
+  .campo input::placeholder{ color:#b0b8c4; }
+
+  /* Botões */
+  .btn{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .2s;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-primario{ background:var(--verde-escuro); color:#fff; }
+  .btn-primario:hover{ background:var(--verde-primario); }
+  .btn-whatsapp{ background:#25d366; color:#fff; }
+  .btn-whatsapp:hover{ background:#1da851; }
+  .btn-secundario{ background:var(--branco); color:#4a5568; border:1px solid var(--cinza-borda); }
+  .btn-secundario:hover{ background:var(--cinza-fundo); }
+
+  /* Link gerado */
+  .link-box{
+    background:var(--cinza-fundo);
+    border:1px solid var(--cinza-borda);
+    border-radius:8px;
+    padding:14px;
+    margin-top:16px;
+    display:none;
+  }
+  .link-box.mostrar{ display:block; }
+  .link-label{
+    font-size:11px;
+    font-weight:700;
+    color:#4a5568;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin-bottom:8px;
+  }
+  .link-input-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .link-input{
+    flex:1;
+    min-width:200px;
+    padding:10px 12px;
+    border:1px solid var(--cinza-borda);
+    border-radius:8px;
+    font-size:13px;
+    font-family:monospace;
+    background:var(--branco);
+    color:#26313a;
+    outline:none;
+  }
+  .link-acoes{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+    flex-wrap:wrap;
+  }
+  .link-msg{
+    margin-top:10px;
+    font-size:12px;
+    display:none;
+    padding:8px 12px;
+    border-radius:6px;
+  }
+  .link-msg.sucesso{ display:block; background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+  .link-msg.info{ display:block; background:#e3f2fd; color:#1565c0; border:1px solid #bbdefb; }
+
+  /* Filtros */
+  .filtros{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .filtro-select{
+    padding:8px 12px;
+    border:1px solid var(--cinza-borda);
+    border-radius:6px;
+    font-size:12px;
+    font-family:inherit;
+    background:var(--branco);
+    cursor:pointer;
+  }
+  .auto-refresh{
+    font-size:11px;
+    color:var(--cinza-texto);
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:4px;
+  }
+  .auto-refresh .dot{
+    width:6px; height:6px;
+    background:#4caf50;
+    border-radius:50%;
+    animation:pulse 2s infinite;
+  }
+
+  /* Tabela */
+  .tabela-scroll{
+    overflow-x:auto;
+  }
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  thead th{
+    background:var(--cinza-fundo);
+    padding:10px 12px;
+    text-align:left;
+    font-weight:700;
+    color:#4a5568;
+    border-bottom:2px solid var(--cinza-borda);
+    white-space:nowrap;
+    position:sticky;
+    top:0;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--cinza-borda);
+    vertical-align:middle;
+  }
+  tbody tr:hover{ background:#fafbfc; }
+  .vazio{
+    text-align:center;
+    padding:32px;
+    color:var(--cinza-texto);
+    font-size:13px;
+  }
+
+  /* Badges */
+  .badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:10px;
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .badge-em-transito{ background:#fff3e0; color:#e65100; }
+  .badge-aguardando{ background:#e3f2fd; color:#1565c0; }
+  .badge-confirmado-checkin{ background:#e8f5e9; color:#2e7d32; }
+  .badge-partida{ background:#fff3e0; color:#e65100; }
+  .badge-chegada{ background:#e3f2fd; color:#1565c0; }
+
+  /* Tela de login/auth */
+  .auth-screen{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    background:linear-gradient(135deg,var(--verde-escuro) 0%,var(--verde-primario) 100%);
+    padding:20px;
+  }
+  .auth-card{
+    background:var(--branco);
+    border-radius:16px;
+    padding:40px 32px;
+    width:100%;
+    max-width:400px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.2);
+  }
+  .auth-card h1{
+    text-align:center;
+    font-size:20px;
+    color:var(--verde-escuro);
+    margin-bottom:8px;
+  }
+  .auth-card .sub{
+    text-align:center;
+    font-size:13px;
+    color:var(--cinza-texto);
+    margin-bottom:24px;
+  }
+  .auth-card .campo{ margin-bottom:14px; }
+  .auth-card .btn-primario{ width:100%; justify-content:center; padding:12px; font-size:15px; }
+  .auth-erro{
+    color:var(--vermelho);
+    font-size:13px;
+    text-align:center;
+    margin-top:12px;
+    display:none;
+  }
+
+  /* Counters */
+  .contadores{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .contador-card{
+    background:var(--branco);
+    border-radius:10px;
+    padding:14px 16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    text-align:center;
+    border-left:4px solid var(--cinza-borda);
+  }
+  .contador-card.transito{ border-left-color:#e65100; }
+  .contador-card.aguardando{ border-left-color:#1565c0; }
+  .contador-card.confirmado{ border-left-color:#2e7d32; }
+  .contador-card.total{ border-left-color:var(--verde-escuro); }
+  .contador-numero{
+    font-size:28px;
+    font-weight:700;
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .contador-card.transito .contador-numero{ color:#e65100; }
+  .contador-card.aguardando .contador-numero{ color:#1565c0; }
+  .contador-card.confirmado .contador-numero{ color:#2e7d32; }
+  .contador-card.total .contador-numero{ color:var(--verde-escuro); }
+  .contador-label{
+    font-size:11px;
+    color:var(--cinza-texto);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+
+  /* Tooltip detalhes */
+  .detalhe-btn{
+    cursor:help;
+    font-size:16px;
+    line-height:1;
+  }
+
+  /* Modal de detalhes */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.5);
+    z-index:1000;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.mostrar{ display:flex; }
+  .modal-content{
+    background:var(--branco);
+    border-radius:16px;
+    padding:28px 24px;
+    width:100%;
+    max-width:500px;
+    max-height:80vh;
+    overflow-y:auto;
+    box-shadow:0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal-content h2{
+    font-size:16px;
+    color:var(--verde-escuro);
+    margin-bottom:16px;
+  }
+  .modal-linha{
+    display:flex;
+    padding:10px 0;
+    border-bottom:1px solid var(--cinza-borda);
+    font-size:13px;
+  }
+  .modal-linha:last-child{ border-bottom:none; }
+  .modal-label{
+    font-weight:700;
+    color:#4a5568;
+    width:130px;
+    flex-shrink:0;
+  }
+  .modal-valor{
+    color:#26313a;
+    word-break:break-word;
+  }
+  .modal-fechar{
+    margin-top:16px;
+    width:100%;
+  }
+
+  /* Responsivo */
+  @media(max-width:768px){
+    .header{ padding:12px 16px; }
+    .container{ padding:16px; }
+    .card{ padding:16px; }
+    .link-grid{ grid-template-columns:1fr; }
+    .contadores{ grid-template-columns:repeat(2, 1fr); }
+    table{ font-size:11px; }
+    thead th, tbody td{ padding:8px 6px; }
+    .header-titulo h1{ font-size:14px; }
+  }
+  @media(max-width:480px){
+    .contadores{ grid-template-columns:1fr 1fr; }
+    .link-acoes{ flex-direction:column; }
+    .link-acoes .btn{ width:100%; justify-content:center; }
+  }
+
+  @keyframes pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.4; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Tela de login -->
+<div id="telaLogin" class="auth-screen">
+  <div class="auth-card">
+    <h1>Controle de Portaria</h1>
+    <p class="sub">Check-ins de Transportadora</p>
+    <form onsubmit="fazerLogin(event)">
+      <div class="campo">
+        <label>Usuário</label>
+        <input type="text" id="loginUsuario" placeholder="Seu usuário" required autocomplete="username">
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="Sua senha" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primario">Entrar</button>
+    </form>
+    <div class="auth-erro" id="loginErro"></div>
+  </div>
+</div>
+
+<!-- Tela principal -->
+<div id="telaPrincipal" style="display:none">
+  <header class="header">
+    <div class="header-left">
+      <img src="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png" alt="Logo" class="header-logo">
+      <div class="header-titulo">
+        <h1>Check-ins de Transportadora</h1>
+        <div class="empresa" id="headerEmpresa">---</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="header-usuario" id="headerUsuario">---</span>
+      <button class="btn-sair" onclick="fazerLogout()">Sair</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Contadores -->
+    <div class="contadores">
+      <div class="contador-card transito">
+        <div class="contador-numero" id="countTransito">0</div>
+        <div class="contador-label">Em Trânsito</div>
+      </div>
+      <div class="contador-card aguardando">
+        <div class="contador-numero" id="countAguardando">0</div>
+        <div class="contador-label">Aguardando</div>
+      </div>
+      <div class="contador-card confirmado">
+        <div class="contador-numero" id="countConfirmado">0</div>
+        <div class="contador-label">Confirmados</div>
+      </div>
+      <div class="contador-card total">
+        <div class="contador-numero" id="countTotal">0</div>
+        <div class="contador-label">Total Hoje</div>
+      </div>
+    </div>
+
+    <!-- Gerar Link -->
+    <div class="card" style="border-left:4px solid var(--laranja)">
+      <div class="card-titulo">🔗 Gerar Link de Check-in</div>
+      <p class="card-desc">Gere o link e envie para a transportadora. O motorista preenche os dados pelo celular e você acompanha tudo aqui.</p>
+      <div class="link-grid">
+        <div>
+          <div class="campo">
+            <label>Telefone da transportadora (WhatsApp)</label>
+            <input type="tel" id="telefoneDestino" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+          </div>
+        </div>
+        <div>
+          <div class="campo">
+            <label>&nbsp;</label>
+            <button class="btn btn-primario" onclick="gerarLink()">Gerar Link</button>
+          </div>
+        </div>
+      </div>
+      <div class="link-box" id="linkBox">
+        <div class="link-label">Link de Check-in</div>
+        <div class="link-input-row">
+          <input type="text" class="link-input" id="linkInput" readonly>
+          <button class="btn btn-secundario" onclick="copiarLink()">📋 Copiar</button>
+        </div>
+        <div class="link-acoes">
+          <button class="btn btn-whatsapp" onclick="enviarWhatsApp()">💬 Enviar por WhatsApp</button>
+          <button class="btn btn-secundario" onclick="enviarEmail()">✉️ Enviar por Email</button>
+        </div>
+        <div class="link-msg" id="linkMsg"></div>
+      </div>
+    </div>
+
+    <!-- Tabela de Check-ins -->
+    <div class="card">
+      <div class="filtros">
+        <h3 class="card-titulo" style="margin-bottom:0">📩 Check-ins Recebidos</h3>
+        <select class="filtro-select" id="filtroStatus" onchange="carregarCheckins()">
+          <option value="">Todos</option>
+          <option value="em_transito">🚀 Em Trânsito</option>
+          <option value="aguardando">📍 Aguardando</option>
+          <option value="confirmado">✅ Confirmados</option>
+        </select>
+        <button class="btn btn-secundario" onclick="carregarCheckins()" style="padding:8px 12px;font-size:11px">Atualizar</button>
+        <div class="auto-refresh">
+          <div class="dot"></div>
+          Auto-refresh 30s
+        </div>
+      </div>
+      <div class="tabela-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Motorista</th>
+              <th>Placa</th>
+              <th>Modelo</th>
+              <th>Empresa</th>
+              <th>Finalidade</th>
+              <th>NF</th>
+              <th>Material</th>
+              <th>Telefone</th>
+              <th>Previsão</th>
+              <th>Horário</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tabelaCheckins"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioMsg" style="display:none">
+        Nenhum check-in recebido ainda. Gere o link e envie para a transportadora.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal de detalhes -->
+<div class="modal-overlay" id="modalDetalhes">
+  <div class="modal-content">
+    <h2>📋 Detalhes do Check-in</h2>
+    <div id="modalBody"></div>
+    <button class="btn btn-secundario modal-fechar" onclick="fecharModal()">Fechar</button>
+  </div>
+</div>
+
+<script>
+var API = window.location.origin;
+var token = localStorage.getItem('token');
+var usuario = null;
+var empresa = '';
+var autoRefreshInterval = null;
+
+// === Init ===
+(function init(){
+  if(token){
+    verificarToken().then(function(ok){
+      if(ok){
+        mostrarPainel();
+      } else {
+        mostrarLogin();
+      }
+    });
+  } else {
+    mostrarLogin();
+  }
+})();
+
+function mostrarLogin(){
+  document.getElementById('telaLogin').style.display = 'flex';
+  document.getElementById('telaPrincipal').style.display = 'none';
+}
+
+function mostrarPainel(){
+  document.getElementById('telaLogin').style.display = 'none';
+  document.getElementById('telaPrincipal').style.display = 'block';
+  usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+  empresa = localStorage.getItem('empresa') || '';
+  document.getElementById('headerUsuario').textContent = usuario.nome || 'Operador';
+  document.getElementById('headerEmpresa').textContent = empresa;
+  document.title = empresa + ' | Check-ins Transportadora';
+  carregarCheckins();
+  iniciarAutoRefresh();
+}
+
+function fazerLogin(e){
+  e.preventDefault();
+  var u = document.getElementById('loginUsuario').value.trim();
+  var s = document.getElementById('loginSenha').value;
+  var erroEl = document.getElementById('loginErro');
+  erroEl.style.display = 'none';
+  var btn = e.target.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  fetch(API + '/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario: u, senha: s })
+  })
+  .then(function(res){
+    if(!res.ok) return res.json().then(function(err){ throw new Error(err.erro || 'Erro ao fazer login'); });
+    return res.json();
+  })
+  .then(function(data){
+    token = data.token;
+    localStorage.setItem('token', token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    localStorage.setItem('empresa', data.empresa || '');
+    mostrarPainel();
+  })
+  .catch(function(ex){
+    erroEl.textContent = ex.message || 'Erro de conexão';
+    erroEl.style.display = 'block';
+  })
+  .finally(function(){
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  });
+}
+
+async function verificarToken(){
+  try {
+    var res = await fetch(API + '/api/verificar-token', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if(!res.ok){
+      localStorage.clear();
+      token = null;
+      return false;
+    }
+    return true;
+  } catch(e){
+    return false;
+  }
+}
+
+function fazerLogout(){
+  localStorage.clear();
+  token = null;
+  if(autoRefreshInterval) clearInterval(autoRefreshInterval);
+  mostrarLogin();
+  document.getElementById('loginUsuario').value = '';
+  document.getElementById('loginSenha').value = '';
+}
+
+function iniciarAutoRefresh(){
+  if(autoRefreshInterval) clearInterval(autoRefreshInterval);
+  autoRefreshInterval = setInterval(carregarCheckins, 30000);
+}
+
+function getHeaders(){
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+}
+
+function obterClienteId(){
+  try {
+    var payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.cliente_id || payload.id || null;
+  } catch(e){ return null; }
+}
+
+// === GERAR LINK ===
+function gerarLink(){
+  var clienteId = obterClienteId();
+  if(!clienteId){ alert('Erro: faça login novamente.'); return; }
+  var base = window.location.origin;
+  var link = base + '/checkin/' + clienteId + '?empresa=' + encodeURIComponent(empresa);
+  document.getElementById('linkInput').value = link;
+  document.getElementById('linkBox').classList.add('mostrar');
+  document.getElementById('linkMsg').style.display = 'none';
+}
+
+function copiarLink(){
+  var input = document.getElementById('linkInput');
+  if(!input.value) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(input.value).then(function(){
+      mostrarMsgLink('Link copiado!', 'sucesso');
+    }).catch(function(){
+      document.execCommand('copy');
+      mostrarMsgLink('Link copiado!', 'sucesso');
+    });
+  } catch(e){
+    document.execCommand('copy');
+    mostrarMsgLink('Link copiado!', 'sucesso');
+  }
+}
+
+function enviarWhatsApp(){
+  var link = document.getElementById('linkInput').value;
+  if(!link){ gerarLink(); link = document.getElementById('linkInput').value; }
+  var telefone = document.getElementById('telefoneDestino').value.replace(/\D/g, '');
+  var msg = 'Olá! Segue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
+    'O motorista deve preencher ao sair ou ao chegar:\n\n' + link + '\n\n' +
+    'Basta clicar e preencher no celular. Obrigado!';
+  var url;
+  if(telefone.length >= 10){
+    var num = telefone;
+    if(num.length === 11 && num.startsWith('0')) num = num.substring(1);
+    if(num.length === 10 || num.length === 11) num = '55' + num;
+    url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  } else {
+    url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
+  }
+  window.open(url, '_blank');
+  mostrarMsgLink('WhatsApp aberto!', 'info');
+}
+
+function enviarEmail(){
+  var link = document.getElementById('linkInput').value;
+  if(!link){ gerarLink(); link = document.getElementById('linkInput').value; }
+  var assunto = encodeURIComponent('Link de Check-in — ' + empresa);
+  var corpo = encodeURIComponent(
+    'Olá,\n\nSegue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
+    'O motorista deve preencher ao sair ou ao chegar:\n\n' + link +
+    '\n\nBasta clicar e preencher no celular.\n\nAtenciosamente,\n' + empresa
+  );
+  window.location.href = 'mailto:?subject=' + assunto + '&body=' + corpo;
+  mostrarMsgLink('Email aberto!', 'info');
+}
+
+function mostrarMsgLink(msg, tipo){
+  var el = document.getElementById('linkMsg');
+  el.textContent = msg;
+  el.className = 'link-msg ' + tipo;
+  setTimeout(function(){ el.style.display = 'none'; el.className = 'link-msg'; }, 4000);
+}
+
+function mascaraTelefone(input){
+  var v = input.value.replace(/\D/g, '');
+  if(v.length > 11) v = v.substring(0, 11);
+  if(v.length > 6) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+  else if(v.length > 2) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
+  else if(v.length > 0) input.value = '(' + v;
+}
+
+// === CHECK-INS ===
+async function carregarCheckins(){
+  var status = document.getElementById('filtroStatus').value;
+  var tbody = document.getElementById('tabelaCheckins');
+  var vazio = document.getElementById('vazioMsg');
+  tbody.innerHTML = '';
+  try {
+    var url = API + '/api/checkins';
+    if(status) url += '?status=' + encodeURIComponent(status);
+    var res = await fetch(url, { headers: getHeaders() });
+    if(res.status === 401){ fazerLogout(); return; }
+    if(!res.ok) return;
+    var dados = await res.json();
+    if(!Array.isArray(dados)) dados = [];
+
+    // Atualizar contadores
+    var hoje = new Date().toLocaleDateString('en-CA');
+    var transito = 0, aguardando = 0, confirmado = 0;
+    dados.forEach(function(d){
+      if(d.status_checkin === 'em_transito') transito++;
+      else if(d.status_checkin === 'aguardando') aguardando++;
+      else if(d.status_checkin === 'confirmado') confirmado++;
+    });
+    document.getElementById('countTransito').textContent = transito;
+    document.getElementById('countAguardando').textContent = aguardando;
+    document.getElementById('countConfirmado').textContent = confirmado;
+    document.getElementById('countTotal').textContent = dados.length;
+
+    if(dados.length === 0){
+      vazio.style.display = 'block';
+      return;
+    }
+    vazio.style.display = 'none';
+
+    dados.forEach(function(d){
+      var tipoClass = d.tipo_checkin === 'partida' ? 'badge-partida' : 'badge-chegada';
+      var tipoText = d.tipo_checkin === 'partida' ? '🚛 Partida' : '📍 Chegada';
+      var statusClass = 'badge-aguardando';
+      var statusText = 'Aguardando';
+      if(d.status_checkin === 'em_transito'){ statusClass = 'badge-em-transito'; statusText = 'Em Trânsito'; }
+      else if(d.status_checkin === 'confirmado'){ statusClass = 'badge-confirmado-checkin'; statusText = 'Confirmado'; }
+      var dataHora = d.criado_em ? new Date(d.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+      var previsao = d.data_previsao ? new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '-';
+      var material = d.descricao_material ? (d.descricao_material.length > 30 ? d.descricao_material.substring(0,30) + '...' : d.descricao_material) : '-';
+      var telefone = d.telefone_motorista || '-';
+
+      tbody.innerHTML += '<tr>' +
+        '<td><span class="badge ' + tipoClass + '">' + tipoText + '</span></td>' +
+        '<td><span class="badge ' + statusClass + '">' + statusText + '</span></td>' +
+        '<td><b>' + esc(d.motorista || '-') + '</b></td>' +
+        '<td><b>' + esc(d.placa || '-') + '</b></td>' +
+        '<td>' + esc(d.modelo || '-') + '</td>' +
+        '<td>' + esc(d.empresa || '-') + '</td>' +
+        '<td>' + esc(d.finalidade || '-') + '</td>' +
+        '<td>' + esc(d.nota || '-') + '</td>' +
+        '<td title="' + esc(d.descricao_material || '') + '">' + esc(material) + '</td>' +
+        '<td>' + esc(telefone) + '</td>' +
+        '<td>' + previsao + '</td>' +
+        '<td>' + dataHora + '</td>' +
+        '<td><span class="detalhe-btn" onclick="verDetalhes(' + d.id + ')" title="Ver detalhes">📋</span></td>' +
+      '</tr>';
+    });
+  } catch(e){}
+}
+
+// === MODAL DE DETALHES ===
+async function verDetalhes(id){
+  var modal = document.getElementById('modalDetalhes');
+  var body = document.getElementById('modalBody');
+  body.innerHTML = '<div style="text-align:center;padding:20px;color:#5b6672">Carregando...</div>';
+  modal.classList.add('mostrar');
+  try {
+    var res = await fetch(API + '/api/checkins', { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    var d = dados.find(function(item){ return item.id === id; });
+    if(!d){
+      body.innerHTML = '<div style="text-align:center;padding:20px;color:#5b6672">Registro não encontrado</div>';
+      return;
+    }
+    var linhas = [
+      { label: 'Tipo', valor: d.tipo_checkin === 'partida' ? '🚛 Partida (Em trânsito)' : '📍 Chegada (Na portaria)' },
+      { label: 'Status', valor: d.status_checkin === 'em_transito' ? '🚀 Em Trânsito' : d.status_checkin === 'confirmado' ? '✅ Confirmado' : '📍 Aguardando' }
+    ];
+    if(d.motorista) linhas.push({ label: 'Motorista', valor: d.motorista });
+    if(d.cnh) linhas.push({ label: 'CNH', valor: d.cnh });
+    if(d.telefone_motorista) linhas.push({ label: 'Telefone', valor: d.telefone_motorista });
+    if(d.placa) linhas.push({ label: 'Placa', valor: d.placa });
+    if(d.modelo) linhas.push({ label: 'Modelo', valor: d.modelo });
+    if(d.empresa) linhas.push({ label: 'Empresa', valor: d.empresa });
+    if(d.finalidade) linhas.push({ label: 'Finalidade', valor: d.finalidade });
+    if(d.nota) linhas.push({ label: 'Nota Fiscal', valor: d.nota });
+    if(d.descricao_material) linhas.push({ label: 'Material', valor: d.descricao_material });
+    if(d.quantidade_peso) linhas.push({ label: 'Qtd/Peso', valor: d.quantidade_peso });
+    if(d.nome_recebedor) linhas.push({ label: 'Recebedor', valor: d.nome_recebedor });
+    if(d.data_previsao) linhas.push({ label: 'Previsão', valor: new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR') });
+    if(d.criado_em) linhas.push({ label: 'Check-in em', valor: new Date(d.criado_em).toLocaleString('pt-BR') });
+    if(d.obs) linhas.push({ label: 'Observação', valor: d.obs });
+
+    body.innerHTML = linhas.map(function(l){
+      return '<div class="modal-linha"><div class="modal-label">' + esc(l.label) + '</div><div class="modal-valor">' + esc(l.valor) + '</div></div>';
+    }).join('');
+  } catch(e){
+    body.innerHTML = '<div style="text-align:center;padding:20px;color:#d64545">Erro ao carregar detalhes</div>';
+  }
+}
+
+function fecharModal(){
+  document.getElementById('modalDetalhes').classList.remove('mostrar');
+}
+
+// Fechar modal clicando fora
+document.getElementById('modalDetalhes').addEventListener('click', function(e){
+  if(e.target === this) fecharModal();
+});
+
+// ESC fecha modal
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') fecharModal();
+});
+
+function esc(s){
+  if(s === null || s === undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
