@@ -2245,7 +2245,7 @@ async function carregarMural(){
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
           <div style="font-size:15px;font-weight:700;color:#1a1a2e">${esc(d.titulo)}${badge}</div>
           <div style="display:flex;gap:6px">
-            <button onclick="editarMural(${d.id},'${d.titulo.replace(/'/g,"\\'")}','${(d.texto||'').replace(/'/g,"\\'").replace(/\n/g,"\\n")}','${d.prioridade}')" style="background:#3182ce;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Editar</button>
+            <button data-mural-id="${d.id}" data-mural-titulo="${esc(d.titulo)}" data-mural-texto="${esc(d.texto||'')}" data-mural-prioridade="${esc(d.prioridade)}" onclick="editarMural(this)" style="background:#3182ce;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Editar</button>
             <button onclick="excluirMural(${d.id})" style="background:#e53e3e;color:#fff;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">Excluir</button>
           </div>
         </div>
@@ -2264,10 +2264,14 @@ function abrirModalMural(){
   document.getElementById("muralPrioridade").value = 'normal';
   abrirModal('modalMural');
 }
-function editarMural(id, titulo, texto, prioridade){
+function editarMural(btn){
+  var id = btn.dataset.muralId;
+  var titulo = btn.dataset.muralTitulo;
+  var texto = btn.dataset.muralTexto;
+  var prioridade = btn.dataset.muralPrioridade;
   document.getElementById("muralEditId").value = id;
   document.getElementById("muralTitulo").value = titulo;
-  document.getElementById("muralTexto").value = texto.replace(/\\n/g, "\n");
+  document.getElementById("muralTexto").value = texto;
   document.getElementById("muralPrioridade").value = prioridade;
   abrirModal('modalMural');
 }

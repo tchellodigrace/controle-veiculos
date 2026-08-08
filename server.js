@@ -1295,7 +1295,7 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
 
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, compras_ativo, compras_token, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_token, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_smtp_pass, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
+    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, compras_ativo, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar clientes:', err);
@@ -1303,7 +1303,7 @@ app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => 
   }
 });
 
-app.post('/api/admin/clientes', adminMiddleware, async (req, res) => {
+app.post('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -1634,7 +1634,7 @@ app.post('/api/admin/clientes/:id/email-teste', adminMiddleware, apiLimiter, asy
     res.json(resultado);
   } catch (err) {
     console.error('Erro no teste Email:', err);
-    res.status(500).json({ ok: false, erro: err.message });
+    res.status(500).json({ ok: false, erro: 'Erro ao enviar email. Verifique as configuracoes SMTP.' });
   }
 });
 
@@ -1676,7 +1676,7 @@ app.post('/api/admin/clientes/:id/whatsapp-teste', adminMiddleware, apiLimiter, 
     res.json(resultado);
   } catch (err) {
     console.error('Erro no teste WhatsApp:', err);
-    res.status(500).json({ ok: false, erro: err.message });
+    res.status(500).json({ ok: false, erro: 'Erro ao conectar com WhatsApp. Verifique as configuracoes.' });
   }
 });
 
@@ -1840,7 +1840,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
   try {
     const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!cliente.rows.length) {
-      console.log('[LOGISTICA] Token nao encontrado:', req.params.token.substring(0, 8) + '...');
+      console.log('[LOGISTICA] Token nao encontrado para o cliente informado');
       return res.status(404).json({ erro: 'Link invalido' });
     }
     if (!cliente.rows[0].logistica_ativo) {
@@ -2055,6 +2055,10 @@ app.post('/api/motorista-despacho/:token/gps', apiLimiter, async (req, res) => {
   try {
     const { lat, lng } = req.body;
     if (lat == null || lng == null) return res.status(400).json({ erro: 'Coordenadas obrigatorias' });
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (isNaN(latNum) || isNaN(lngNum)) return res.status(400).json({ erro: 'Coordenadas invalidas' });
+    if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) return res.status(400).json({ erro: 'Coordenadas fora do range' });
 
     // Atualizar pre_registros
     await pool.query(
@@ -2415,6 +2419,14 @@ async function iniciar() {
     };
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('unhandledRejection', (reason, promise) => {
+      console.error('Unhandled Rejection:', reason);
+    });
+    process.on('uncaughtException', (err) => {
+      console.error('Uncaught Exception:', err);
+      if (err.message && err.message.includes('ECONNRESET')) return;
+      process.exit(1);
+    });
   });
 }
 

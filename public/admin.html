@@ -659,6 +659,7 @@ if(!token){ window.location.replace('/admin-login.html?t=' + Date.now()); throw 
 
 function getHeaders(){ return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }; }
 function esc(s){ if(s==null||s===undefined) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function toggleSenha(el){ el.textContent = el.dataset.show === '1' ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : el.dataset.senha; el.dataset.show = el.dataset.show === '1' ? '0' : '1'; }
 
 const admin = JSON.parse(localStorage.getItem('adminLogado') || '{}');
 if(admin.nome) document.getElementById('adminNome').textContent = admin.nome;
@@ -779,11 +780,11 @@ async function verDetalhes(id){
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
             <div>
               <div style="font-size:11px;opacity:.8">Usuário</div>
-              <div style="font-size:20px;font-weight:700;letter-spacing:.5px">${u.usuario}</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:.5px">${esc(u.usuario)}</div>
             </div>
             <div>
               <div style="font-size:11px;opacity:.8">Senha</div>
-              <div style="font-size:20px;font-weight:700;letter-spacing:.5px;cursor:pointer" onclick="this.textContent = this.dataset.show === '1' ? '••••••••' : '${u.senha_exibicao || '***'}'; this.dataset.show = this.dataset.show === '1' ? '0' : '1'" data-show="0" title="Clique para mostrar/ocultar senha">••••••••</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:.5px;cursor:pointer" id="senha-${esc(u.id)}" data-senha="${esc(u.senha_exibicao || '***')}" data-show="0" onclick="toggleSenha(this)" title="Clique para mostrar/ocultar senha">••••••••</div>
             </div>
             <span style="font-size:10px;background:${u.ativo?'rgba(255,255,255,.25)':'rgba(255,0,0,.3)'};padding:3px 10px;border-radius:10px">${u.ativo?'Ativo':'Inativo'}</span>
           </div>
