@@ -562,11 +562,6 @@
   .badge-agendado{background:var(--azul-claro);color:var(--azul);}
   .badge-confirmado{background:#e6f9ee;color:#1b7a3d;}
   .badge-cancelado{background:#fde8e8;color:var(--vermelho);}
-  .badge-em-transito{background:#fff3e0;color:#e65100;}
-  .badge-aguardando{background:#e3f2fd;color:#1565c0;}
-  .badge-confirmado-checkin{background:#e8f5e9;color:#2e7d32;}
-  .badge-partida{background:#fff3e0;color:#e65100;}
-  .badge-chegada{background:#e3f2fd;color:#1565c0;}
   .badge-qr-code{
     display:inline-block;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;
     font-size:10px;font-weight:700;margin-left:6px;
@@ -687,11 +682,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
       Agendamentos
     </div>
-    <div class="nav-item" id="navCheckins">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-      Check-ins
-      <span class="nav-badge" id="badgeCheckins" style="display:none;background:#ff5722">0</span>
-    </div>
+
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
       Relatórios
@@ -1142,93 +1133,7 @@
         </div>
       </div>
     </div>
-    <div id="viewCheckins" style="display:none">
-      <div class="card" style="padding:18px 20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">📩 CHECK-INS DA TRANSPORTADORA
-          </h3>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select id="checkinsFiltroStatus" onchange="carregarCheckins()" style="padding:6px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:12px;font-family:inherit;background:#fff;cursor:pointer">
-              <option value="">Todos</option>
-              <option value="em_transito">🚀 Em Trânsito</option>
-              <option value="aguardando">📍 Aguardando</option>
-              <option value="confirmado">✅ Confirmado</option>
-            </select>
-            <button class="btn btn-secundario" onclick="carregarCheckins()" style="padding:6px 14px;font-size:12px">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-              Atualizar
-            </button>
-          </div>
-        </div>
-      </div>
-      <!-- Card: Gerar Link de Check-in -->
-      <div class="card" style="padding:18px 20px;margin-top:16px;border-left:4px solid var(--laranja)">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--laranja)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">🔗 GERAR LINK DE CHECK-IN</h3>
-        </div>
-        <p style="margin:0 0 14px;font-size:13px;color:var(--cinza-texto);line-height:1.5">
-          Gere o link e envie para a transportadora. O motorista preenche os dados pelo celular e a empresa recebe tudo no painel.
-        </p>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-          <label style="font-size:12px;font-weight:600;color:#4a5568">Enviar link por WhatsApp para:</label>
-          <input type="tel" id="checkinTelefoneDestino" placeholder="(00) 00000-0000" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;font-family:inherit" oninput="mascaraTelefone(this)">
-          <button class="btn btn-primario" onclick="gerarLinkCheckin()" style="padding:8px 16px;font-size:12px;font-weight:700">
-            Gerar Link
-          </button>
-        </div>
-        <!-- Link gerado (inicialmente oculto) -->
-        <div id="checkinLinkBox" style="display:none">
-          <div style="background:var(--cinza-fundo);border:1px solid var(--cinza-borda);border-radius:8px;padding:12px;margin-bottom:12px">
-            <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Link de Check-in</div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-              <input type="text" id="checkinLinkInput" readonly style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;font-family:monospace;background:#fff;color:#26313a">
-              <button class="btn btn-secundario" onclick="copiarLinkCheckin()" style="padding:8px 14px;font-size:12px;white-space:nowrap">
-                📋 Copiar
-              </button>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primario" onclick="enviarLinkWhatsApp()" style="padding:8px 16px;font-size:12px;font-weight:700;background:#25d366;border-color:#25d366">
-              💬 Enviar por WhatsApp
-            </button>
-            <button class="btn btn-secundario" onclick="enviarLinkEmail()" style="padding:8px 16px;font-size:12px">
-              ✉️ Enviar por Email
-            </button>
-          </div>
-          <div id="checkinLinkMsg" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:6px"></div>
-        </div>
-      </div>
-      <div class="card tabela-card" style="margin-top:16px">
-        <div class="tabela-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Tipo</th>
-                <th>Status</th>
-                <th>Motorista</th>
-                <th>Placa</th>
-                <th>Modelo</th>
-                <th>Empresa</th>
-                <th>Finalidade</th>
-                <th>NF</th>
-                <th>Material</th>
-                <th>Telefone</th>
-                <th>Recebedor</th>
-                <th>Previsão</th>
-                <th>Horário Check-in</th>
-                <th>Confirmar</th>
-                <th>Detalhes</th>
-              </tr>
-            </thead>
-            <tbody id="tabelaCheckins"></tbody>
-          </table>
-        </div>
-        <div class="vazio" id="vazioCheckins" style="display:none;text-align:center;padding:24px;color:#5b6672">
-          Nenhum check-in recebido de transportadora.
-        </div>
-      </div>
-    </div>
+
   </main>
   <footer>
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
@@ -1976,7 +1881,6 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     if(localStorage.getItem("activeView") === "mural") mostrarMural();
     if(localStorage.getItem("activeView") === "rastreamento") mostrarRastreamento();
     if(localStorage.getItem("activeView") === "agendamentos") mostrarAgendamentos();
-    if(localStorage.getItem("activeView") === "checkins") mostrarCheckins();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     atualizar();
@@ -2241,14 +2145,12 @@ function mostrarVeiculos(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -2259,14 +2161,12 @@ function mostrarVisitantes(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -2280,14 +2180,12 @@ function mostrarRastreamento(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewRastreamento").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "rastreamento");
@@ -2300,14 +2198,13 @@ function mostrarAuditoria(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAuditoria").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "auditoria");
@@ -2319,14 +2216,12 @@ function mostrarMural(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewMural").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "mural");
@@ -2479,7 +2374,6 @@ document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
 document.getElementById("navRastreamento").addEventListener("click", mostrarRastreamento);
 document.getElementById("navAgendamentos").addEventListener("click", mostrarAgendamentos);
-document.getElementById("navCheckins").addEventListener("click", mostrarCheckins);
 document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
 document.getElementById("navMural").addEventListener("click", mostrarMural);
 
@@ -2577,14 +2471,12 @@ function mostrarAgendamentos(){
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
-  document.getElementById("navCheckins").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAgendamentos").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
-  document.getElementById("viewCheckins").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "agendamentos");
@@ -2703,217 +2595,6 @@ async function excluirAgendamento(id){
     if(!res.ok){ alert('Erro ao excluir agendamento'); return; }
     carregarAgendamentos();
   } catch(e){ alert('Erro ao excluir agendamento'); }
-}
-
-// === CHECK-INS DA TRANSPORTADORA ===
-function mostrarCheckins(){
-  document.getElementById("navCheckins").classList.add("active");
-  document.getElementById("navVeiculos").classList.remove("active");
-  document.getElementById("navVisitantes").classList.remove("active");
-  document.getElementById("navRastreamento").classList.remove("active");
-  document.getElementById("navAgendamentos").classList.remove("active");
-  document.getElementById("navAuditoria").classList.remove("active");
-  document.getElementById("navMural").classList.remove("active");
-  document.getElementById("viewCheckins").style.display = "block";
-  document.getElementById("viewVeiculos").style.display = "none";
-  document.getElementById("viewVisitantes").style.display = "none";
-  document.getElementById("viewRastreamento").style.display = "none";
-  document.getElementById("viewAgendamentos").style.display = "none";
-  document.getElementById("viewAuditoria").style.display = "none";
-  document.getElementById("viewMural").style.display = "none";
-  pararPollingRastreamento();
-  localStorage.setItem("activeView", "checkins");
-  carregarCheckins();
-}
-
-async function carregarCheckins(){
-  var status = document.getElementById('checkinsFiltroStatus').value;
-  var tbody = document.getElementById('tabelaCheckins');
-  tbody.innerHTML = '';
-  var vazio = document.getElementById('vazioCheckins');
-  try {
-    var url = API + '/api/checkins';
-    if(status) url += '?status=' + encodeURIComponent(status);
-    var res = await fetch(url, { headers: getHeaders() });
-    if(!res.ok) return;
-    var dados = await res.json();
-    if(!Array.isArray(dados)) dados = [];
-    if(dados.length === 0){
-      tbody.innerHTML = '';
-      vazio.style.display = 'block';
-      return;
-    }
-    vazio.style.display = 'none';
-    dados.forEach(function(d){
-      // Tipo badge
-      var tipoClass = d.tipo_checkin === 'partida' ? 'badge-partida' : 'badge-chegada';
-      var tipoText = d.tipo_checkin === 'partida' ? '🚛 Partida' : '📍 Chegada';
-      // Status badge
-      var statusClass = 'badge-aguardando';
-      var statusText = 'Aguardando';
-      if(d.status_checkin === 'em_transito'){ statusClass = 'badge-em-transito'; statusText = '🚀 Em Trânsito'; }
-      else if(d.status_checkin === 'confirmado'){ statusClass = 'badge-confirmado-checkin'; statusText = '✅ Confirmado'; }
-      else if(d.status_checkin === 'aguardando'){ statusClass = 'badge-aguardando'; statusText = '📍 Aguardando'; }
-      // Format date/time
-      var dataHora = d.criado_em ? new Date(d.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
-      var previsao = d.data_previsao ? new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '-';
-      // Observação
-      var obsText = d.obs ? esc(d.obs) : '';
-      // Descricao material (truncate)
-      var material = d.descricao_material ? esc(d.descricao_material.substring(0,40)) + (d.descricao_material.length > 40 ? '...' : '') : '-';
-      var tr = '<tr>' +
-        '<td><span class="badge-status ' + tipoClass + '">' + tipoText + '</span></td>' +
-        '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
-        '<td><b>' + esc(d.motorista || '-') + '</b></td>' +
-        '<td><b>' + esc(d.placa || '-') + '</b></td>' +
-        '<td>' + esc(d.modelo || '-') + '</td>' +
-        '<td>' + esc(d.empresa || '-') + '</td>' +
-        '<td>' + esc(d.finalidade || '-') + '</td>' +
-        '<td>' + esc(d.nota || '-') + '</td>' +
-        '<td title="' + esc(d.descricao_material || '') + '">' + material + '</td>' +
-        '<td>' + esc(d.telefone_motorista || '-') + '</td>' +
-        '<td>' + esc(d.nome_recebedor || '-') + '</td>' +
-        '<td>' + previsao + '</td>' +
-        '<td>' + dataHora + '</td>' +
-        '<td>' + (d.status_checkin !== 'confirmado' ? '<button class="btn" style="padding:4px 10px;font-size:10px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:6px;cursor:pointer;font-weight:700" onclick="confirmarCheckin(' + d.id + ')" title="Confirmar chegada">✅ Confirmar</button>' : '<span style="color:#2e7d32;font-size:11px">✅</span>') + '</td>' +
-        '<td>' + (obsText ? '<span title="' + obsText + '" style="cursor:help;font-size:16px">📋</span>' : '-') + '</td>' +
-      '</tr>';
-      tbody.innerHTML += tr;
-    });
-    // Update badge
-    var emTransitoCount = dados.filter(function(d){ return d.status_checkin === 'em_transito'; }).length;
-    var badge = document.getElementById('badgeCheckins');
-    if(emTransitoCount > 0){
-      badge.textContent = emTransitoCount;
-      badge.style.display = 'inline';
-    } else {
-      badge.style.display = 'none';
-    }
-  } catch(e){}
-}
-
-async function confirmarCheckin(id){
-  if(!confirm('Confirmar este check-in?')) return;
-  try {
-    var res = await fetch(API + '/api/checkins/' + id + '/status', {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ status_checkin: 'confirmado' })
-    });
-    if(!res.ok){ alert('Erro ao confirmar'); return; }
-    carregarCheckins();
-  } catch(e){ alert('Erro de conexão'); }
-}
-
-// === GERAR LINK DE CHECK-IN ===
-function obterClienteIdDoToken(){
-  try {
-    var token = getToken();
-    if(!token) return null;
-    var payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.cliente_id || payload.id || null;
-  } catch(e){ return null; }
-}
-
-function gerarLinkCheckin(){
-  var clienteId = obterClienteIdDoToken();
-  var empresa = localStorage.getItem('empresa') || 'Portaria';
-  if(!clienteId){
-    alert('Erro: não foi possível identificar a empresa. Faça login novamente.');
-    return;
-  }
-  var base = window.location.origin;
-  var link = base + '/checkin/' + clienteId + '?empresa=' + encodeURIComponent(empresa);
-  document.getElementById('checkinLinkInput').value = link;
-  document.getElementById('checkinLinkBox').style.display = 'block';
-  document.getElementById('checkinLinkMsg').style.display = 'none';
-}
-
-function copiarLinkCheckin(){
-  var input = document.getElementById('checkinLinkInput');
-  if(!input.value) return;
-  input.select();
-  input.setSelectionRange(0, 99999);
-  try {
-    navigator.clipboard.writeText(input.value).then(function(){
-      mostrarMsgLink('Link copiado com sucesso!', 'sucesso');
-    }).catch(function(){
-      document.execCommand('copy');
-      mostrarMsgLink('Link copiado!', 'sucesso');
-    });
-  } catch(e){
-    document.execCommand('copy');
-    mostrarMsgLink('Link copiado!', 'sucesso');
-  }
-}
-
-function enviarLinkWhatsApp(){
-  var link = document.getElementById('checkinLinkInput').value;
-  if(!link){ gerarLinkCheckin(); link = document.getElementById('checkinLinkInput').value; }
-  var telefone = document.getElementById('checkinTelefoneDestino').value.replace(/\D/g, '');
-  var empresa = localStorage.getItem('empresa') || 'Portaria';
-  var msg = 'Olá! Segue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
-    'O motorista deve preencher os dados ao sair (ou ao chegar):\n\n' + link + '\n\n' +
-    'Basta clicar no link e preencher. Obrigado!';
-  var whatsappUrl;
-  if(telefone.length >= 10){
-    // telefone com DD: remover 0 inicial se tiver 11 digitos com 0
-    var num = telefone;
-    if(num.length === 11 && num.startsWith('0')) num = num.substring(1);
-    // adicionar 55 (Brasil) se não tiver código país
-    if(num.length === 10 || num.length === 11) num = '55' + num;
-    whatsappUrl = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
-  } else {
-    // Sem telefone - abre WhatsApp com o texto apenas
-    whatsappUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
-  }
-  window.open(whatsappUrl, '_blank');
-  mostrarMsgLink('WhatsApp aberto! Se não abrir, copie o link e envie manualmente.', 'info');
-}
-
-function enviarLinkEmail(){
-  var link = document.getElementById('checkinLinkInput').value;
-  if(!link){ gerarLinkCheckin(); link = document.getElementById('checkinLinkInput').value; }
-  var empresa = localStorage.getItem('empresa') || 'Portaria';
-  var assunto = encodeURIComponent('Link de Check-in - ' + empresa);
-  var corpo = encodeURIComponent(
-    'Olá,\n\n' +
-    'Segue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
-    'O motorista deve preencher os dados ao sair (ou ao chegar):\n\n' +
-    link + '\n\n' +
-    'Basta clicar no link e preencher no celular.\n\n' +
-    'Atenciosamente,\n' + empresa
-  );
-  window.location.href = 'mailto:?subject=' + assunto + '&body=' + corpo;
-  mostrarMsgLink('Email aberto! Preencha o destinatário e envie.', 'info');
-}
-
-function mostrarMsgLink(msg, tipo){
-  var el = document.getElementById('checkinLinkMsg');
-  el.style.display = 'block';
-  if(tipo === 'sucesso'){
-    el.style.background = '#e8f5e9';
-    el.style.color = '#2e7d32';
-    el.style.border = '1px solid #c8e6c9';
-  } else {
-    el.style.background = '#e3f2fd';
-    el.style.color = '#1565c0';
-    el.style.border = '1px solid #bbdefb';
-  }
-  el.textContent = msg;
-  setTimeout(function(){ el.style.display = 'none'; }, 5000);
-}
-
-function mascaraTelefone(input){
-  var v = input.value.replace(/\D/g, '');
-  if(v.length > 11) v = v.substring(0, 11);
-  if(v.length > 6){
-    input.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
-  } else if(v.length > 2){
-    input.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
-  } else if(v.length > 0){
-    input.value = '(' + v;
-  }
 }
 
 // === Verificacao periodica de expiracao do token JWT ===
