@@ -80,6 +80,37 @@
   /* Separador de secao */
   .separador{ text-align:center; font-size:11px; color:#9aa4ad; padding:6px 0 2px; border-top:1px dashed #ddd; margin-top:4px; }
 
+  /* Check-ins QR */
+  .checkin-card{
+    background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px;
+    padding:10px 12px; cursor:pointer; transition:.15s;
+  }
+  .checkin-card:hover{ background:#c8e6c9; transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+  .checkin-card .cc-topo{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .checkin-card .cc-motorista{ font-weight:700; color:#1a1a2e; font-size:12px; flex:1; }
+  .checkin-card .cc-info{ font-size:11px; color:#6b7685; display:flex; flex-direction:column; gap:2px; }
+  .checkin-card .cc-info b{ color:#4a5568; }
+  .cc-status{ font-size:10px; padding:2px 8px; border-radius:10px; font-weight:700; white-space:nowrap; }
+  .cc-status.em_transito{ background:#fff3e0; color:#e08a1e; }
+  .cc-status.aguardando{ background:#e3f2fd; color:#1565c0; }
+  .cc-status.confirmado{ background:#e8f5e9; color:#1b7d2c; }
+  .cc-tipo{ font-size:10px; color:#6b7685; margin-left:auto; }
+
+  /* Modal */
+  .modal-overlay{ display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center; }
+  .modal-overlay.mostrar{ display:flex; }
+  .modal-box{ background:#fff; border-radius:14px; max-width:520px; width:95%; max-height:85vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.2); animation:modalIn .2s ease-out; }
+  @keyframes modalIn{ from{ opacity:0; transform:scale(.95) translateY(10px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+  .modal-top{ padding:16px 20px; border-bottom:1px solid #e8ebed; display:flex; align-items:center; justify-content:space-between; }
+  .modal-top h2{ font-size:16px; font-weight:700; color:#1a1a2e; display:flex; align-items:center; gap:8px; }
+  .modal-fechar{ background:none; border:1px solid #e0e3e7; border-radius:8px; width:32px; height:32px; font-size:18px; cursor:pointer; color:#6b7685; display:flex; align-items:center; justify-content:center; }
+  .modal-fechar:hover{ background:#fdecea; color:#dc3545; border-color:#dc3545; }
+  .modal-body{ padding:20px 24px; }
+  .modal-linha{ display:flex; padding:10px 0; border-bottom:1px solid #f0f2f5; gap:12px; }
+  .modal-linha:last-child{ border-bottom:none; }
+  .modal-label{ font-size:12px; color:#9aa4ad; min-width:110px; font-weight:600; }
+  .modal-valor{ color:#1a1a2e; flex:1; word-break:break-word; font-size:13px; }
+
   /* Leaflet */
   .leaflet-popup-content{ font-size:13px; line-height:1.5; }
   .leaflet-popup-content b{ color:#1a1a2e; }
@@ -141,6 +172,17 @@
   </div>
 </div>
 
+<!-- Modal de detalhes check-in QR -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-top">
+      <h2>📋 Detalhes do Check-in</h2>
+      <button class="modal-fechar" onclick="fecharModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 var API = window.location.origin;
@@ -148,6 +190,7 @@ var params = new URLSearchParams(window.location.search);
 var TOKEN = params.get('token');
 var CLIENTE_ID = params.get('cliente_id');
 var EMPRESA = params.get('empresa') || '---';
+var checkinsCache = [];
 
 if(!TOKEN || !CLIENTE_ID){
   document.querySelector('.container').innerHTML = '<div style="text-align:center;padding:60px"><h2 style="color:#cc0000">Link invalido</h2><p style="color:#666;margin-top:8px">Este link expirou ou foi desativado.</p></div>';
@@ -204,6 +247,8 @@ function carregarDados(){
       if(!data || data.erro) return;
       var motoristas = data.motoristas || [];
       var preRegistros = data.preRegistros || [];
+      var checkinsQR = data.checkinsQR || [];
+      checkinsCache = checkinsQR;
 
       // Contadores
       var aCaminhoCount = 0, chegouCount = 0, concluidoCount = 0;
@@ -302,7 +347,36 @@ function carregarDados(){
           '</div>';
       });
 
-      if(motoristas.length === 0 && preRegistros.length === 0){
+      // Separador: Check-ins de Transportadora
+      if(checkinsQR.length > 0){
+        listaHtml += '<div class="separador">&#x1F4E8; CHECK-INS DA TRANSPORTADORA (' + checkinsQR.length + ')</div>';
+      }
+
+      // Check-ins QR
+      checkinsQR.forEach(function(c, idx){
+        var statusLabel = c.status_checkin === 'em_transito' ? 'Em Trânsito' : c.status_checkin === 'confirmado' ? 'Confirmado' : 'Aguardando';
+        var statusIcon = c.status_checkin === 'em_transito' ? '&#x1F69A;' : c.status_checkin === 'confirmado' ? '&#x2705;' : '&#x1F4CD;';
+        var tipoLabel = c.tipo_checkin === 'partida' ? '&#x1F69A; Partida' : '&#x1F4CD; Chegada';
+        listaHtml +=
+          '<div class="checkin-card" onclick="verDetalhesCheckin(' + idx + ')">' +
+            '<div class="cc-topo">' +
+              '<div style="font-size:14px">' + statusIcon + '</div>' +
+              '<div class="cc-motorista">' + esc(c.motorista || 'Motorista') + '</div>' +
+              '<div class="cc-status ' + (c.status_checkin || '') + '">' + statusLabel + '</div>' +
+            '</div>' +
+            '<div class="cc-info">' +
+              (c.placa ? '<div>Placa: <b>' + esc(c.placa) + '</b></div>' : '') +
+              (c.empresa ? '<div>Empresa: ' + esc(c.empresa) + '</div>' : '') +
+              (c.descricao_material ? '<div>Material: ' + esc(c.descricao_material) + '</div>' : '') +
+              '<div style="display:flex;align-items:center;gap:8px;margin-top:2px">' +
+                '<span>' + tipoLabel + '</span>' +
+                '<span style="color:#9aa4ad">' + (c.criado_em ? new Date(c.criado_em).toLocaleString('pt-BR') : '---') + '</span>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+      });
+
+      if(motoristas.length === 0 && preRegistros.length === 0 && checkinsQR.length === 0){
         listaHtml = '<div style="text-align:center;color:#9aa4ad;font-size:13px;padding:20px">Nenhuma movimentacao no momento</div>';
       }
 
@@ -388,6 +462,52 @@ function esc(s){
   d.textContent = s;
   return d.innerHTML;
 }
+
+// === Modal de detalhes check-in QR ===
+function verDetalhesCheckin(idx){
+  var d = checkinsCache[idx];
+  if(!d) return;
+  var modal = document.getElementById('modalOverlay');
+  var body = document.getElementById('modalBody');
+
+  var linhas = [
+    { label: 'Tipo', valor: d.tipo_checkin === 'partida' ? '🚛 Partida (Em trânsito)' : '📍 Chegada (Na portaria)' },
+    { label: 'Status', valor: d.status_checkin === 'em_transito' ? '🚀 Em Trânsito' : d.status_checkin === 'confirmado' ? '✅ Confirmado' : '📍 Aguardando na Portaria' }
+  ];
+  if(d.motorista) linhas.push({ label: 'Motorista', valor: d.motorista });
+  if(d.cnh) linhas.push({ label: 'CNH', valor: d.cnh });
+  if(d.telefone_motorista) linhas.push({ label: 'Telefone', valor: d.telefone_motorista });
+  if(d.placa) linhas.push({ label: 'Placa', valor: d.placa });
+  if(d.modelo) linhas.push({ label: 'Modelo', valor: d.modelo });
+  if(d.empresa) linhas.push({ label: 'Empresa', valor: d.empresa });
+  if(d.finalidade) linhas.push({ label: 'Finalidade', valor: d.finalidade });
+  if(d.nota) linhas.push({ label: 'Nota Fiscal', valor: d.nota });
+  if(d.descricao_material) linhas.push({ label: 'Material', valor: d.descricao_material });
+  if(d.quantidade_peso) linhas.push({ label: 'Qtd/Peso', valor: d.quantidade_peso });
+  if(d.nome_recebedor) linhas.push({ label: 'Recebedor', valor: d.nome_recebedor });
+  if(d.data_previsao) linhas.push({ label: 'Previsão', valor: new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR') });
+  if(d.criado_em) linhas.push({ label: 'Check-in em', valor: new Date(d.criado_em).toLocaleString('pt-BR') });
+  if(d.obs) linhas.push({ label: 'Observação', valor: d.obs });
+
+  body.innerHTML = linhas.map(function(l){
+    return '<div class="modal-linha"><div class="modal-label">' + esc(l.label) + '</div><div class="modal-valor">' + esc(l.valor) + '</div></div>';
+  }).join('');
+  modal.classList.add('mostrar');
+}
+
+function fecharModal(){
+  document.getElementById('modalOverlay').classList.remove('mostrar');
+}
+
+// Fechar modal clicando fora
+document.getElementById('modalOverlay').addEventListener('click', function(e){
+  if(e.target === this) fecharModal();
+});
+
+// Fechar modal com ESC
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') fecharModal();
+});
 
 // Iniciar
 iniciarMapa();

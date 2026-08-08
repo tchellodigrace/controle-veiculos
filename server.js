@@ -1849,12 +1849,13 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     }
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
-    const [localizacoes, preRegistros] = await Promise.all([
+    const [localizacoes, preRegistros, checkinsQR] = await Promise.all([
       pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, finalidade_tipo, saida_em, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC", [cid]),
-      pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid])
+      pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid]),
+      pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\' ORDER BY criado_em DESC LIMIT 200', [cid])
     ]);
-    console.log('[LOGISTICA] Resultado:', localizacoes.rows.length, 'motoristas,', preRegistros.rows.length, 'pre-registros');
-    res.json({ empresa: cliente.rows[0].empresa, motoristas: localizacoes.rows, preRegistros: preRegistros.rows });
+    console.log('[LOGISTICA] Resultado:', localizacoes.rows.length, 'motoristas,', preRegistros.rows.length, 'pre-registros,', checkinsQR.rows.length, 'checkins QR');
+    res.json({ empresa: cliente.rows[0].empresa, motoristas: localizacoes.rows, preRegistros: preRegistros.rows, checkinsQR: checkinsQR.rows });
   } catch (err) {
     console.error('Erro API logistica:', err);
     res.status(500).json({ erro: 'Erro ao buscar dados' });
