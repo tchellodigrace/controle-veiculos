@@ -185,7 +185,19 @@
 
       <div class="campo">
         <label>Modelo do Veículo</label>
-        <input type="text" id="veiculoModelo" placeholder="Ex.: Caminhão, Utilitário, Truck" autocomplete="off">
+        <select id="veiculoModelo">
+          <option value="">Selecione o modelo</option>
+          <option value="Utilitário">Utilitário</option>
+          <option value="Toco">Toco</option>
+          <option value="Guindaste">Guindaste</option>
+          <option value="Munck">Munck</option>
+          <option value="P. Rota">P. Rota</option>
+          <option value="P. Rodoviário / Baixa">P. Rodoviário / Baixa</option>
+          <option value="Truck">Truck</option>
+          <option value="Empilhadeira">Empilhadeira</option>
+          <option value="Caminhonete">Caminhonete</option>
+          <option value="Outro">Outro</option>
+        </select>
       </div>
 
       <div class="separador"></div>
@@ -202,9 +214,11 @@
         <label>Finalidade <span class="obrigatorio">*</span></label>
         <select id="finalidade" required>
           <option value="">Selecione a finalidade</option>
-          <option value="Coleta">Coleta</option>
-          <option value="Entrega">Entrega</option>
-          <option value="Outro">Outro</option>
+          <option value="Coleta de material / equipamento">Coleta de material / equipamento</option>
+          <option value="Entrega de material / equipamento">Entrega de material / equipamento</option>
+          <option value="Coleta de óleo">Coleta de óleo</option>
+          <option value="Coleta de sucata">Coleta de sucata</option>
+          <option value="Coleta de resíduos">Coleta de resíduos</option>
         </select>
       </div>
 
@@ -308,7 +322,7 @@
     var nome      = document.getElementById('motoristaNome').value.trim();
     var cnh       = document.getElementById('motoristaCnh').value.trim();
     var placa     = document.getElementById('veiculoPlaca').value.trim().toUpperCase();
-    var modelo    = document.getElementById('veiculoModelo').value.trim();
+    var modelo    = document.getElementById('veiculoModelo').value;
     var transp    = document.getElementById('empresaTransportadora').value.trim();
     var finalid   = document.getElementById('finalidade').value;
     var nota      = document.getElementById('notaFiscal').value.trim();
