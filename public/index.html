@@ -571,6 +571,58 @@
     cursor:pointer;background:#fafbfc;color:#26313a;
   }
   .agendamento-select-status:focus{outline:none;border-color:var(--verde-primario);}
+  /* === NOTIFICACOES (SINO) === */
+  .notificacao-container{
+    position:relative;flex-shrink:0;
+  }
+  .notificacao-sino{
+    background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;
+    font-size:22px;line-height:1;position:relative;color:var(--verde-escuro);transition:background .15s;
+  }
+  .notificacao-sino:hover{background:var(--cinza-fundo);}
+  .notificacao-badge{
+    position:absolute;top:0;right:0;background:#d64545;color:#fff;font-size:10px;font-weight:700;
+    min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 4px;pointer-events:none;
+  }
+  .notificacao-dropdown{
+    display:none;position:absolute;top:100%;right:0;width:360px;max-height:400px;
+    overflow-y:auto;background:var(--branco);border:1px solid var(--cinza-borda);border-radius:10px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:9999;margin-top:8px;
+  }
+  .notificacao-dropdown.aberto{display:block;}
+  .notificacao-header{
+    display:flex;align-items:center;justify-content:space-between;padding:12px 16px;
+    border-bottom:1px solid var(--cinza-borda);position:sticky;top:0;
+    background:var(--branco);border-radius:10px 10px 0 0;z-index:1;
+  }
+  .notificacao-header h3{
+    margin:0;font-size:13px;font-weight:700;color:var(--verde-escuro);letter-spacing:0.5px;
+  }
+  .notificacao-marcar-todas{
+    background:none;border:none;color:var(--verde-primario);font-size:11px;font-weight:600;
+    cursor:pointer;padding:4px 8px;border-radius:4px;transition:background .15s;
+  }
+  .notificacao-marcar-todas:hover{background:var(--verde-claro);}
+  .notificacao-item{
+    display:flex;gap:10px;padding:12px 16px;cursor:pointer;transition:background .15s;
+    border-bottom:1px solid #f0f2f4;
+  }
+  .notificacao-item:hover{background:#f2f4f6;}
+  .notificacao-item.lida{opacity:0.55;}
+  .notificacao-item-icone{
+    flex-shrink:0;width:32px;height:32px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;font-size:15px;background:var(--verde-claro);
+  }
+  .notificacao-item-conteudo{flex:1;min-width:0;}
+  .notificacao-item-titulo{font-size:13px;font-weight:700;color:#26313a;margin-bottom:2px;}
+  .notificacao-item-desc{
+    font-size:12px;color:var(--cinza-texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .notificacao-item-hora{font-size:10px;color:#9aa4ad;margin-top:3px;}
+  .notificacao-vazio{
+    text-align:center;padding:32px 16px;color:#9aa4ad;font-size:13px;
+  }
+  .notificacao-vazio span{font-size:28px;display:block;margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -585,6 +637,21 @@
     <div class="titulo">
       <h1>SISTEMA DE CONTROLE</h1>
       <p id="usuarioLogado">Operador: ---</p>
+    </div>
+    <div class="notificacao-container" id="notificacaoContainer">
+      <button class="notificacao-sino" id="btnNotificacao" title="Notificacoes" aria-label="Abrir notificacoes">
+        🔔
+        <span class="notificacao-badge" id="notificacaoBadge" style="display:none">0</span>
+      </button>
+      <div class="notificacao-dropdown" id="notificacaoDropdown">
+        <div class="notificacao-header">
+          <h3>🔔 Notificacoes</h3>
+          <button class="notificacao-marcar-todas" id="btnMarcarTodasLidas" onclick="marcarTodasNotificacoesLidas()">Marcar todas como lidas</button>
+        </div>
+        <div id="notificacaoLista">
+          <div class="notificacao-vazio"><span>🔕</span>Nenhuma notificacao</div>
+        </div>
+      </div>
     </div>
     <div class="relogio">
       <div id="dataAtual">📅 --/--/----</div>
@@ -2710,6 +2777,117 @@ function verificarExpiracaoToken() {
 }
 setInterval(verificarExpiracaoToken, 60000);
 verificarExpiracaoToken();
+
+// === NOTIFICACOES (SINO) ===
+var notificacoesAnteriores = 0;
+var notificacoesAberto = false;
+
+function toggleNotificacaoDropdown(){
+  var dropdown = document.getElementById('notificacaoDropdown');
+  notificacoesAberto = !notificacoesAberto;
+  dropdown.classList.toggle('aberto', notificacoesAberto);
+  if(notificacoesAberto) carregarNotificacoes();
+}
+
+document.getElementById('btnNotificacao').addEventListener('click', function(e){
+  e.stopPropagation();
+  toggleNotificacaoDropdown();
+});
+
+document.addEventListener('click', function(e){
+  var container = document.getElementById('notificacaoContainer');
+  if(container && !container.contains(e.target)){
+    notificacoesAberto = false;
+    document.getElementById('notificacaoDropdown').classList.remove('aberto');
+  }
+});
+
+var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱' };
+
+function tocarBeepNotificacao(){
+  try{
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.1);
+  }catch(e){}
+}
+
+async function verificarNotificacoesNaoLidas(){
+  try{
+    var res = await fetch(API + '/api/notificacoes/nao-lidas', { headers: getHeaders() });
+    if(!res.ok) return;
+    var data = await res.json();
+    var total = data.total || 0;
+    var badge = document.getElementById('notificacaoBadge');
+    if(total > 0){
+      badge.textContent = total > 99 ? '99+' : total;
+      badge.style.display = 'inline';
+    } else {
+      badge.style.display = 'none';
+    }
+    if(total > notificacoesAnteriores){
+      tocarBeepNotificacao();
+    }
+    notificacoesAnteriores = total;
+  }catch(e){}
+}
+
+async function carregarNotificacoes(){
+  try{
+    var res = await fetch(API + '/api/notificacoes', { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    var lista = document.getElementById('notificacaoLista');
+    if(!dados || dados.length === 0){
+      lista.innerHTML = '<div class="notificacao-vazio"><span>🔕</span>Nenhuma notificacao</div>';
+      return;
+    }
+    lista.innerHTML = dados.map(function(n){
+      var icone = notificacaoIconesPorTipo[n.tipo] || '🔔';
+      var lidaClass = n.lida ? ' lida' : '';
+      var hora = n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR') : '';
+      return '<div class="notificacao-item' + lidaClass + '" data-id="' + n.id + '" onclick="marcarNotificacaoLida(' + n.id + ')">' +
+        '<div class="notificacao-item-icone">' + icone + '</div>' +
+        '<div class="notificacao-item-conteudo">' +
+          '<div class="notificacao-item-titulo">' + esc(n.titulo || 'Notificacao') + '</div>' +
+          '<div class="notificacao-item-desc">' + esc(n.descricao || '') + '</div>' +
+          '<div class="notificacao-item-hora">' + hora + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }catch(e){}
+}
+
+async function marcarNotificacaoLida(id){
+  try{
+    var res = await fetch(API + '/api/notificacoes/' + id + '/ler', { method: 'PUT', headers: getHeaders() });
+    if(!res.ok) return;
+    var item = document.querySelector('.notificacao-item[data-id="' + id + '"]');
+    if(item) item.classList.add('lida');
+    verificarNotificacoesNaoLidas();
+  }catch(e){}
+}
+
+async function marcarTodasNotificacoesLidas(){
+  try{
+    var res = await fetch(API + '/api/notificacoes/ler-todas', { method: 'PUT', headers: getHeaders() });
+    if(!res.ok) return;
+    document.querySelectorAll('.notificacao-item').forEach(function(el){ el.classList.add('lida'); });
+    notificacoesAnteriores = 0;
+    verificarNotificacoesNaoLidas();
+  }catch(e){}
+}
+
+verificarNotificacoesNaoLidas();
+setInterval(verificarNotificacoesNaoLidas, 30000);
 
 // === Handler global de erros JS ===
 window.onerror = function(msg, url, line, col, err) {

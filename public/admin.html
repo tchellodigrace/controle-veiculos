@@ -113,6 +113,15 @@
   .wa-teste-ok{background:#c6f6d5;color:#276749}
   .wa-teste-erro{background:#fed7d7;color:#9b2c2c}
   /* ===== FIM WHATSAPP CONFIG ===== */
+  /* ===== EMAIL CONFIG ===== */
+  .em-btn-config{padding:6px 14px;border:none;border-radius:6px;background:#4F86C6;color:#fff;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:opacity .2s}
+  .em-btn-config:hover{opacity:.85}
+  .em-help{background:#ebf8ff;border:1px solid #bee3f8;border-radius:8px;padding:12px 14px;font-size:11px;color:#2a4365;line-height:1.6;margin-bottom:14px}
+  .em-help b{color:#2c5282}
+  .em-help ul{margin:6px 0 0 0;padding-left:18px}
+  .em-help li{margin-bottom:3px}
+  .em-campos-config{opacity:.4;pointer-events:none;transition:opacity .2s}
+  /* ===== FIM EMAIL CONFIG ===== */
 </style>
 </head>
 <body>
@@ -166,6 +175,10 @@
     <button class="tab" onclick="trocarAba(this,'abaWhatsapp')">
       <svg viewBox="0 0 24 24" width="14" height="14" fill="#25d366" style="vertical-align:-2px;margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
       WhatsApp
+    </button>
+    <button class="tab" onclick="trocarAba(this,'abaEmail')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#4F86C6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>
+      Email
     </button>
   </div>
 
@@ -307,6 +320,31 @@
         </table>
       </div>
       <div class="vazio" id="vazioWhatsapp" style="display:none">Nenhum cliente cadastrado</div>
+    </div>
+  </div>
+
+<div id="abaEmail" style="display:none">
+    <div class="section">
+      <h2>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#4F86C6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:4px"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>
+        Configuracao Email por Cliente
+      </h2>
+      <p style="font-size:13px;color:#4a5568;margin-bottom:16px">Configure a integracao com SMTP para envio de notificacoes por email de cada cliente.</p>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>SMTP Host</th>
+              <th>Usuario SMTP</th>
+              <th>Email</th>
+              <th>Acoes</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaEmail"></tbody>
+        </table>
+      </div>
+      <div class="vazio" id="vazioEmail" style="display:none">Nenhum cliente cadastrado</div>
     </div>
   </div>
 
@@ -544,6 +582,76 @@
 </div>
 <!-- FIM MODAL WHATSAPP -->
 
+<!-- MODAL EMAIL CONFIG -->
+<div class="modal-overlay" id="modalEmail">
+  <div class="modal-content" style="max-width:540px">
+    <div class="modal-header">
+      <h3 id="emModalTitulo">Configurar Email</h3>
+      <button class="modal-close" onclick="fecharModal('modalEmail')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="emClienteId">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 14px;background:#ebf8ff;border-radius:8px;border:1px solid #bee3f8">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1a1a2e" id="emClienteNome">—</div>
+          <div style="font-size:11px;color:#2a4365">Ativar notificacoes via Email</div>
+        </div>
+        <label class="wa-toggle">
+          <input type="checkbox" id="emAtivo" onchange="toggleEmailCampos()">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div id="emCamposConfig" class="em-campos-config">
+        <div class="em-help">
+          <b>Dicas de configuracao SMTP:</b>
+          <ul>
+            <li><b>Gmail:</b> Host: smtp.gmail.com, Porta: 587. Ative "Acesso a apps menos seguros" ou use <b>Senha de App do Google</b>.</li>
+            <li><b>Outlook/Office365:</b> Host: smtp.office365.com, Porta: 587.</li>
+            <li><b>Outlook (antigo):</b> Host: smtp-mail.outlook.com, Porta: 587.</li>
+            <li>O email remetente pode ser o mesmo que o usuario SMTP.</li>
+          </ul>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SMTP Host *</label>
+            <input type="text" id="emSmtpHost" placeholder="smtp.gmail.com">
+          </div>
+          <div class="form-group">
+            <label>SMTP Porta *</label>
+            <input type="number" id="emSmtpPorta" placeholder="587" min="1" max="65535">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Usuario SMTP (email) *</label>
+          <input type="text" id="emSmtpUser" placeholder="seu-email@gmail.com">
+        </div>
+        <div class="form-group">
+          <label>Senha SMTP *</label>
+          <input type="password" id="emSmtpPass" placeholder="Senha ou App Password">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Remetente (nome)</label>
+            <input type="text" id="emRemetenteNome" placeholder="ArcaTech - Controle Portaria">
+            <small style="font-size:10px;color:#8b93a1">Nome que aparece no campo "De" do email</small>
+          </div>
+          <div class="form-group">
+            <label>Email Destinatario</label>
+            <input type="email" id="emDestinatario" placeholder="notificacoes@empresa.com">
+            <small style="font-size:10px;color:#8b93a1">Quem recebe as notificacoes</small>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+          <button type="button" class="btn-salvar" style="flex:1" onclick="salvarConfigEmail()">Salvar Configuracao</button>
+          <button type="button" class="wa-btn-teste" style="flex:1" onclick="enviarTesteEmail()">Enviar Teste</button>
+        </div>
+        <div id="emTesteResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- FIM MODAL EMAIL -->
+
 <script>
 const API = window.location.origin;
 const token = localStorage.getItem('tokenAdmin');
@@ -565,7 +673,7 @@ function sair(){
 function trocarAba(btn, id){
   document.querySelectorAll('.tab').forEach(b => { b.classList.remove('active'); });
   btn.classList.add('active');
-  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup','abaQrCode','abaWhatsapp'].forEach(a => {
+  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup','abaQrCode','abaWhatsapp','abaEmail'].forEach(a => {
     document.getElementById(a).style.display = a === id ? 'block' : 'none';
   });
   if(id === 'abaAlertas') carregarAlertas();
@@ -575,6 +683,7 @@ function trocarAba(btn, id){
   if(id === 'abaConfig') carregarConfig();
   if(id === 'abaQrCode') initQrCode();
   if(id === 'abaWhatsapp') carregarWhatsapp();
+  if(id === 'abaEmail') carregarEmail();
 }
 
 function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
@@ -1369,6 +1478,118 @@ async function enviarTesteWhatsapp(){
   }
 }
 /* ===== FIM WHATSAPP CONFIG ===== */
+
+/* ===== EMAIL CONFIG ===== */
+let emClientesCache = [];
+
+async function carregarEmail(){
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    if(!res.ok) return;
+    const clientes = await res.json();
+    emClientesCache = clientes;
+    const tbody = document.getElementById('tabelaEmail');
+    const vazio = document.getElementById('vazioEmail');
+    if(clientes.length === 0){ tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    tbody.innerHTML = clientes.map(c => {
+      const ativo = !!c.email_ativo;
+      const host = c.email_smtp_host || '—';
+      const user = c.email_smtp_user || '—';
+      return `<tr>
+        <td><b>${esc(c.empresa)}</b></td>
+        <td>${esc(host)}</td>
+        <td>${esc(user)}</td>
+        <td>${ativo
+          ? '<span class="wa-badge-ativo"><svg viewBox="0 0 24 24" width="12" height="12" fill="#38a169"><circle cx="12" cy="12" r="10"/></svg> Ativo</span>'
+          : '<span class="wa-badge-inativo"><svg viewBox="0 0 24 24" width="12" height="12" fill="#cbd5e0"><circle cx="12" cy="12" r="10"/></svg> Inativo</span>'
+        }</td>
+        <td>
+          <div class="acoes-col">
+            <button class="em-btn-config" onclick="abrirConfigEmail(${c.id})">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              Configurar
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch {}
+}
+
+async function abrirConfigEmail(id){
+  const c = emClientesCache.find(x => x.id == id);
+  if(!c) return;
+  document.getElementById('emClienteId').value = c.id;
+  document.getElementById('emClienteNome').textContent = c.empresa;
+  document.getElementById('emAtivo').checked = !!c.email_ativo;
+  document.getElementById('emSmtpHost').value = c.email_smtp_host || '';
+  document.getElementById('emSmtpPorta').value = c.email_smtp_porta || '';
+  document.getElementById('emSmtpUser').value = c.email_smtp_user || '';
+  document.getElementById('emSmtpPass').value = c.email_smtp_pass || '';
+  document.getElementById('emRemetenteNome').value = c.email_remetente_nome || '';
+  document.getElementById('emDestinatario').value = c.email_destinatario || '';
+  document.getElementById('emTesteResult').innerHTML = '';
+  toggleEmailCampos();
+  abrirModal('modalEmail');
+}
+
+function toggleEmailCampos(){
+  const ativo = document.getElementById('emAtivo').checked;
+  const campos = document.getElementById('emCamposConfig');
+  campos.style.opacity = ativo ? '1' : '.4';
+  campos.style.pointerEvents = ativo ? 'auto' : 'none';
+}
+
+async function salvarConfigEmail(){
+  const id = document.getElementById('emClienteId').value;
+  if(!id){ alert('Cliente nao identificado'); return; }
+  const ativo = document.getElementById('emAtivo').checked;
+  const payload = {
+    ativo: ativo,
+    smtp_host: document.getElementById('emSmtpHost').value.trim(),
+    smtp_porta: parseInt(document.getElementById('emSmtpPorta').value) || 587,
+    smtp_user: document.getElementById('emSmtpUser').value.trim(),
+    smtp_pass: document.getElementById('emSmtpPass').value,
+    remetente_nome: document.getElementById('emRemetenteNome').value.trim(),
+    destinatario: document.getElementById('emDestinatario').value.trim()
+  };
+  if(ativo && !payload.smtp_host){ alert('Informe o SMTP Host.'); return; }
+  if(ativo && !payload.smtp_user){ alert('Informe o Usuario SMTP.'); return; }
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + id + '/email', {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ const err = await res.json().catch(() => ({})); alert(err.erro || 'Erro ao salvar configuracao.'); return; }
+    const data = await res.json().catch(() => ({}));
+    alert(data.mensagem || 'Configuracao salva com sucesso!');
+    fecharModal('modalEmail');
+    carregarEmail();
+  } catch { alert('Erro de conexao ao salvar.'); }
+}
+
+async function enviarTesteEmail(){
+  const id = document.getElementById('emClienteId').value;
+  if(!id){ alert('Cliente nao identificado'); return; }
+  const destino = prompt('Digite o email de destino para o teste:');
+  if(!destino || !destino.trim()) return;
+  const resultadoEl = document.getElementById('emTesteResult');
+  resultadoEl.innerHTML = '<div class="wa-teste-erro">Enviando email de teste...</div>';
+  try {
+    const res = await fetch(API + '/api/admin/clientes/' + id + '/email-teste', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ email: destino.trim() })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(res.ok){
+      resultadoEl.innerHTML = '<div class="wa-teste-ok">Email enviado com sucesso! Verifique a caixa de entrada de ' + esc(destino.trim()) + '.</div>';
+    } else {
+      resultadoEl.innerHTML = '<div class="wa-teste-erro">Erro: ' + esc(data.erro || 'Nao foi possivel enviar o email.') + '</div>';
+    }
+  } catch {
+    resultadoEl.innerHTML = '<div class="wa-teste-erro">Erro de conexao. Verifique se o servidor esta acessivel.</div>';
+  }
+}
+/* ===== FIM EMAIL CONFIG ===== */
 
 function abrirTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.add('mostrar'); }
 function fecharTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.remove('mostrar'); }

@@ -8,6 +8,7 @@ const pool = require('./db');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 const whatsapp = require('./services/whatsapp');
+const email = require('./services/email');
 const uuid = () => crypto.randomBytes(16).toString('hex');
 
 // Cache de reverse geocoding para evitar chamadas excessivas ao Nominatim
@@ -357,6 +358,10 @@ app.put('/api/registros/:id/saida', authMiddleware, apiLimiter, async (req, res)
     logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Saida', 'veiculo', result.rows[0].placa, 'Saida registrada as ' + hora);
     // Notificar logística via WhatsApp (saída registrada)
     whatsapp.notificarSaida(pool, req.usuario.cliente_id, { empresa: '', motorista: reg.motorista, placa: reg.placa, finalidade: reg.finalidade, hora }).catch(() => {});
+    // Notificar via Email (saída registrada)
+    email.notificarSaida(pool, req.usuario.cliente_id, { empresa: '', motorista: reg.motorista, placa: reg.placa, finalidade: reg.finalidade, hora }).catch(() => {});
+    // Criar notificação no sistema
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [req.usuario.cliente_id, 'saida', 'Saída de veículo', 'Motorista: ' + (reg.motorista||'') + ' | Placa: ' + reg.placa]).catch(() => {});
   } catch (err) {
     console.error('Erro ao marcar saída:', err);
     res.status(500).json({ erro: 'Erro ao marcar saída' });
@@ -893,6 +898,10 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
     // Notificar logística via WhatsApp (entrada confirmada)
     whatsapp.notificarEntrada(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade, hora }).catch(() => {});
+    // Notificar via Email (entrada confirmada)
+    email.notificarEntrada(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade, hora }).catch(() => {});
+    // Criar notificação no sistema
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cid, 'entrada', 'Entrada de veículo', 'Motorista: ' + (d.motorista||'') + ' | Placa: ' + d.placa + ' | Empresa: ' + d.empresa]).catch(() => {});
   } catch (err) {
     console.error('Erro ao confirmar pre-registro:', err);
     res.status(500).json({ erro: 'Erro ao confirmar pré-registro' });
@@ -1540,6 +1549,93 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
   }
 });
 
+// === NOTIFICACOES DO SISTEMA ===
+app.get('/api/notificacoes', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 ORDER BY lida ASC, criado_em DESC LIMIT 50',
+      [req.usuario.cliente_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar notificacoes:', err);
+    res.status(500).json({ erro: 'Erro ao buscar notificações' });
+  }
+});
+
+app.get('/api/notificacoes/nao-lidas', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE',
+      [req.usuario.cliente_id]
+    );
+    res.json({ total: result.rows[0].total });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao contar notificações' });
+  }
+});
+
+app.put('/api/notificacoes/:id/ler', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    await pool.query('UPDATE notificacoes SET lida = TRUE WHERE id = $1 AND cliente_id = $2', [req.params.id, req.usuario.cliente_id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao marcar notificação' });
+  }
+});
+
+app.put('/api/notificacoes/ler-todas', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    await pool.query('UPDATE notificacoes SET lida = TRUE WHERE cliente_id = $1 AND lida = FALSE', [req.usuario.cliente_id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao marcar notificações' });
+  }
+});
+
+// === EMAIL CONFIG (ADMIN) ===
+app.put('/api/admin/clientes/:id/email', adminMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const { ativo, smtp_host, smtp_port, smtp_user, smtp_pass, remetente, destinatario } = req.body;
+    const id = parseInt(req.params.id);
+    await pool.query(
+      `UPDATE clientes SET 
+        email_ativo = $1,
+        email_smtp_host = $2,
+        email_smtp_port = $3,
+        email_smtp_user = $4,
+        email_smtp_pass = $5,
+        email_remetente = $6,
+        email_destinatario = $7
+      WHERE id = $8`,
+      [!!ativo, sanitizarString(smtp_host||'').substring(0,200), sanitizarString(smtp_port||'587').substring(0,10), sanitizarString(smtp_user||'').substring(0,200), sanitizarString(smtp_pass||'').substring(0,500), sanitizarString(remetente||'').substring(0,200), sanitizarString(destinatario||'').substring(0,200), id]
+    );
+    email.limparCache(id);
+    res.json({ ok: true });
+    logAuditoria(id, 'Admin', 'Config Email atualizada', 'email', 'Ativo: ' + !!ativo);
+  } catch (err) {
+    console.error('Erro ao salvar config Email:', err);
+    res.status(500).json({ erro: 'Erro ao salvar configuração' });
+  }
+});
+
+app.post('/api/admin/clientes/:id/email-teste', adminMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const { destinatario } = req.body;
+    if (!destinatario) return res.status(400).json({ erro: 'Email de destino é obrigatório' });
+    const id = parseInt(req.params.id);
+    email.limparCache(id);
+    const resultado = await email.enviar(pool, id, '🧪 Teste de Conexão — Sistema Portaria DSRH', '<p>Este é um <b>teste de conexão</b> do Sistema de Controle de Portaria DSRH.</p><p>Se você recebeu este email, a integração está funcionando!</p>', destinatario);
+    res.json(resultado);
+  } catch (err) {
+    console.error('Erro no teste Email:', err);
+    res.status(500).json({ ok: false, erro: err.message });
+  }
+});
+
 // === WHATSAPP CONFIG (ADMIN) ===
 app.put('/api/admin/clientes/:id/whatsapp', adminMiddleware, apiLimiter, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
@@ -1814,6 +1910,10 @@ app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
     res.status(201).json(result.rows[0]);
     // Notificar logística via WhatsApp (novo check-in QR recebido)
     whatsapp.notificarCheckinQR(pool, cliente_id, { empresa, motorista, placa, finalidade }).catch(() => {});
+    // Notificar via Email (check-in QR)
+    email.notificarCheckinQR(pool, cliente_id, { empresa, motorista, placa, finalidade }).catch(() => {});
+    // Criar notificação no sistema
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cliente_id, 'checkin_qr', 'Check-in via QR Code', 'Motorista: ' + motorista + ' | Placa: ' + placa + ' | Empresa: ' + empresa]).catch(() => {});
   } catch (err) {
     console.error('Erro no checkin-portaria:', err);
     res.status(500).json({ erro: 'Erro ao realizar check-in' });
@@ -1993,7 +2093,16 @@ async function iniciar() {
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_telefone VARCHAR(30) DEFAULT ''",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_telefone_notif VARCHAR(30) DEFAULT ''",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_url VARCHAR(300) DEFAULT ''",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_instancia VARCHAR(200) DEFAULT ''"
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_instancia VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_ativo BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_smtp_host VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_smtp_port VARCHAR(10) DEFAULT '587'",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_smtp_user VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_smtp_pass VARCHAR(500) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_remetente VARCHAR(200) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_destinatario VARCHAR(200) DEFAULT ''",
+      "CREATE TABLE IF NOT EXISTS notificacoes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, tipo VARCHAR(30) NOT NULL, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', lida BOOLEAN DEFAULT FALSE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE INDEX IF NOT EXISTS idx_notificacoes_cliente ON notificacoes(cliente_id, lida, criado_em DESC)"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}
