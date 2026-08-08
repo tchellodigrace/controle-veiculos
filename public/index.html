@@ -1161,6 +1161,44 @@
           </div>
         </div>
       </div>
+      <!-- Card: Gerar Link de Check-in -->
+      <div class="card" style="padding:18px 20px;margin-top:16px;border-left:4px solid var(--laranja)">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--laranja)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">🔗 GERAR LINK DE CHECK-IN</h3>
+        </div>
+        <p style="margin:0 0 14px;font-size:13px;color:var(--cinza-texto);line-height:1.5">
+          Gere o link e envie para a transportadora. O motorista preenche os dados pelo celular e a empresa recebe tudo no painel.
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <label style="font-size:12px;font-weight:600;color:#4a5568">Enviar link por WhatsApp para:</label>
+          <input type="tel" id="checkinTelefoneDestino" placeholder="(00) 00000-0000" style="flex:1;min-width:180px;padding:8px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;font-family:inherit" oninput="mascaraTelefone(this)">
+          <button class="btn btn-primario" onclick="gerarLinkCheckin()" style="padding:8px 16px;font-size:12px;font-weight:700">
+            Gerar Link
+          </button>
+        </div>
+        <!-- Link gerado (inicialmente oculto) -->
+        <div id="checkinLinkBox" style="display:none">
+          <div style="background:var(--cinza-fundo);border:1px solid var(--cinza-borda);border-radius:8px;padding:12px;margin-bottom:12px">
+            <div style="font-size:11px;font-weight:700;color:#4a5568;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Link de Check-in</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="text" id="checkinLinkInput" readonly style="flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;font-family:monospace;background:#fff;color:#26313a">
+              <button class="btn btn-secundario" onclick="copiarLinkCheckin()" style="padding:8px 14px;font-size:12px;white-space:nowrap">
+                📋 Copiar
+              </button>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primario" onclick="enviarLinkWhatsApp()" style="padding:8px 16px;font-size:12px;font-weight:700;background:#25d366;border-color:#25d366">
+              💬 Enviar por WhatsApp
+            </button>
+            <button class="btn btn-secundario" onclick="enviarLinkEmail()" style="padding:8px 16px;font-size:12px">
+              ✉️ Enviar por Email
+            </button>
+          </div>
+          <div id="checkinLinkMsg" style="margin-top:10px;font-size:12px;display:none;padding:8px 12px;border-radius:6px"></div>
+        </div>
+      </div>
       <div class="card tabela-card" style="margin-top:16px">
         <div class="tabela-scroll">
           <table>
@@ -2751,6 +2789,117 @@ async function carregarCheckins(){
       badge.style.display = 'none';
     }
   } catch(e){}
+}
+
+// === GERAR LINK DE CHECK-IN ===
+function obterClienteIdDoToken(){
+  try {
+    var token = getToken();
+    if(!token) return null;
+    var payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.cliente_id || payload.id || null;
+  } catch(e){ return null; }
+}
+
+function gerarLinkCheckin(){
+  var clienteId = obterClienteIdDoToken();
+  var empresa = localStorage.getItem('empresa') || 'Portaria';
+  if(!clienteId){
+    alert('Erro: não foi possível identificar a empresa. Faça login novamente.');
+    return;
+  }
+  var base = window.location.origin;
+  var link = base + '/checkin/' + clienteId + '?empresa=' + encodeURIComponent(empresa);
+  document.getElementById('checkinLinkInput').value = link;
+  document.getElementById('checkinLinkBox').style.display = 'block';
+  document.getElementById('checkinLinkMsg').style.display = 'none';
+}
+
+function copiarLinkCheckin(){
+  var input = document.getElementById('checkinLinkInput');
+  if(!input.value) return;
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(input.value).then(function(){
+      mostrarMsgLink('Link copiado com sucesso!', 'sucesso');
+    }).catch(function(){
+      document.execCommand('copy');
+      mostrarMsgLink('Link copiado!', 'sucesso');
+    });
+  } catch(e){
+    document.execCommand('copy');
+    mostrarMsgLink('Link copiado!', 'sucesso');
+  }
+}
+
+function enviarLinkWhatsApp(){
+  var link = document.getElementById('checkinLinkInput').value;
+  if(!link){ gerarLinkCheckin(); link = document.getElementById('checkinLinkInput').value; }
+  var telefone = document.getElementById('checkinTelefoneDestino').value.replace(/\D/g, '');
+  var empresa = localStorage.getItem('empresa') || 'Portaria';
+  var msg = 'Olá! Segue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
+    'O motorista deve preencher os dados ao sair (ou ao chegar):\n\n' + link + '\n\n' +
+    'Basta clicar no link e preencher. Obrigado!';
+  var whatsappUrl;
+  if(telefone.length >= 10){
+    // telefone com DD: remover 0 inicial se tiver 11 digitos com 0
+    var num = telefone;
+    if(num.length === 11 && num.startsWith('0')) num = num.substring(1);
+    // adicionar 55 (Brasil) se não tiver código país
+    if(num.length === 10 || num.length === 11) num = '55' + num;
+    whatsappUrl = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  } else {
+    // Sem telefone - abre WhatsApp com o texto apenas
+    whatsappUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
+  }
+  window.open(whatsappUrl, '_blank');
+  mostrarMsgLink('WhatsApp aberto! Se não abrir, copie o link e envie manualmente.', 'info');
+}
+
+function enviarLinkEmail(){
+  var link = document.getElementById('checkinLinkInput').value;
+  if(!link){ gerarLinkCheckin(); link = document.getElementById('checkinLinkInput').value; }
+  var empresa = localStorage.getItem('empresa') || 'Portaria';
+  var assunto = encodeURIComponent('Link de Check-in - ' + empresa);
+  var corpo = encodeURIComponent(
+    'Olá,\n\n' +
+    'Segue o link de check-in para entrega/coleta na ' + empresa + '.\n\n' +
+    'O motorista deve preencher os dados ao sair (ou ao chegar):\n\n' +
+    link + '\n\n' +
+    'Basta clicar no link e preencher no celular.\n\n' +
+    'Atenciosamente,\n' + empresa
+  );
+  window.location.href = 'mailto:?subject=' + assunto + '&body=' + corpo;
+  mostrarMsgLink('Email aberto! Preencha o destinatário e envie.', 'info');
+}
+
+function mostrarMsgLink(msg, tipo){
+  var el = document.getElementById('checkinLinkMsg');
+  el.style.display = 'block';
+  if(tipo === 'sucesso'){
+    el.style.background = '#e8f5e9';
+    el.style.color = '#2e7d32';
+    el.style.border = '1px solid #c8e6c9';
+  } else {
+    el.style.background = '#e3f2fd';
+    el.style.color = '#1565c0';
+    el.style.border = '1px solid #bbdefb';
+  }
+  el.textContent = msg;
+  setTimeout(function(){ el.style.display = 'none'; }, 5000);
+}
+
+function mascaraTelefone(input){
+  var v = input.value.replace(/\D/g, '');
+  if(v.length > 11) v = v.substring(0, 11);
+  if(v.length > 6){
+    input.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+  } else if(v.length > 2){
+    input.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
+  } else if(v.length > 0){
+    input.value = '(' + v;
+  }
 }
 
 // === Verificacao periodica de expiracao do token JWT ===
