@@ -1295,7 +1295,7 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
 
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, compras_ativo, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
+    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, compras_ativo, compras_token, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar clientes:', err);
