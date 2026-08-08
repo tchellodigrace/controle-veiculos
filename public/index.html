@@ -539,6 +539,38 @@
     .painel-topo{ grid-template-columns:1fr; }
     #mapaContainer{ height:400px; }
   }
+  /* === AGENDAMENTOS === */
+  .agendamento-filtros{
+    display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;
+  }
+  .agendamento-filtros .campo{flex:1;min-width:140px;}
+  .agendamento-form-inline{
+    display:none;
+    background:var(--cinza-fundo);border:1px solid var(--cinza-borda);border-radius:10px;
+    padding:16px 18px;margin-bottom:16px;
+  }
+  .agendamento-form-inline.mostrar{display:block;}
+  .agendamento-form-inline .grid-inputs{grid-template-columns:repeat(4,1fr);gap:10px;}
+  .agendamento-form-inline .campo-obs{grid-column:span 4;}
+  @media(max-width:800px){
+    .agendamento-form-inline .grid-inputs{grid-template-columns:repeat(2,1fr);}
+    .agendamento-form-inline .campo-obs{grid-column:span 2;}
+  }
+  .badge-status{
+    display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;white-space:nowrap;
+  }
+  .badge-agendado{background:var(--azul-claro);color:var(--azul);}
+  .badge-confirmado{background:#e6f9ee;color:#1b7a3d;}
+  .badge-cancelado{background:#fde8e8;color:var(--vermelho);}
+  .badge-qr-code{
+    display:inline-block;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;
+    font-size:10px;font-weight:700;margin-left:6px;
+  }
+  .agendamento-select-status{
+    padding:4px 8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:12px;
+    cursor:pointer;background:#fafbfc;color:#26313a;
+  }
+  .agendamento-select-status:focus{outline:none;border-color:var(--verde-primario);}
 </style>
 </head>
 <body>
@@ -578,6 +610,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
       Rastreamento
       <span class="nav-badge" id="badgeRastreamento" style="display:none;background:#ff5722">0</span>
+    </div>
+    <div class="nav-item" id="navAgendamentos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+      Agendamentos
     </div>
     <div class="nav-item" id="navRelatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
@@ -944,6 +980,91 @@
         <div class="vazio" id="vazioAuditoria" style="display:none;text-align:center;padding:24px;color:#5b6672">Nenhum registro de auditoria</div>
       </div>
     </div>
+    <div id="viewAgendamentos" style="display:none">
+      <div class="card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">📅 AGENDAMENTOS DE ENTREGAS/COLETAS</h3>
+          <button class="btn btn-primario" onclick="toggleFormAgendamento()" style="font-size:12px;padding:6px 14px" id="btnToggleFormAgendamento">+ Novo Agendamento</button>
+        </div>
+        <div class="agendamento-filtros">
+          <div class="campo">
+            <label>Data</label>
+            <input type="date" id="agendamentoData" onchange="carregarAgendamentos()">
+          </div>
+          <div class="campo">
+            <label style="visibility:hidden">.</label>
+            <button class="btn btn-secundario" onclick="carregarAgendamentos()" style="padding:9px 16px;font-size:12px">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              Atualizar
+            </button>
+          </div>
+        </div>
+        <div class="agendamento-form-inline" id="formAgendamentoInline">
+          <h4 style="margin:0 0 12px;font-size:13px;color:var(--verde-escuro);font-weight:700">NOVO AGENDAMENTO</h4>
+          <div class="grid-inputs">
+            <div class="campo">
+              <label>Motorista *</label>
+              <input id="agMotorista" placeholder="Nome do motorista" maxlength="100">
+            </div>
+            <div class="campo">
+              <label>Placa *</label>
+              <input id="agPlaca" placeholder="Placa do veículo" maxlength="8" style="text-transform:uppercase">
+            </div>
+            <div class="campo">
+              <label>Empresa *</label>
+              <input id="agEmpresa" placeholder="Nome da empresa" maxlength="100">
+            </div>
+            <div class="campo">
+              <label>Horário *</label>
+              <input type="time" id="agHorario">
+            </div>
+            <div class="campo">
+              <label>Doca</label>
+              <input id="agDoca" placeholder="Ex.: Doca 1" maxlength="50">
+            </div>
+            <div class="campo">
+              <label>Finalidade</label>
+              <select id="agFinalidade">
+                <option value="">Selecione</option>
+                <option>Entrega de material</option>
+                <option>Coleta de material</option>
+                <option>Coleta de Óleo</option>
+                <option>Coleta de sucata</option>
+                <option>Coleta de Resíduos</option>
+                <option>Outros</option>
+              </select>
+            </div>
+          </div>
+          <div class="acoes-form">
+            <button class="btn btn-primario" onclick="criarAgendamento()">Salvar Agendamento</button>
+            <button class="btn btn-secundario" onclick="toggleFormAgendamento()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+      <div class="card tabela-card" style="margin-top:16px">
+        <div class="tabela-topo">
+          <h3 id="tituloAgendamentos">AGENDAMENTOS</h3>
+        </div>
+        <div class="tabela-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Motorista</th>
+                <th>Placa</th>
+                <th>Empresa</th>
+                <th>Horário</th>
+                <th>Doca</th>
+                <th>Finalidade</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaAgendamentos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
   <footer>
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
@@ -1252,7 +1373,7 @@ async function atualizarPreRegistros(){
     dados.forEach((d,i) => {
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
-        <td><b>${esc(d.motorista)}</b></td>
+        <td><b>${esc(d.motorista)}</b>${d.origem === 'checkin_qr' ? ' <span class="badge-qr-code">📱 QR Code</span>' : ''}</td>
         <td>${esc(d.empresa)}</td>
         <td>${esc(d.placa)}</td>
         <td>${esc(d.modelo) || "—"}</td>
@@ -1689,6 +1810,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     if(localStorage.getItem("activeView") === "auditoria") mostrarAuditoria();
     if(localStorage.getItem("activeView") === "mural") mostrarMural();
     if(localStorage.getItem("activeView") === "rastreamento") mostrarRastreamento();
+    if(localStorage.getItem("activeView") === "agendamentos") mostrarAgendamentos();
     atualizarRelogio();
     setInterval(atualizarRelogio, 1000);
     atualizar();
@@ -1952,11 +2074,13 @@ function mostrarVeiculos(){
   document.getElementById("navVeiculos").classList.add("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVeiculos").style.display = "block";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -1966,11 +2090,13 @@ function mostrarVisitantes(){
   document.getElementById("navVisitantes").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewVisitantes").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
@@ -1983,11 +2109,13 @@ function mostrarRastreamento(){
   document.getElementById("navRastreamento").classList.add("active");
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewRastreamento").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   localStorage.setItem("activeView", "rastreamento");
@@ -1999,11 +2127,13 @@ function mostrarAuditoria(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
   document.getElementById("navMural").classList.remove("active");
   document.getElementById("viewAuditoria").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "auditoria");
@@ -2014,11 +2144,13 @@ function mostrarMural(){
   document.getElementById("navVeiculos").classList.remove("active");
   document.getElementById("navVisitantes").classList.remove("active");
   document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAgendamentos").classList.remove("active");
   document.getElementById("navAuditoria").classList.remove("active");
   document.getElementById("viewMural").style.display = "block";
   document.getElementById("viewVeiculos").style.display = "none";
   document.getElementById("viewVisitantes").style.display = "none";
   document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "mural");
@@ -2171,6 +2303,7 @@ async function excluirPreRegistroVisitante(id){
 document.getElementById("navVeiculos").addEventListener("click", mostrarVeiculos);
 document.getElementById("navVisitantes").addEventListener("click", mostrarVisitantes);
 document.getElementById("navRastreamento").addEventListener("click", mostrarRastreamento);
+document.getElementById("navAgendamentos").addEventListener("click", mostrarAgendamentos);
 document.getElementById("navAuditoria").addEventListener("click", mostrarAuditoria);
 document.getElementById("navMural").addEventListener("click", mostrarMural);
 
@@ -2260,6 +2393,139 @@ async function excluirVisitante(id){
     if(!res.ok){ alert("Erro ao excluir"); return; }
     atualizarVisitantes();
   } catch { alert("Erro ao excluir"); }
+}
+
+// === AGENDAMENTOS ===
+function mostrarAgendamentos(){
+  document.getElementById("navAgendamentos").classList.add("active");
+  document.getElementById("navVeiculos").classList.remove("active");
+  document.getElementById("navVisitantes").classList.remove("active");
+  document.getElementById("navRastreamento").classList.remove("active");
+  document.getElementById("navAuditoria").classList.remove("active");
+  document.getElementById("navMural").classList.remove("active");
+  document.getElementById("viewAgendamentos").style.display = "block";
+  document.getElementById("viewVeiculos").style.display = "none";
+  document.getElementById("viewVisitantes").style.display = "none";
+  document.getElementById("viewRastreamento").style.display = "none";
+  document.getElementById("viewAuditoria").style.display = "none";
+  document.getElementById("viewMural").style.display = "none";
+  pararPollingRastreamento();
+  localStorage.setItem("activeView", "agendamentos");
+  var dataInput = document.getElementById('agendamentoData');
+  if(!dataInput.value) dataInput.value = new Date().toISOString().slice(0,10);
+  carregarAgendamentos();
+}
+
+function toggleFormAgendamento(){
+  var form = document.getElementById('formAgendamentoInline');
+  form.classList.toggle('mostrar');
+  if(form.classList.contains('mostrar')){
+    document.getElementById('agMotorista').value = '';
+    document.getElementById('agPlaca').value = '';
+    document.getElementById('agEmpresa').value = '';
+    document.getElementById('agHorario').value = '';
+    document.getElementById('agDoca').value = '';
+    document.getElementById('agFinalidade').value = '';
+    document.getElementById('agMotorista').focus();
+  }
+}
+
+async function carregarAgendamentos(){
+  var data = document.getElementById('agendamentoData').value;
+  if(!data) return;
+  var tbody = document.getElementById('tabelaAgendamentos');
+  tbody.innerHTML = '';
+  try {
+    var res = await fetch(API + '/api/agendamentos?data=' + encodeURIComponent(data), { headers: getHeaders() });
+    if(!res.ok) return;
+    var dados = await res.json();
+    if(!Array.isArray(dados)) dados = [];
+    if(dados.length === 0){
+      tbody.innerHTML = '<tr><td colspan="9" class="vazio">Nenhum agendamento para esta data.</td></tr>';
+      return;
+    }
+    var iconExcluir = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+    dados.forEach(function(d, i){
+      var statusClass = 'badge-agendado';
+      var statusText = 'agendado';
+      if(d.status === 'confirmado'){ statusClass = 'badge-confirmado'; statusText = 'confirmado'; }
+      else if(d.status === 'cancelado'){ statusClass = 'badge-cancelado'; statusText = 'cancelado'; }
+      tbody.innerHTML += '<tr>' +
+        '<td>' + (i+1) + '</td>' +
+        '<td><b>' + esc(d.motorista) + '</b></td>' +
+        '<td><b>' + esc(d.placa) + '</b></td>' +
+        '<td>' + esc(d.empresa) + '</td>' +
+        '<td>' + esc(d.horario) + '</td>' +
+        '<td>' + esc(d.doca) + '</td>' +
+        '<td>' + esc(d.finalidade) + '</td>' +
+        '<td><span class="badge-status ' + statusClass + '">' + statusText + '</span></td>' +
+        '<td>' +
+          '<div class="acoes-tabela">' +
+            '<select class="agendamento-select-status" onchange="atualizarStatusAgendamento(' + d.id + ', this.value)" aria-label="Alterar status">' +
+              '<option value="agendado"' + (d.status === 'agendado' ? ' selected' : '') + '>Agendado</option>' +
+              '<option value="confirmado"' + (d.status === 'confirmado' ? ' selected' : '') + '>Confirmado</option>' +
+              '<option value="cancelado"' + (d.status === 'cancelado' ? ' selected' : '') + '>Cancelado</option>' +
+            '</select>' +
+            '<button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir agendamento" onclick="excluirAgendamento(' + d.id + ')">' + iconExcluir + '</button>' +
+          '</div>' +
+        '</td>' +
+      '</tr>';
+    });
+  } catch(e){}
+}
+
+async function criarAgendamento(){
+  var motorista = document.getElementById('agMotorista').value.trim();
+  var placa = document.getElementById('agPlaca').value.trim().toUpperCase();
+  var empresa = document.getElementById('agEmpresa').value.trim();
+  var horario = document.getElementById('agHorario').value;
+  var doca = document.getElementById('agDoca').value.trim();
+  var finalidade = document.getElementById('agFinalidade').value;
+  if(!motorista || !placa || !empresa || !horario){
+    alert('Preencha os campos obrigatórios: Motorista, Placa, Empresa e Horário.');
+    return;
+  }
+  var data = document.getElementById('agendamentoData').value;
+  if(!data){ alert('Selecione uma data.'); return; }
+  var payload = {
+    motorista: motorista,
+    placa: placa,
+    empresa: empresa,
+    horario: horario,
+    doca: doca,
+    finalidade: finalidade,
+    data: data,
+    status: 'agendado'
+  };
+  try {
+    var res = await fetch(API + '/api/agendamentos', {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
+    });
+    if(!res.ok){ var err = await res.json(); alert(err.erro || 'Erro ao criar agendamento'); return; }
+    toggleFormAgendamento();
+    carregarAgendamentos();
+  } catch(e){ alert('Erro de conexão com o servidor'); }
+}
+
+async function atualizarStatusAgendamento(id, novoStatus){
+  try {
+    var res = await fetch(API + '/api/agendamentos/' + id, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ status: novoStatus })
+    });
+    if(!res.ok){ alert('Erro ao atualizar status'); return; }
+    carregarAgendamentos();
+  } catch(e){ alert('Erro ao atualizar status'); }
+}
+
+async function excluirAgendamento(id){
+  if(!confirm('Excluir este agendamento?')) return;
+  try {
+    var res = await fetch(API + '/api/agendamentos/' + id, {
+      method: 'DELETE', headers: getHeaders()
+    });
+    if(!res.ok){ alert('Erro ao excluir agendamento'); return; }
+    carregarAgendamentos();
+  } catch(e){ alert('Erro ao excluir agendamento'); }
 }
 
 // === Verificacao periodica de expiracao do token JWT ===

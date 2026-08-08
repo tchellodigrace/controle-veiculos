@@ -76,6 +76,21 @@
   .vazio{ text-align:center; color:#8b93a1; padding:24px; font-size:13px; }
   .skip-link{position:absolute;top:-40px;left:0;background:#4F86C6;color:#fff;padding:8px 16px;z-index:10000;font-size:14px;font-weight:600;text-decoration:none;border-radius:0 0 6px 0;transition:top .2s;}
   .skip-link:focus{top:0;}
+  .qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:16px;}
+  .qr-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;transition:box-shadow .2s;}
+  .qr-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.1);}
+  .qr-card .empresa-nome{font-size:15px;font-weight:700;color:#1a1a2e;}
+  .qr-card .empresa-plano{font-size:11px;color:#8b93a1;background:#f0f2f5;padding:2px 10px;border-radius:10px;}
+  .qr-card img.qr-img{width:200px;height:200px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;}
+  .qr-card .qr-link{font-family:'Courier New',monospace;font-size:11px;color:#3182ce;word-break:break-all;max-width:100%;user-select:all;cursor:text;background:#f7f8fa;padding:8px;border-radius:6px;border:1px solid #e2e8f0;}
+  .qr-card .btn-baixar-qr{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:linear-gradient(135deg,#2a6f7e,#4FB0C6);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+  .qr-card .btn-baixar-qr:hover{opacity:.85;}
+  .qr-url-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .qr-url-bar label{font-size:13px;font-weight:600;color:#4a5568;white-space:nowrap;}
+  .qr-url-bar input{flex:1;min-width:200px;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:'Courier New',monospace;outline:none;}
+  .qr-url-bar input:focus{border-color:#2a6f7e;}
+  .qr-url-bar button{padding:9px 16px;background:#2a6f7e;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .qr-url-bar button:hover{background:#4FB0C6;}
 </style>
 </head>
 <body>
@@ -122,6 +137,10 @@
     <button class="tab" onclick="trocarAba(this,'abaLogs')">Logs</button>
     <button class="tab" onclick="trocarAba(this,'abaConfig')">Config</button>
     <button class="tab" onclick="trocarAba(this,'abaBackup')">Backup</button>
+    <button class="tab" onclick="trocarAba(this,'abaQrCode')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="14" y1="21" x2="17" y2="21"/></svg>
+      QR Code Portaria
+    </button>
   </div>
 
   <div id="abaClientes">
@@ -238,6 +257,23 @@
         <button class="btn-acao" style="background:#38a169;padding:10px 18px" onclick="exportarTabela('chamados')">Chamados</button>
       </div>
       <div id="exportStatus" style="margin-top:16px;font-size:13px;color:#4a5568"></div>
+    </div>
+  </div>
+
+<div id="abaQrCode" style="display:none">
+    <div class="section">
+      <h2>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2a6f7e" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><line x1="21" y1="14" x2="21" y2="14.01"/><line x1="21" y1="21" x2="21" y2="21.01"/><line x1="14" y1="21" x2="17" y2="21"/></svg>
+        QR Code da Portaria
+      </h2>
+      <p style="font-size:13px;color:#4a5568;margin-bottom:16px">Gere QR Codes de checkin para cada cliente ativo. Escaneie para acessar a tela de checkin da portaria.</p>
+      <div class="qr-url-bar">
+        <label>URL Base:</label>
+        <input type="text" id="qrBaseUrl" placeholder="https://meudominio.com" value="">
+        <button onclick="gerarQrCodes()">Gerar QR Codes</button>
+      </div>
+      <div class="qr-grid" id="qrGrid"></div>
+      <div class="vazio" id="vazioQrCode" style="display:none">Nenhum cliente ativo encontrado</div>
     </div>
   </div>
 
@@ -406,7 +442,7 @@ function sair(){
 function trocarAba(btn, id){
   document.querySelectorAll('.tab').forEach(b => { b.classList.remove('active'); });
   btn.classList.add('active');
-  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup'].forEach(a => {
+  ['abaClientes','abaFaturamento','abaAlertas','abaChamados','abaHistorico','abaLogs','abaConfig','abaBackup','abaQrCode'].forEach(a => {
     document.getElementById(a).style.display = a === id ? 'block' : 'none';
   });
   if(id === 'abaAlertas') carregarAlertas();
@@ -414,6 +450,7 @@ function trocarAba(btn, id){
   if(id === 'abaHistorico') carregarHistorico();
   if(id === 'abaLogs') carregarLogs();
   if(id === 'abaConfig') carregarConfig();
+  if(id === 'abaQrCode') initQrCode();
 }
 
 function abrirModal(modal){ document.getElementById(modal).classList.add('mostrar'); }
@@ -1001,6 +1038,93 @@ async function exportarTabela(tabela){
     el.textContent = 'Exportado ' + data.rows + ' registros da tabela ' + tabela;
   } catch { el.textContent = 'Erro ao exportar'; }
 }
+
+/* ===== QR CODE PORTARIA ===== */
+function initQrCode(){
+  const input = document.getElementById('qrBaseUrl');
+  if(!input.value) input.value = window.location.origin;
+  gerarQrCodes();
+}
+
+async function gerarQrCodes(){
+  const baseUrl = document.getElementById('qrBaseUrl').value.trim().replace(/\/+$/, '');
+  if(!baseUrl){ alert('Informe a URL base'); return; }
+  const grid = document.getElementById('qrGrid');
+  const vazio = document.getElementById('vazioQrCode');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:#8b93a1;font-size:13px">Carregando clientes...</div>';
+  try {
+    const res = await fetch(API + '/api/admin/clientes', { headers: getHeaders() });
+    if(!res.ok){ grid.innerHTML = ''; vazio.style.display = 'block'; return; }
+    const clientes = await res.json();
+    const ativos = clientes.filter(c => c.ativo);
+    if(ativos.length === 0){ grid.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+    grid.innerHTML = ativos.map(c => {
+      const url = baseUrl + '/checkin/' + c.id;
+      const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(url);
+      return `<div class="qr-card">
+        <div class="empresa-nome">${esc(c.empresa)}</div>
+        <span class="empresa-plano">${esc(c.plano)}</span>
+        <img class="qr-img" src="${qrApiUrl}" alt="QR Code ${esc(c.empresa)}" crossorigin="anonymous">
+        <div class="qr-link" title="Clique para selecionar" onclick="this.select();document.execCommand('copy');this.title='Copiado!'">${esc(url)}</div>
+        <button class="btn-baixar-qr" onclick="baixarQrCode(this, '${esc(c.empresa)}', '${qrApiUrl}')">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar QR Code
+        </button>
+      </div>`;
+    }).join('');
+  } catch {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:#e53e3e;font-size:13px">Erro ao carregar clientes</div>';
+  }
+}
+
+function baixarQrCode(btn, empresa, qrApiUrl){
+  const originalText = btn.innerHTML;
+  btn.innerHTML = 'Gerando...';
+  btn.disabled = true;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 400;
+  canvas.height = 500;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 400, 500);
+  ctx.fillStyle = '#1a1a2e';
+  ctx.font = 'bold 20px Segoe UI, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(empresa, 200, 35);
+  ctx.font = '11px Segoe UI, system-ui, sans-serif';
+  ctx.fillStyle = '#8b93a1';
+  ctx.fillText('ArcaTech Solucoes - Controle de Portaria', 200, 55);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function(){
+    ctx.drawImage(img, 100, 75, 200, 200);
+    ctx.fillStyle = '#2a6f7e';
+    ctx.font = 'bold 14px Segoe UI, system-ui, sans-serif';
+    ctx.fillText('Escaneie para Check-in', 200, 305);
+    const url = document.getElementById('qrBaseUrl').value.trim().replace(/\/+$/, '') + '/checkin/';
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '11px Courier New, monospace';
+    ctx.fillText(url, 200, 330);
+    try {
+      const link = document.createElement('a');
+      link.download = 'qrcode_' + empresa.replace(/\s+/g, '_') + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch(e){
+      window.open(qrApiUrl, '_blank');
+    }
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  };
+  img.onerror = function(){
+    window.open(qrApiUrl, '_blank');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  };
+  img.src = qrApiUrl;
+}
+/* ===== FIM QR CODE PORTARIA ===== */
 
 function abrirTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.add('mostrar'); }
 function fecharTrocarSenha(){ document.getElementById('modalTrocarSenha').classList.remove('mostrar'); }

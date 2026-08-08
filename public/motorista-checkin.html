@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<meta name="theme-color" content="#4FB0C6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<title>Check-in — Portaria</title>
+<meta name="description" content="Check-in de motoristas via QR Code — Sistema de Portaria DSRH">
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100vh;
+    background:linear-gradient(135deg,#2a6f7e 0%,#4FB0C6 100%);
+    display:flex; align-items:flex-start; justify-content:center;
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif; padding:16px;
+  }
+  .card{
+    background:#fff; border-radius:16px; padding:32px 28px;
+    width:100%; max-width:480px; box-shadow:0 20px 60px rgba(0,0,0,0.25);
+    margin-top:20px; margin-bottom:20px;
+  }
+
+  /* Logo / Ícone do caminhão */
+  .logo-area{ text-align:center; margin-bottom:16px; }
+  .logo-area img{ height:52px; display:block; margin:0 auto 10px; }
+  .truck-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:72px; border-radius:50%;
+    background:linear-gradient(135deg,#e0f4f7 0%,#d0ecf0 100%);
+    margin-bottom:8px;
+  }
+  .truck-icon svg{ width:40px; height:40px; }
+
+  /* Títulos */
+  .card h1{ margin:0 0 4px; font-size:20px; color:#2a6f7e; text-align:center; font-weight:700; }
+  .card .empresa-nome{ font-size:13px; color:#4FB0C6; text-align:center; font-weight:600; margin-bottom:2px; }
+  .card .sub{ margin:0 0 24px; font-size:13px; color:#8b93a1; text-align:center; }
+
+  /* Campos */
+  .card .campo{ margin-bottom:14px; }
+  .card label{
+    display:block; font-size:12px; font-weight:600; color:#4a5568; margin-bottom:4px;
+  }
+  .card label .obrigatorio{ color:#cc0000; margin-left:2px; }
+  .card input,
+  .card select,
+  .card textarea{
+    width:100%; padding:10px 12px; border:1px solid #d1d5db;
+    border-radius:8px; font-size:14px; outline:none; transition:border-color .2s;
+    font-family:inherit; background:#fff;
+  }
+  .card input:focus,
+  .card select:focus,
+  .card textarea:focus{
+    border-color:#2a6f7e;
+    box-shadow:0 0 0 3px rgba(79,176,198,.15);
+  }
+  .card input::placeholder,
+  .card textarea::placeholder{ color:#b0b8c4; }
+  .card textarea{ resize:vertical; min-height:60px; }
+  .card select{ appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:32px; cursor:pointer; }
+
+  /* Botão */
+  .card button{
+    width:100%; padding:12px; border:none; border-radius:8px;
+    background:#2a6f7e; color:#fff; font-size:15px; font-weight:700;
+    cursor:pointer; transition:background .2s, transform .1s;
+    margin-top:6px;
+  }
+  .card button:hover{ background:#4FB0C6; }
+  .card button:active{ transform:scale(0.98); }
+  .card button:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+  /* Erro */
+  .erro-msg{
+    background:#fff0f0; border:1px solid #ffc0c0; border-radius:8px;
+    padding:10px 14px; font-size:13px; color:#cc0000; margin-bottom:14px; display:none;
+  }
+
+  /* Tela de sucesso */
+  .sucesso{ display:none; text-align:center; padding:24px 0; }
+  .sucesso .check-circle{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:72px; border-radius:50%;
+    background:linear-gradient(135deg,#28a745,#20c997);
+    margin-bottom:16px;
+    animation:scaleIn .4s ease;
+  }
+  .sucesso .check-circle svg{ width:36px; height:36px; }
+  .sucesso h2{ margin:0 0 8px; color:#2a6f7e; font-size:20px; }
+  .sucesso p{ margin:0 0 24px; color:#4a5568; font-size:14px; line-height:1.5; }
+  .sucesso .destaque{
+    background:#e0f4f7; border:1px solid #b8e4ec; border-radius:10px;
+    padding:14px 16px; font-size:13px; color:#2a6f7e; margin-bottom:20px;
+    line-height:1.5;
+  }
+
+  /* Rodapé */
+  .rodape{ font-size:11px; color:#8b93a1; text-align:center; margin-top:16px; }
+  .rodape b{ color:#2a6f7e; }
+
+  /* Link inválido */
+  .link-invalido{ text-align:center; padding:40px 20px; }
+  .link-invalido .erro-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:64px; height:64px; border-radius:50%; background:#fff0f0; margin-bottom:16px;
+  }
+  .link-invalido .erro-icon svg{ width:32px; height:32px; }
+  .link-invalido h2{ color:#cc0000; margin-bottom:8px; font-size:18px; }
+  .link-invalido p{ color:#666; font-size:14px; line-height:1.5; }
+
+  /* Separador visual */
+  .separador{ height:1px; background:#e3e7eb; margin:18px 0; }
+
+  /* Badge de seção */
+  .secao-titulo{
+    font-size:11px; font-weight:700; color:#2a6f7e;
+    text-transform:uppercase; letter-spacing:0.5px;
+    margin-bottom:12px; display:flex; align-items:center; gap:6px;
+  }
+  .secao-titulo::before{
+    content:''; display:inline-block; width:3px; height:14px;
+    background:#4FB0C6; border-radius:2px;
+  }
+
+  @keyframes scaleIn{
+    0%{ transform:scale(0); opacity:0; }
+    60%{ transform:scale(1.15); }
+    100%{ transform:scale(1); opacity:1; }
+  }
+</style>
+</head>
+<body>
+<div class="card" id="cardPrincipal">
+
+  <!-- Tela do formulário -->
+  <div id="telaFormulario">
+    <div class="logo-area">
+      <div class="truck-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 3h15v13H1z"/>
+          <path d="M16 8h4l3 3v5h-7V8z"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+          <path d="M8 16v5"/>
+          <path d="M16 16v5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="empresa-nome" id="empresaNome"></div>
+    <h1>Check-in de Motorista</h1>
+    <p class="sub">Preencha seus dados para a portaria</p>
+
+    <div class="erro-msg" id="erroMsg"></div>
+
+    <form id="formCheckin" onsubmit="enviarCheckin(event)">
+
+      <!-- Seção: Dados do Motorista -->
+      <div class="secao-titulo">Dados do Motorista</div>
+
+      <div class="campo">
+        <label>Nome do Motorista <span class="obrigatorio">*</span></label>
+        <input type="text" id="motoristaNome" placeholder="Seu nome completo" required autocomplete="name">
+      </div>
+
+      <div class="campo">
+        <label>CNH</label>
+        <input type="text" id="motoristaCnh" placeholder="Número da CNH" autocomplete="off">
+      </div>
+
+      <div class="separador"></div>
+
+      <!-- Seção: Dados do Veículo -->
+      <div class="secao-titulo">Dados do Veículo</div>
+
+      <div class="campo">
+        <label>Placa do Veículo <span class="obrigatorio">*</span></label>
+        <input type="text" id="veiculoPlaca" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <label>Modelo do Veículo</label>
+        <input type="text" id="veiculoModelo" placeholder="Ex.: Caminhão, Utilitário, Truck" autocomplete="off">
+      </div>
+
+      <div class="separador"></div>
+
+      <!-- Seção: Dados da Visita -->
+      <div class="secao-titulo">Dados da Visita</div>
+
+      <div class="campo">
+        <label>Empresa Transportadora <span class="obrigatorio">*</span></label>
+        <input type="text" id="empresaTransportadora" placeholder="Nome da transportadora" required autocomplete="organization">
+      </div>
+
+      <div class="campo">
+        <label>Finalidade <span class="obrigatorio">*</span></label>
+        <select id="finalidade" required>
+          <option value="">Selecione a finalidade</option>
+          <option value="Coleta">Coleta</option>
+          <option value="Entrega">Entrega</option>
+          <option value="Outro">Outro</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>Nota Fiscal / Ordem</label>
+        <input type="text" id="notaFiscal" placeholder="Número da NF ou ordem de serviço" autocomplete="off">
+      </div>
+
+      <div class="campo">
+        <label>Observação</label>
+        <textarea id="observacao" placeholder="Informações adicionais (opcional)" rows="2"></textarea>
+      </div>
+
+      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+    </form>
+
+    <p class="rodape"><b>Controle de Portaria DSRH</b> — Sistema de gestão de acesso</p>
+  </div>
+
+  <!-- Tela de sucesso -->
+  <div class="sucesso" id="telaSucesso">
+    <div class="check-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h2>Pré-registro enviado!</h2>
+    <div class="destaque">
+      Aguarde a portaria confirmar sua entrada.<br>
+      Apresente-se ao porteiro na chegada.
+    </div>
+    <button type="button" onclick="novoCheckin()">Novo Check-in</button>
+    <p class="rodape" style="margin-top:20px"><b>Controle de Portaria DSRH</b></p>
+  </div>
+
+  <!-- Tela de link inválido -->
+  <div class="link-invalido" id="telaInvalido" style="display:none">
+    <div class="erro-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#cc0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <h2>Link inválido</h2>
+    <p>Este link de check-in não é válido.<br>Solicite o QR Code correto à portaria.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // === Ler query params ===
+  var params = new URLSearchParams(window.location.search);
+  var CLIENTE_ID = params.get('cliente_id');
+  var EMPRESA = params.get('empresa') || '';
+
+  // === Atualizar título com nome da empresa ===
+  var nomeEmpresa = EMPRESA ? decodeURIComponent(EMPRESA) : 'Portaria';
+  document.title = 'Check-in — ' + nomeEmpresa;
+
+  // === Mostrar nome da empresa no card ===
+  var elEmpresaNome = document.getElementById('empresaNome');
+  if(EMPRESA){
+    elEmpresaNome.textContent = nomeEmpresa;
+  } else {
+    elEmpresaNome.style.display = 'none';
+  }
+
+  // === Validar cliente_id ===
+  if(!CLIENTE_ID){
+    document.getElementById('telaFormulario').style.display = 'none';
+    document.getElementById('telaSucesso').style.display = 'none';
+    document.getElementById('telaInvalido').style.display = 'block';
+    return;
+  }
+
+  var API = window.location.origin;
+
+  // === Placa automática em maiúsculas ===
+  var placaInput = document.getElementById('veiculoPlaca');
+  placaInput.addEventListener('input', function(){
+    this.value = this.value.toUpperCase();
+  });
+
+  // === Funções de erro ===
+  function mostrarErro(msg){
+    var el = document.getElementById('erroMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function ocultarErro(){
+    document.getElementById('erroMsg').style.display = 'none';
+  }
+
+  // === Enviar check-in ===
+  window.enviarCheckin = function(e){
+    e.preventDefault();
+    ocultarErro();
+
+    var nome      = document.getElementById('motoristaNome').value.trim();
+    var cnh       = document.getElementById('motoristaCnh').value.trim();
+    var placa     = document.getElementById('veiculoPlaca').value.trim().toUpperCase();
+    var modelo    = document.getElementById('veiculoModelo').value.trim();
+    var transp    = document.getElementById('empresaTransportadora').value.trim();
+    var finalid   = document.getElementById('finalidade').value;
+    var nota      = document.getElementById('notaFiscal').value.trim();
+    var obs       = document.getElementById('observacao').value.trim();
+
+    if(!nome){ mostrarErro('Informe o nome do motorista.'); return; }
+    if(!placa){ mostrarErro('Informe a placa do veículo.'); return; }
+    if(!transp){ mostrarErro('Informe a empresa transportadora.'); return; }
+    if(!finalid){ mostrarErro('Selecione a finalidade da visita.'); return; }
+
+    var btn = document.getElementById('btnEnviar');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    var payload = {
+      cliente_id: parseInt(CLIENTE_ID),
+      motorista: nome,
+      cnh: cnh,
+      placa: placa,
+      modelo: modelo,
+      empresa: transp,
+      finalidade: finalid,
+      nota: nota,
+      obs: obs
+    };
+
+    fetch(API + '/api/checkin-portaria', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(function(res){
+      if(!res.ok) return res.json().then(function(err){ throw new Error(err.erro || 'Erro ao enviar'); });
+      return res.json();
+    })
+    .then(function(){
+      document.getElementById('telaFormulario').style.display = 'none';
+      document.getElementById('telaSucesso').style.display = 'block';
+    })
+    .catch(function(ex){
+      mostrarErro(ex.message || 'Erro de conexão. Verifique sua internet e tente novamente.');
+    })
+    .finally(function(){
+      btn.disabled = false;
+      btn.textContent = 'Enviar Pré-Registro';
+    });
+  };
+
+  // === Novo check-in ===
+  window.novoCheckin = function(){
+    document.getElementById('formCheckin').reset();
+    document.getElementById('telaSucesso').style.display = 'none';
+    document.getElementById('telaFormulario').style.display = 'block';
+    ocultarErro();
+  };
+
+})();
+</script>
+</body>
+</html>

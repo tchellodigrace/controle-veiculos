@@ -1724,6 +1724,112 @@ app.put('/api/admin/clientes/:id/logistica', adminMiddleware, apiLimiter, async 
   }
 });
 
+// === CHECK-IN VIA QR CODE (MOTORISTA NA PORTARIA) ===
+app.get('/checkin/:cliente_id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, empresa, checkin_ativo FROM clientes WHERE id = $1', [req.params.cliente_id]);
+    if (!result.rows.length) return res.status(404).send('Cliente não encontrado');
+    const c = result.rows[0];
+    if (!c.checkin_ativo) return res.status(404).send('Check-in desativado para esta empresa');
+    res.redirect('/motorista-checkin.html?cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa));
+  } catch { res.status(500).send('Erro'); }
+});
+
+app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
+  try {
+    const { cliente_id, motorista, cnh, placa, modelo, empresa, finalidade, nota, obs } = req.body;
+    if (!cliente_id || !motorista || !placa || !empresa) return res.status(400).json({ erro: 'Motorista, placa e empresa são obrigatórios' });
+    if (!/^\d+$/.test(String(cliente_id))) return res.status(400).json({ erro: 'ID de cliente invalido' });
+    const placaClean = placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (placaClean.length < 6 || placaClean.length > 8) return res.status(400).json({ erro: 'Placa invalida' });
+    const result = await pool.query(
+      `INSERT INTO pre_registros (cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'checkin_qr') RETURNING id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em`,
+      [cliente_id, sanitizarString(empresa).toUpperCase(), sanitizarString(motorista).toUpperCase(), sanitizarString(cnh).substring(0,20), placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,50), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500)]
+    );
+    logAuditoria(cliente_id, 'Motorista (Check-in QR)', 'Pré-registro via QR Code', 'veiculo', placa.toUpperCase(), 'Motorista: ' + motorista + ' | Empresa: ' + empresa);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro no checkin-portaria:', err);
+    res.status(500).json({ erro: 'Erro ao realizar check-in' });
+  }
+});
+
+// === AGENDAMENTOS ===
+app.get('/api/agendamentos', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const data = req.query.data || new Date().toLocaleDateString('en-CA');
+    const result = await pool.query(
+      'SELECT id, cliente_id, motorista, placa, empresa, finalidade, data_agendada, horario, doca, nota, status, criado_em FROM agendamentos WHERE cliente_id = $1 AND data_agendada = $2 ORDER BY horario ASC, id ASC',
+      [req.usuario.cliente_id, data]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar agendamentos:', err);
+    res.status(500).json({ erro: 'Erro ao buscar agendamentos' });
+  }
+});
+
+app.post('/api/agendamentos', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const { motorista, placa, empresa, finalidade, data_agendada, horario, doca, nota } = req.body;
+    if (!data_agendada || !horario) return res.status(400).json({ erro: 'Data e horário são obrigatórios' });
+    const result = await pool.query(
+      `INSERT INTO agendamentos (cliente_id, motorista, placa, empresa, finalidade, data_agendada, horario, doca, nota)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, motorista, placa, empresa, finalidade, data_agendada, horario, doca, nota, status`,
+      [req.usuario.cliente_id, sanitizarString(motorista||'').substring(0,200), sanitizarString(placa||'').substring(0,20), sanitizarString(empresa||'').substring(0,200), sanitizarString(finalidade||'').substring(0,50), data_agendada, sanitizarString(horario).substring(0,10), sanitizarString(doca||'').substring(0,50), sanitizarString(nota||'').substring(0,500)]
+    );
+    res.status(201).json(result.rows[0]);
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Agendamento criado', 'agendamento', placa || '', 'Motorista: ' + (motorista||'') + ' | Data: ' + data_agendada + ' ' + horario);
+  } catch (err) {
+    console.error('Erro ao criar agendamento:', err);
+    res.status(500).json({ erro: 'Erro ao criar agendamento' });
+  }
+});
+
+app.put('/api/agendamentos/:id', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const { status, horario, doca, motorista, placa, empresa, finalidade, nota } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+    if (status !== undefined) { updates.push(`status = $${idx++}`); values.push(status); }
+    if (horario !== undefined) { updates.push(`horario = $${idx++}`); values.push(horario); }
+    if (doca !== undefined) { updates.push(`doca = $${idx++}`); values.push(doca); }
+    if (motorista !== undefined) { updates.push(`motorista = $${idx++}`); values.push(sanitizarString(motorista).substring(0,200)); }
+    if (placa !== undefined) { updates.push(`placa = $${idx++}`); values.push(sanitizarString(placa).substring(0,20)); }
+    if (empresa !== undefined) { updates.push(`empresa = $${idx++}`); values.push(sanitizarString(empresa).substring(0,200)); }
+    if (finalidade !== undefined) { updates.push(`finalidade = $${idx++}`); values.push(sanitizarString(finalidade).substring(0,50)); }
+    if (nota !== undefined) { updates.push(`nota = $${idx++}`); values.push(sanitizarString(nota).substring(0,500)); }
+    if (updates.length === 0) return res.status(400).json({ erro: 'Nada para atualizar' });
+    updates.push(`atualizado_em = NOW()`);
+    values.push(req.params.id);
+    values.push(req.usuario.cliente_id);
+    const result = await pool.query(
+      `UPDATE agendamentos SET ${updates.join(', ')} WHERE id = $${idx} AND cliente_id = $${idx+1} RETURNING *`,
+      values
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Agendamento não encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar agendamento:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar agendamento' });
+  }
+});
+
+app.delete('/api/agendamentos/:id', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const result = await pool.query('DELETE FROM agendamentos WHERE id = $1 AND cliente_id = $2 RETURNING id', [req.params.id, req.usuario.cliente_id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Agendamento não encontrado' });
+    res.json({ mensagem: 'Agendamento excluído' });
+  } catch (err) {
+    console.error('Erro ao excluir agendamento:', err);
+    res.status(500).json({ erro: 'Erro ao excluir agendamento' });
+  }
+});
+
 app.get('/p/:cliente_id', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, empresa FROM clientes WHERE id = $1', [req.params.cliente_id]);
@@ -1810,7 +1916,12 @@ async function iniciar() {
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_ativo BOOLEAN DEFAULT FALSE",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_token VARCHAR(100) DEFAULT ''"
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_token VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS checkin_ativo BOOLEAN DEFAULT TRUE",
+      "ALTER TABLE registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
+      "CREATE TABLE IF NOT EXISTS agendamentos (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, motorista VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', finalidade VARCHAR(50) DEFAULT '', data_agendada DATE NOT NULL, horario VARCHAR(10) DEFAULT '', doca VARCHAR(50) DEFAULT '', nota VARCHAR(500) DEFAULT '', status VARCHAR(20) DEFAULT 'agendado', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE INDEX IF NOT EXISTS idx_agendamentos_cliente ON agendamentos(cliente_id, data_agendada)"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}
