@@ -183,14 +183,7 @@
   .badge-aguardando{ background:var(--azul-claro); color:#1565c0; }
   .badge-confirmado{ background:var(--verde-claro); color:#1b7d2c; }
 
-  /* Botão confirmar inline */
-  .btn-confirmar{
-    padding:4px 12px; font-size:10px; font-weight:700;
-    background:var(--verde-claro); color:#1b7d2c;
-    border:1px solid #c8e6c9; border-radius:6px;
-    cursor:pointer; transition:.15s;
-  }
-  .btn-confirmar:hover{ background:#c8e6c9; }
+
 
   /* Botão detalhes */
   .btn-detalhes{
@@ -553,7 +546,6 @@
             <th>Telefone</th>
             <th>Previsão</th>
             <th>Horário</th>
-            <th>Confirmar</th>
             <th>Detalhes</th>
           </tr>
         </thead>
@@ -698,7 +690,7 @@ function renderizarCheckins(dados){
       '<td>' + esc(telefone) + '</td>' +
       '<td>' + previsao + '</td>' +
       '<td>' + dataHora + '</td>' +
-      '<td>' + (d.status_checkin !== 'confirmado' ? '<button class="btn-confirmar" onclick="confirmarCheckin(' + d.id + ')" title="Confirmar chegada na portaria">✅ Confirmar</button>' : '<span style="color:#1b7d2c;font-size:11px;font-weight:700">✅ Confirmado</span>') + '</td>' +
+
       '<td><button class="btn-detalhes" onclick="verDetalhes(' + i + ')" title="Ver detalhes">📋</button></td>';
     tbody.appendChild(tr);
   });
@@ -846,20 +838,6 @@ function mascaraTelefone(input){
   if(v.length > 6) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
   else if(v.length > 2) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
   else if(v.length > 0) input.value = '(' + v;
-}
-
-// === CONFIRMAR CHECK-IN ===
-async function confirmarCheckin(id){
-  if(!confirm('Confirmar a chegada deste check-in na portaria?')) return;
-  try {
-    var res = await fetch(API + '/api/compras/' + encodeURIComponent(TOKEN) + '/checkins/' + id + '/status', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status_checkin: 'confirmado' })
-    });
-    if(!res.ok){ alert('Erro ao confirmar check-in'); return; }
-    carregarDados();
-  } catch(e){ alert('Erro de conexão'); }
 }
 
 // === Init ===
