@@ -1973,6 +1973,111 @@ app.put('/api/compras/:token/checkins/:id/status', apiLimiter, async (req, res) 
   }
 });
 
+// === MOTORISTA DESPACHO (PAINEL DO MOTORISTA) ===
+// GET: buscar dados do check-in pelo token do motorista
+app.get('/api/motorista-despacho/:token', apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pr.id, pr.cliente_id, pr.empresa, pr.motorista, pr.cnh, pr.placa, pr.modelo, pr.finalidade,
+              pr.nota, pr.obs, pr.telefone_motorista, pr.descricao_material, pr.quantidade_peso,
+              pr.nome_recebedor, pr.data_previsao, pr.tipo_checkin, pr.status_checkin, pr.motorista_token,
+              pr.transito_inicio, pr.criado_em,
+              c.empresa AS empresa_destino
+       FROM pre_registros pr
+       JOIN clientes c ON c.id = pr.cliente_id
+       WHERE pr.motorista_token = $1 AND pr.origem = 'checkin_qr'`,
+      [req.params.token]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao buscar despacho motorista:', err);
+    res.status(500).json({ erro: 'Erro ao buscar dados' });
+  }
+});
+
+// POST: motorista inicia transito (muda status para em_transito + salva GPS inicial)
+app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    const result = await pool.query(
+      `UPDATE pre_registros
+       SET status_checkin = 'em_transito',
+           transito_inicio = COALESCE(transito_inicio, NOW()),
+           transito_lat = COALESCE(transito_lat, $2),
+           transito_lng = COALESCE(transito_lng, $3)
+       WHERE motorista_token = $1 AND origem = 'checkin_qr'
+       RETURNING id, status_checkin, transito_inicio`,
+      [req.params.token, lat || null, lng || null]
+    );
+    if (!result.rows.length) {
+      return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    }
+
+    // Criar localizacao ativa para o motorista aparecer no mapa da logistica
+    const despacho = await pool.query(
+      `SELECT cliente_id, motorista, placa, empresa, finalidade FROM pre_registros WHERE id = $1`,
+      [result.rows[0].id]
+    );
+    if (despacho.rows.length) {
+      const d = despacho.rows[0];
+      const motoristaId = result.rows[0].id;
+      // Delete existing + Insert nova localizacao
+      await pool.query(
+        `DELETE FROM localizacoes_motoristas WHERE cliente_id = $1 AND motorista_id = $2`,
+        [d.cliente_id, motoristaId]
+      ).catch(() => {});
+      await pool.query(
+        `INSERT INTO localizacoes_motoristas (cliente_id, motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, finalidade_tipo, atualizado_em)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, '', TRUE, FALSE, $8, NOW())`,
+        [d.cliente_id, motoristaId, d.motorista, d.placa, d.empresa, lat || 0, lng || 0, d.finalidade || 'Entrega']
+      ).catch(() => {});
+    }
+
+    // Notificar
+    const d2 = despacho.rows[0];
+    whatsapp.notificarCheckinQR(pool, d2.cliente_id, { empresa: d2.empresa, motorista: d2.motorista, placa: d2.placa, finalidade: d2.finalidade }).catch(() => {});
+    email.notificarCheckinQR(pool, d2.cliente_id, { empresa: d2.empresa, motorista: d2.motorista, placa: d2.placa, finalidade: d2.finalidade }).catch(() => {});
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [d2.cliente_id, 'checkin_qr', '🚛 Motorista em transito', 'Motorista: ' + d2.motorista + ' | Placa: ' + d2.placa + ' | Empresa: ' + d2.empresa]).catch(() => {});
+
+    res.json({ id: result.rows[0].id, status_checkin: 'em_transito', hora_inicio: result.rows[0].transito_inicio });
+  } catch (err) {
+    console.error('Erro ao iniciar transito:', err);
+    res.status(500).json({ erro: 'Erro ao iniciar transito' });
+  }
+});
+
+// POST: atualizar GPS do motorista
+app.post('/api/motorista-despacho/:token/gps', apiLimiter, async (req, res) => {
+  try {
+    const { lat, lng } = req.body;
+    if (lat == null || lng == null) return res.status(400).json({ erro: 'Coordenadas obrigatorias' });
+
+    // Atualizar pre_registros
+    await pool.query(
+      `UPDATE pre_registros SET transito_lat = $1, transito_lng = $2 WHERE motorista_token = $3 AND origem = 'checkin_qr'`,
+      [lat, lng, req.params.token]
+    );
+
+    // Atualizar localizacoes_motoristas
+    await pool.query(
+      `UPDATE localizacoes_motoristas SET lat = $1, lng = $2, atualizado_em = NOW()
+       WHERE motorista_id = (
+         SELECT id FROM pre_registros WHERE motorista_token = $3 AND origem = 'checkin_qr' LIMIT 1
+       )`,
+      [lat, lng, req.params.token]
+    ).catch(() => {});
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro GPS motorista:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar GPS' });
+  }
+});
+
 // === CHECK-IN VIA QR CODE (MOTORISTA NA PORTARIA) ===
 app.get('/checkin/:cliente_id', async (req, res) => {
   try {
@@ -1993,10 +2098,11 @@ app.post('/api/checkin-portaria', preRegistroLimiter, async (req, res) => {
     if (placaClean.length < 6 || placaClean.length > 8) return res.status(400).json({ erro: 'Placa invalida' });
     const tipoCheckin = (req.body.tipo_checkin === 'partida') ? 'partida' : 'chegada';
     const statusCheckin = tipoCheckin === 'partida' ? 'em_transito' : 'aguardando';
+    const motoristaToken = 'mtk_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
     const result = await pool.query(
-      `INSERT INTO pre_registros (cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'checkin_qr', $10, $11, $12, $13, $14, $15, $16) RETURNING id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em`,
-      [cliente_id, sanitizarString(empresa).toUpperCase(), sanitizarString(motorista).toUpperCase(), sanitizarString(cnh).substring(0,20), placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,100), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), sanitizarString(req.body.telefone_motorista||'').substring(0,30), sanitizarString(req.body.descricao_material||'').substring(0,1000), sanitizarString(req.body.quantidade_peso||'').substring(0,100), sanitizarString(req.body.nome_recebedor||'').substring(0,200), req.body.data_previsao || null, tipoCheckin, statusCheckin]
+      `INSERT INTO pre_registros (cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, motorista_token)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'checkin_qr', $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, motorista_token, criado_em`,
+      [cliente_id, sanitizarString(empresa).toUpperCase(), sanitizarString(motorista).toUpperCase(), sanitizarString(cnh).substring(0,20), placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,100), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), sanitizarString(req.body.telefone_motorista||'').substring(0,30), sanitizarString(req.body.descricao_material||'').substring(0,1000), sanitizarString(req.body.quantidade_peso||'').substring(0,100), sanitizarString(req.body.nome_recebedor||'').substring(0,200), req.body.data_previsao || null, tipoCheckin, statusCheckin, motoristaToken]
     );
     logAuditoria(cliente_id, 'Motorista (Check-in QR)', 'Pré-registro via QR Code', 'veiculo', placa.toUpperCase(), 'Motorista: ' + motorista + ' | Empresa: ' + empresa);
     res.status(201).json(result.rows[0]);
@@ -2243,7 +2349,11 @@ async function iniciar() {
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS tipo_checkin VARCHAR(20) DEFAULT 'chegada'",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS status_checkin VARCHAR(20) DEFAULT 'aguardando'",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS compras_ativo BOOLEAN DEFAULT FALSE",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS compras_token VARCHAR(100) DEFAULT ''"
+      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS compras_token VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS motorista_token VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_inicio TIMESTAMP DEFAULT NULL",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lat DECIMAL(10,7) DEFAULT NULL",
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lng DECIMAL(10,7) DEFAULT NULL"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

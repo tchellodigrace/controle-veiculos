@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" href="https://i.ibb.co/PZStmN7z/logo-sem-fundo-arcatech.png">
+<meta name="theme-color" content="#2a6f7e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Despacho de Motorista</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; min-height:100vh;
+    background:linear-gradient(135deg,#1a3a4a 0%,#2a6f7e 50%,#4FB0C6 100%);
+    display:flex; align-items:flex-start; justify-content:center;
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif; padding:16px;
+    color:#1a1a2e;
+  }
+
+  .card{
+    background:#fff; border-radius:16px; padding:28px 24px;
+    width:100%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+    margin-top:20px; margin-bottom:20px;
+  }
+
+  /* Header */
+  .header{text-align:center; margin-bottom:20px; }
+  .header .icon-circle{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:72px; border-radius:50%;
+    background:linear-gradient(135deg,#e0f4f7,#b8e4ec); margin-bottom:12px;
+  }
+  .header .icon-circle svg{ width:40px; height:40px; }
+  .header h1{ font-size:18px; color:#2a6f7e; font-weight:800; margin-bottom:4px; }
+  .header .empresa{ font-size:13px; color:#4FB0C6; font-weight:600; }
+
+  /* Resumo */
+  .resumo{
+    background:#f7f9fb; border:1px solid #e0e3e7; border-radius:12px;
+    padding:16px; margin-bottom:20px;
+  }
+  .resumo-item{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:8px 0; border-bottom:1px solid #f0f2f5; font-size:13px;
+  }
+  .resumo-item:last-child{ border-bottom:none; }
+  .resumo-item .label{ color:#8b93a1; font-weight:600; min-width:100px; font-size:12px; }
+  .resumo-item .valor{ color:#1a1a2e; font-weight:600; text-align:right; flex:1; word-break:break-word; }
+
+  /* Status */
+  .status-area{text-align:center; margin-bottom:20px; }
+  .status-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:8px 16px; border-radius:20px; font-size:13px; font-weight:700;
+  }
+  .status-badge.aguardando{ background:#fff3e0; color:#e65100; }
+  .status-badge.em_transito{ background:#e8f5e9; color:#1b7d2c; }
+  .status-badge.concluido{ background:#e3f2fd; color:#1565c0; }
+
+  .status-icon{ width:20px; height:20px; font-size:16px; }
+
+  /* Botão principal */
+  .btn-action{
+    width:100%; padding:16px; border:none; border-radius:12px;
+    font-size:17px; font-weight:800; cursor:pointer; transition:all .2s;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-bottom:12px;
+  }
+  .btn-action svg{ width:24px; height:24px; }
+  .btn-iniciar{
+    background:linear-gradient(135deg,#ff9800,#f57c00); color:#fff;
+    box-shadow:0 4px 16px rgba(255,152,0,.4);
+  }
+  .btn-iniciar:hover{ transform:translateY(-1px); box-shadow:0 6px 20px rgba(255,152,0,.5); }
+  .btn-iniciar:active{ transform:scale(0.98); }
+  .btn-iniciar:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+  .btn-iniciar.em_transito{
+    background:linear-gradient(135deg,#28a745,#20c997);
+    box-shadow:0 4px 16px rgba(40,167,69,.4);
+  }
+
+  /* Botão WhatsApp */
+  .btn-whatsapp{
+    width:100%; padding:12px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#25d366,#128c7e); color:#fff;
+    font-size:14px; font-weight:700; cursor:pointer; transition:all .2s;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-whatsapp svg{ width:20px; height:20px; }
+  .btn-whatsapp:hover{ transform:translateY(-1px); box-shadow:0 4px 16px rgba(37,211,102,.4); }
+
+  /* Tracking ativo */
+  .tracking-info{
+    display:none; text-align:center; padding:16px; margin-top:16px;
+    background:linear-gradient(135deg,#e8f5e9,#c8e6c9); border-radius:12px;
+    border:1px solid #a5d6a7;
+  }
+  .tracking-info.ativo{ display:block; }
+  .tracking-info h3{ font-size:14px; color:#1b7d2c; margin-bottom:8px; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .tracking-info .gps-detail{ font-size:12px; color:#2e7d32; line-height:1.6; }
+  .tracking-info .hora{ font-size:11px; color:#4caf50; margin-top:6px; }
+
+  .pulse-dot{
+    width:10px; height:10px; border-radius:50%; background:#28a745;
+    display:inline-block; animation:pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.4; transform:scale(1.4); } }
+
+  /* Erro / Loading */
+  .msg-erro{
+    text-align:center; padding:40px 20px;
+  }
+  .msg-erro .erro-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:64px; height:64px; border-radius:50%; background:#fff0f0; margin-bottom:16px;
+  }
+  .msg-erro .erro-icon svg{ width:32px; height:32px; }
+  .msg-erro h2{ color:#cc0000; margin-bottom:8px; font-size:18px; }
+  .msg-erro p{ color:#666; font-size:14px; line-height:1.5; }
+
+  .loading{
+    text-align:center; padding:40px 20px;
+  }
+  .spinner{
+    width:40px; height:40px; border:4px solid #e0e3e7;
+    border-top-color:#4FB0C6; border-radius:50%;
+    animation:spin .8s linear infinite; margin:0 auto 16px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* Rodapé */
+  .rodape{ font-size:11px; color:#8b93a1; text-align:center; margin-top:20px; }
+  .rodape b{ color:#2a6f7e; }
+
+  @keyframes scaleIn{
+    0%{ transform:scale(0); opacity:0; }
+    60%{ transform:scale(1.15); }
+    100%{ transform:scale(1); opacity:1; }
+  }
+
+  /* Sucesso ao iniciar transito */
+  .sucesso-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+    z-index:100; align-items:center; justify-content:center; padding:16px;
+  }
+  .sucesso-overlay.mostrar{ display:flex; }
+  .sucesso-card{
+    background:#fff; border-radius:16px; padding:28px; max-width:380px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); animation:scaleIn .25s ease; text-align:center;
+  }
+  .sucesso-card .check-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:72px; border-radius:50%;
+    background:linear-gradient(135deg,#28a745,#20c997); margin-bottom:16px;
+  }
+  .sucesso-card .check-icon svg{ width:36px; height:36px; }
+  .sucesso-card h2{ color:#2a6f7e; margin-bottom:8px; font-size:20px; }
+  .sucesso-card p{ color:#4a5568; font-size:14px; line-height:1.5; margin-bottom:20px; }
+  .sucesso-card .destaque{
+    background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px;
+    padding:12px 16px; font-size:13px; color:#1b7d2c; margin-bottom:16px;
+  }
+</style>
+</head>
+<body>
+<div class="card" id="cardPrincipal">
+
+  <!-- LOADING -->
+  <div class="loading" id="telaLoading">
+    <div class="spinner"></div>
+    <p style="color:#6b7685;font-size:14px">Carregando informacoes da entrega...</p>
+  </div>
+
+  <!-- ERRO -->
+  <div class="msg-erro" id="telaErro" style="display:none">
+    <div class="erro-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#cc0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+    </div>
+    <h2>Link invalido ou expirado</h2>
+    <p>Este link de despacho nao e mais valido.<br>Entre em contato com a transportadora.</p>
+  </div>
+
+  <!-- CONTEUDO PRINCIPAL -->
+  <div id="telaPrincipal" style="display:none">
+
+    <div class="header">
+      <div class="icon-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2a6f7e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 3h15v13H1z"/>
+          <path d="M16 8h4l3 3v5h-7V8z"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/>
+          <circle cx="18.5" cy="18.5" r="2.5"/>
+          <path d="M8 16v5"/>
+          <path d="M16 16v5"/>
+        </svg>
+      </div>
+      <h1>Despacho de Entrega</h1>
+      <div class="empresa" id="empresaNome"></div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-area">
+      <div class="status-badge aguardando" id="statusBadge">
+        <span id="statusIcon">&#x23F3;</span>
+        <span id="statusLabel">Aguardando saida</span>
+      </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="resumo" id="resumoContainer"></div>
+
+    <!-- Botao Iniciar Transito -->
+    <button class="btn-action btn-iniciar" id="btnIniciar" onclick="iniciarTransito()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      Estou a Caminho
+    </button>
+
+    <!-- Tracking GPS (apos iniciar) -->
+    <div class="tracking-info" id="trackingInfo">
+      <h3><span class="pulse-dot"></span> Rastreamento ativo</h3>
+      <div class="gps-detail" id="gpsDetail">Obtendo localizacao GPS...</div>
+      <div class="hora" id="horaInicio"></div>
+    </div>
+
+    <p class="rodape"><b>Controle de Portaria DSRH</b> — Sistema de gestao de acesso</p>
+  </div>
+</div>
+
+<!-- Modal de sucesso -->
+<div class="sucesso-overlay" id="sucessoOverlay">
+  <div class="sucesso-card">
+    <div class="check-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h2>Transito iniciado!</h2>
+    <p>Sua localizacao esta sendo compartilhada.<br>A empresa destino ja foi notificada.</p>
+    <div class="destaque">
+      Mantenha esta pagina aberta durante o trajeto.<br>O GPS sera atualizado automaticamente.
+    </div>
+    <button onclick="fecharSucesso()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#2a6f7e;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Entendido</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var TOKEN = params.get('token');
+  var API = window.location.origin;
+  var checkinData = null;
+  var gpsInterval = null;
+  var watchId = null;
+
+  if(!TOKEN){
+    mostrarErro();
+    return;
+  }
+
+  // Buscar dados do check-in
+  fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN))
+    .then(function(res){
+      if(!res.ok) throw new Error('not found');
+      return res.json();
+    })
+    .then(function(data){
+      checkinData = data;
+      document.getElementById('telaLoading').style.display = 'none';
+      document.getElementById('telaPrincipal').style.display = 'block';
+      document.getElementById('empresaNome').textContent = data.empresa_destino || '---';
+      document.title = 'Despacho — ' + (data.empresa_destino || 'Entrega');
+      montarResumo(data);
+      atualizarStatusUI(data.status_checkin);
+    })
+    .catch(function(){
+      mostrarErro();
+    });
+
+  function montarResumo(d){
+    var itens = [];
+    if(d.motorista) itens.push({ label:'Motorista', valor:d.motorista });
+    if(d.placa) itens.push({ label:'Placa', valor:d.placa });
+    if(d.modelo) itens.push({ label:'Modelo', valor:d.modelo });
+    if(d.empresa) itens.push({ label:'Transportadora', valor:d.empresa });
+    if(d.finalidade) itens.push({ label:'Finalidade', valor:d.finalidade });
+    if(d.descricao_material) itens.push({ label:'Material', valor:d.descricao_material });
+    if(d.quantidade_peso) itens.push({ label:'Qtd/Peso', valor:d.quantidade_peso });
+    if(d.nota) itens.push({ label:'Nota Fiscal', valor:d.nota });
+    if(d.nome_recebedor) itens.push({ label:'Recebedor', valor:d.nome_recebedor });
+    if(d.data_previsao){
+      var dt = new Date(d.data_previsao + 'T00:00:00');
+      itens.push({ label:'Previsao', valor:dt.toLocaleDateString('pt-BR') });
+    }
+    if(d.telefone_motorista) itens.push({ label:'Telefone', valor:d.telefone_motorista });
+    if(d.obs) itens.push({ label:'Observacao', valor:d.obs });
+
+    var html = itens.map(function(item){
+      return '<div class="resumo-item"><div class="label">' + esc(item.label) + '</div><div class="valor">' + esc(item.valor) + '</div></div>';
+    }).join('');
+    document.getElementById('resumoContainer').innerHTML = html;
+  }
+
+  function atualizarStatusUI(status){
+    var badge = document.getElementById('statusBadge');
+    var icon = document.getElementById('statusIcon');
+    var label = document.getElementById('statusLabel');
+    var btn = document.getElementById('btnIniciar');
+
+    if(status === 'em_transito'){
+      badge.className = 'status-badge em_transito';
+      icon.innerHTML = '&#x1F69A;';
+      label.textContent = 'Em transito';
+      btn.className = 'btn-action btn-iniciar em_transito';
+      btn.disabled = true;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Transito em andamento';
+      document.getElementById('trackingInfo').classList.add('ativo');
+      iniciarGPS();
+    } else if(status === 'confirmado'){
+      badge.className = 'status-badge concluido';
+      icon.innerHTML = '&#x2705;';
+      label.textContent = 'Confirmado na portaria';
+      btn.style.display = 'none';
+    } else {
+      badge.className = 'status-badge aguardando';
+      icon.innerHTML = '&#x23F3;';
+      label.textContent = 'Aguardando saida';
+      btn.style.display = 'flex';
+    }
+  }
+
+  // Iniciar transito
+  window.iniciarTransito = function(){
+    if(!TOKEN || !checkinData) return;
+    var btn = document.getElementById('btnIniciar');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:3px;margin:0"></div> Iniciando...';
+
+    // Obter GPS antes de iniciar
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(function(pos){
+        enviarInicioTransito(pos.coords.latitude, pos.coords.longitude);
+      }, function(){
+        // Sem GPS, iniciar sem coordenada
+        enviarInicioTransito(null, null);
+      }, { enableHighAccuracy:true, timeout:10000 });
+    } else {
+      enviarInicioTransito(null, null);
+    }
+  };
+
+  function enviarInicioTransito(lat, lng){
+    fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/iniciar-transito', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ lat:lat, lng:lng })
+    })
+    .then(function(res){
+      if(!res.ok) return res.json().then(function(e){ throw new Error(e.erro || 'Erro'); });
+      return res.json();
+    })
+    .then(function(data){
+      checkinData.status_checkin = 'em_transito';
+      atualizarStatusUI('em_transito');
+      if(data.hora_inicio){
+        document.getElementById('horaInicio').textContent = 'Inicio: ' + new Date(data.hora_inicio).toLocaleString('pt-BR');
+      }
+      document.getElementById('sucessoOverlay').classList.add('mostrar');
+    })
+    .catch(function(ex){
+      alert('Erro ao iniciar transito: ' + (ex.message || 'Tente novamente'));
+      var btn = document.getElementById('btnIniciar');
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Estou a Caminho';
+    });
+  }
+
+  // GPS tracking continuo
+  function iniciarGPS(){
+    if(!navigator.geolocation) return;
+
+    // Opcao 1: watchPosition para tracking continuo
+    if(watchId !== null) navigator.geolocation.clearWatch(watchId);
+    watchId = navigator.geolocation.watchPosition(function(pos){
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      document.getElementById('gpsDetail').textContent = 'Localizacao: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+      // Enviar localizacao periodicamente
+      enviarGPS(lat, lng);
+    }, function(err){
+      document.getElementById('gpsDetail').textContent = 'GPS indisponivel no momento';
+    }, { enableHighAccuracy:true, maximumAge:10000, timeout:15000 });
+
+    // Opcao 2: fallback com setInterval
+    if(gpsInterval) clearInterval(gpsInterval);
+    gpsInterval = setInterval(function(){
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(function(pos){
+          enviarGPS(pos.coords.latitude, pos.coords.longitude);
+        }, function(){}, { enableHighAccuracy:true, timeout:10000 });
+      }
+    }, 30000); // a cada 30s
+  }
+
+  function enviarGPS(lat, lng){
+    fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/gps', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ lat:lat, lng:lng })
+    }).catch(function(){});
+  }
+
+  window.fecharSucesso = function(){
+    document.getElementById('sucessoOverlay').classList.remove('mostrar');
+  };
+
+  function mostrarErro(){
+    document.getElementById('telaLoading').style.display = 'none';
+    document.getElementById('telaErro').style.display = 'block';
+  }
+
+  function esc(s){
+    if(!s) return '';
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Manter pagina viva
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden && checkinData && checkinData.status_checkin === 'em_transito'){
+      iniciarGPS();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
