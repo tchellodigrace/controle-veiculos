@@ -1946,6 +1946,32 @@ app.get('/api/compras/:token', apiLimiter, async (req, res) => {
   }
 });
 
+// Confirmar check-in via token de compras (publico, sem auth)
+app.put('/api/compras/:token/checkins/:id/status', apiLimiter, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const { status_checkin } = req.body;
+    if (!['em_transito', 'aguardando', 'confirmado'].includes(status_checkin)) {
+      return res.status(400).json({ erro: 'Status invalido' });
+    }
+    // Valida token
+    const cliente = await pool.query('SELECT id, compras_ativo FROM clientes WHERE compras_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].compras_ativo) {
+      return res.status(403).json({ erro: 'Painel desativado' });
+    }
+    const cid = cliente.rows[0].id;
+    const result = await pool.query(
+      'UPDATE pre_registros SET status_checkin = $1 WHERE id = $2 AND cliente_id = $3 AND origem = \'checkin_qr\' RETURNING *',
+      [status_checkin, req.params.id, cid]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Check-in não encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao confirmar checkin via compras:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar status' });
+  }
+});
+
 // === CHECK-IN VIA QR CODE (MOTORISTA NA PORTARIA) ===
 app.get('/checkin/:cliente_id', async (req, res) => {
   try {

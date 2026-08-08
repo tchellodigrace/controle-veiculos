@@ -201,6 +201,115 @@
   }
   .btn-detalhes:hover{ background:var(--teal-claro); color:var(--teal); }
 
+  /* Card Link Generator */
+  .link-card{
+    background:#fff; border-radius:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,.06);
+    overflow:hidden; margin-bottom:20px;
+    border-left:4px solid var(--teal);
+  }
+  .link-card-header{
+    padding:16px 20px;
+    display:flex; align-items:center; gap:10px;
+    cursor:pointer; user-select:none;
+  }
+  .link-card-header h3{
+    font-size:15px; font-weight:700; color:var(--cinza-700);
+    display:flex; align-items:center; gap:8px; flex:1;
+  }
+  .link-card-header h3 svg{ width:18px; height:18px; color:var(--teal); }
+  .link-card-header .toggle-icon{
+    width:28px; height:28px; border-radius:6px;
+    background:var(--cinza-100); color:var(--cinza-500);
+    border:none; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:.2s;
+  }
+  .link-card-header .toggle-icon.aberto{ transform:rotate(180deg); }
+  .link-card-body{
+    padding:0 20px;
+    max-height:0; overflow:hidden;
+    transition: max-height .3s ease, padding .3s ease;
+  }
+  .link-card-body.aberto{
+    max-height:500px;
+    padding:0 20px 20px 20px;
+  }
+  .link-card-desc{
+    font-size:13px; color:var(--cinza-500);
+    margin-bottom:16px; line-height:1.5;
+  }
+  .link-form{
+    display:grid; grid-template-columns:1fr auto;
+    gap:12px; align-items:end;
+  }
+  .link-form label{
+    display:block; font-size:11px; font-weight:600;
+    color:var(--cinza-500); margin-bottom:6px; text-transform:uppercase;
+    letter-spacing:.3px;
+  }
+  .link-form input{
+    width:100%; padding:10px 14px; border:1px solid var(--cinza-200);
+    border-radius:8px; font-size:13px; color:var(--cinza-700);
+    outline:none; transition:border-color .15s;
+  }
+  .link-form input:focus{ border-color:var(--teal); }
+  .link-form input::placeholder{ color:var(--cinza-400); }
+  .btn-gerar{
+    padding:10px 20px; background:var(--teal); color:#fff;
+    border:none; border-radius:8px; font-size:13px;
+    font-weight:700; cursor:pointer; white-space:nowrap;
+    transition:.15s; height:42px;
+  }
+  .btn-gerar:hover{ background:#148ea1; }
+  .link-resultado{
+    margin-top:16px; display:none;
+  }
+  .link-resultado.mostrar{ display:block; }
+  .link-label{
+    font-size:11px; font-weight:600; color:var(--cinza-500);
+    text-transform:uppercase; letter-spacing:.3px; margin-bottom:8px;
+  }
+  .link-input-row{
+    display:flex; gap:8px; margin-bottom:12px;
+  }
+  .link-input-row input{
+    flex:1; padding:10px 14px; border:1px solid var(--cinza-200);
+    border-radius:8px; font-size:12px; color:var(--cinza-700);
+    background:var(--cinza-50); font-family:'Courier New',monospace;
+  }
+  .btn-copiar{
+    padding:10px 16px; background:var(--cinza-700); color:#fff;
+    border:none; border-radius:8px; font-size:12px;
+    font-weight:700; cursor:pointer; white-space:nowrap;
+    transition:.15s;
+  }
+  .btn-copiar:hover{ background:#1f2937; }
+  .link-acoes{
+    display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .btn-whatsapp{
+    padding:10px 18px; background:#25d366; color:#fff;
+    border:none; border-radius:8px; font-size:12px;
+    font-weight:700; cursor:pointer; display:flex;
+    align-items:center; gap:6px; transition:.15s;
+  }
+  .btn-whatsapp:hover{ background:#1fb855; }
+  .btn-email{
+    padding:10px 18px; background:#ea4335; color:#fff;
+    border:none; border-radius:8px; font-size:12px;
+    font-weight:700; cursor:pointer; display:flex;
+    align-items:center; gap:6px; transition:.15s;
+  }
+  .btn-email:hover{ background:#d33426; }
+  .link-feedback{
+    margin-top:10px; font-size:12px; font-weight:600;
+    padding:8px 14px; border-radius:6px;
+    display:none;
+  }
+  .link-feedback.sucesso{ display:block; background:var(--verde-claro); color:#1b7d2c; }
+  .link-feedback.info{ display:block; background:var(--teal-claro); color:var(--teal-escuro); }
+
   /* Vazio */
   .vazio-msg{
     text-align:center; padding:50px 20px;
@@ -332,6 +441,49 @@
     </div>
   </div>
 
+  <!-- Gerar Link de Check-in -->
+  <div class="link-card" id="linkCard">
+    <div class="link-card-header" onclick="toggleLinkCard()">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Gerar Link de Check-in
+      </h3>
+      <button class="toggle-icon" id="toggleIcon">▼</button>
+    </div>
+    <div class="link-card-body" id="linkCardBody">
+      <div class="link-card-desc">
+        Gere o link e envie para a transportadora. O motorista preenche os dados pelo celular e a empresa recebe tudo neste painel.
+      </div>
+      <div class="link-form">
+        <div>
+          <label>Enviar link por WhatsApp para:</label>
+          <input type="tel" id="telefoneDestino" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button class="btn-gerar" onclick="gerarLink()">Gerar Link</button>
+        </div>
+      </div>
+      <div class="link-resultado" id="linkResultado">
+        <div class="link-label">Link de Check-in</div>
+        <div class="link-input-row">
+          <input type="text" id="linkInput" readonly>
+          <button class="btn-copiar" onclick="copiarLink()">📋 Copiar</button>
+        </div>
+        <div class="link-acoes">
+          <button class="btn-whatsapp" onclick="enviarWhatsApp()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Enviar por WhatsApp
+          </button>
+          <button class="btn-email" onclick="enviarEmail()">
+            ✉️ Enviar por E-mail
+          </button>
+        </div>
+        <div class="link-feedback" id="linkFeedback"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabela de Check-ins -->
   <div class="card">
     <div class="card-header">
@@ -371,6 +523,7 @@
             <th>Telefone</th>
             <th>Previsão</th>
             <th>Horário</th>
+            <th>Confirmar</th>
             <th>Detalhes</th>
           </tr>
         </thead>
@@ -515,6 +668,7 @@ function renderizarCheckins(dados){
       '<td>' + esc(telefone) + '</td>' +
       '<td>' + previsao + '</td>' +
       '<td>' + dataHora + '</td>' +
+      '<td>' + (d.status_checkin !== 'confirmado' ? '<button class="btn-confirmar" onclick="confirmarCheckin(' + d.id + ')" title="Confirmar chegada na portaria">✅ Confirmar</button>' : '<span style="color:#1b7d2c;font-size:11px;font-weight:700">✅ Confirmado</span>') + '</td>' +
       '<td><button class="btn-detalhes" onclick="verDetalhes(' + i + ')" title="Ver detalhes">📋</button></td>';
     tbody.appendChild(tr);
   });
@@ -570,6 +724,106 @@ document.addEventListener('keydown', function(e){
 function esc(s){
   if(s === null || s === undefined) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// === LINK GENERATOR ===
+function toggleLinkCard(){
+  var body = document.getElementById('linkCardBody');
+  var icon = document.getElementById('toggleIcon');
+  body.classList.toggle('aberto');
+  icon.classList.toggle('aberto');
+}
+
+function gerarLink(){
+  if(!CLIENTE_ID){ alert('Erro: cliente não identificado.'); return; }
+  var base = window.location.origin;
+  var link = base + '/checkin/' + CLIENTE_ID + '?empresa=' + encodeURIComponent(EMPRESA);
+  document.getElementById('linkInput').value = link;
+  document.getElementById('linkResultado').classList.add('mostrar');
+  document.getElementById('linkFeedback').style.display = 'none';
+}
+
+function copiarLink(){
+  var input = document.getElementById('linkInput');
+  if(!input.value){ gerarLink(); }
+  input.select();
+  input.setSelectionRange(0, 99999);
+  try {
+    navigator.clipboard.writeText(input.value).then(function(){
+      mostrarFeedback('Link copiado com sucesso!', 'sucesso');
+    }).catch(function(){
+      document.execCommand('copy');
+      mostrarFeedback('Link copiado com sucesso!', 'sucesso');
+    });
+  } catch(e){
+    document.execCommand('copy');
+    mostrarFeedback('Link copiado com sucesso!', 'sucesso');
+  }
+}
+
+function enviarWhatsApp(){
+  var link = document.getElementById('linkInput').value;
+  if(!link){ gerarLink(); link = document.getElementById('linkInput').value; }
+  var telefone = document.getElementById('telefoneDestino').value.replace(/\D/g, '');
+  var msg = 'Olá! Segue o link de check-in para entrega/coleta na ' + EMPRESA + '.\n\n' +
+    'O motorista deve preencher ao sair ou ao chegar:\n\n' + link + '\n\n' +
+    'Basta clicar e preencher no celular. Obrigado!';
+  var url;
+  if(telefone.length >= 10){
+    var num = telefone;
+    if(num.length === 11 && num.startsWith('0')) num = num.substring(1);
+    if(num.length === 10 || num.length === 11) num = '55' + num;
+    url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  } else {
+    url = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
+  }
+  window.open(url, '_blank');
+  mostrarFeedback('WhatsApp aberto com o link!', 'info');
+}
+
+function enviarEmail(){
+  var link = document.getElementById('linkInput').value;
+  if(!link){ gerarLink(); link = document.getElementById('linkInput').value; }
+  var assunto = encodeURIComponent('Link de Check-in — ' + EMPRESA);
+  var corpo = encodeURIComponent(
+    'Olá,\n\nSegue o link de check-in para entrega/coleta na ' + EMPRESA + '.\n\n' +
+    'O motorista deve preencher ao sair ou ao chegar:\n\n' + link +
+    '\n\nBasta clicar e preencher no celular.\n\nAtenciosamente,\n' + EMPRESA
+  );
+  window.location.href = 'mailto:?subject=' + assunto + '&body=' + corpo;
+  mostrarFeedback('Cliente de e-mail aberto com o link!', 'info');
+}
+
+function mostrarFeedback(msg, tipo){
+  var el = document.getElementById('linkFeedback');
+  el.textContent = msg;
+  el.className = 'link-feedback ' + tipo;
+  setTimeout(function(){
+    el.style.display = 'none';
+    el.className = 'link-feedback';
+  }, 4000);
+}
+
+function mascaraTelefone(input){
+  var v = input.value.replace(/\D/g, '');
+  if(v.length > 11) v = v.substring(0, 11);
+  if(v.length > 6) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2,7) + '-' + v.substring(7);
+  else if(v.length > 2) input.value = '(' + v.substring(0,2) + ') ' + v.substring(2);
+  else if(v.length > 0) input.value = '(' + v;
+}
+
+// === CONFIRMAR CHECK-IN ===
+async function confirmarCheckin(id){
+  if(!confirm('Confirmar a chegada deste check-in na portaria?')) return;
+  try {
+    var res = await fetch(API + '/api/compras/' + encodeURIComponent(TOKEN) + '/checkins/' + id + '/status', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status_checkin: 'confirmado' })
+    });
+    if(!res.ok){ alert('Erro ao confirmar check-in'); return; }
+    carregarDados();
+  } catch(e){ alert('Erro de conexão'); }
 }
 
 // === Init ===
