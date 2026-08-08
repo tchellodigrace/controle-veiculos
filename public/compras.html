@@ -460,6 +460,10 @@
           <input type="tel" id="telefoneDestino" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
         </div>
         <div>
+          <label>E-mail do destinatário:</label>
+          <input type="email" id="emailDestino" placeholder="transportadora@email.com">
+        </div>
+        <div>
           <label>&nbsp;</label>
           <button class="btn-gerar" onclick="gerarLink()">Gerar Link</button>
         </div>
@@ -784,14 +788,18 @@ function enviarWhatsApp(){
 function enviarEmail(){
   var link = document.getElementById('linkInput').value;
   if(!link){ gerarLink(); link = document.getElementById('linkInput').value; }
+  var email = document.getElementById('emailDestino').value.trim();
   var assunto = encodeURIComponent('Link de Check-in — ' + EMPRESA);
   var corpo = encodeURIComponent(
     'Olá,\n\nSegue o link de check-in para entrega/coleta na ' + EMPRESA + '.\n\n' +
     'O motorista deve preencher ao sair ou ao chegar:\n\n' + link +
     '\n\nBasta clicar e preencher no celular.\n\nAtenciosamente,\n' + EMPRESA
   );
-  window.location.href = 'mailto:?subject=' + assunto + '&body=' + corpo;
-  mostrarFeedback('Cliente de e-mail aberto com o link!', 'info');
+  var mailto = 'mailto:';
+  if(email){ mailto += email; }
+  mailto += '?subject=' + assunto + '&body=' + corpo;
+  window.location.href = mailto;
+  mostrarFeedback(email ? 'E-mail aberto para ' + email + '!' : 'Cliente de e-mail aberto com o link!', 'info');
 }
 
 function mostrarFeedback(msg, tipo){
