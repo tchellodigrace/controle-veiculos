@@ -948,6 +948,11 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
       [cid, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, d.nota || '', d.obs, hoje, posicao]
     );
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
+    // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
+    await pool.query(
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
+      [cid, d.placa]
+    ).catch(() => {});
     res.status(201).json(registro.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
     // Notificar logística via WhatsApp (entrada confirmada)
@@ -1948,6 +1953,79 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
   } catch (err) {
     console.error('Erro API logistica:', err);
     res.status(500).json({ erro: 'Erro ao buscar dados' });
+  }
+});
+
+// === LOGISTICA: Entrega Concluida (marcar saida do motorista) ===
+app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res) => {
+  try {
+    const { motorista_id, placa } = req.body;
+    if (!motorista_id && !placa) return res.status(400).json({ erro: 'motorista_id ou placa obrigatorio' });
+    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+
+    // Buscar dados do motorista na localizacao
+    var matchQuery, matchParams;
+    if (motorista_id) {
+      matchQuery = 'SELECT * FROM localizacoes_motoristas WHERE motorista_id = $1 AND cliente_id = $2 AND chegou = TRUE AND saida_logistica = FALSE';
+      matchParams = [motorista_id, cid];
+    } else {
+      matchQuery = 'SELECT * FROM localizacoes_motoristas WHERE placa = $1 AND cliente_id = $2 AND chegou = TRUE AND saida_logistica = FALSE';
+      matchParams = [placa, cid];
+    }
+    const mot = await pool.query(matchQuery, matchParams);
+    if (!mot.rows.length) return res.status(404).json({ erro: 'Motorista nao encontrado ou ja concluido' });
+    const m = mot.rows[0];
+
+    // Marcar saida_logistica
+    await pool.query(
+      'UPDATE localizacoes_motoristas SET saida_logistica = TRUE, finalidade_tipo = $1, saida_em = NOW(), atualizado_em = NOW() WHERE motorista_id = $2 AND cliente_id = $3',
+      ['Entrega', m.motorista_id, cid]
+    );
+
+    // Se existir registro aberto na portaria, marcar saida tambem
+    await pool.query(
+      'UPDATE registros SET saida = $1 WHERE cliente_id = $2 AND placa = $3 AND saida = $4',
+      [new Date().toLocaleTimeString('pt-BR'), cid, m.placa, '']
+    ).catch(() => {});
+
+    // Notificar portaria via notificacao no sistema
+    await pool.query(
+      'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [cid, 'entrega_concluida', 'Entrega Concluida', 'Motorista: ' + (m.nome||'') + ' | Placa: ' + (m.placa||'') + ' | Empresa: ' + (m.empresa||'')]
+    ).catch(() => {});
+
+    // WhatsApp/Email notificacao de saida
+    whatsapp.notificarSaida(pool, cid, { empresa: m.empresa, motorista: m.nome, placa: m.placa, finalidade: 'Entrega', hora: new Date().toLocaleTimeString('pt-BR') }).catch(() => {});
+    email.notificarSaida(pool, cid, { empresa: m.empresa, motorista: m.nome, placa: m.placa, finalidade: 'Entrega', hora: new Date().toLocaleTimeString('pt-BR') }).catch(() => {});
+
+    logAuditoria(cid, 'Logistica', 'Entrega concluida', 'veiculo', m.placa, 'Motorista: ' + (m.nome||'') + ' | Empresa: ' + (m.empresa||''));
+    res.json({ ok: true, mensagem: 'Entrega concluida com sucesso' });
+  } catch (err) {
+    console.error('Erro ao marcar entrega concluida:', err);
+    res.status(500).json({ erro: 'Erro ao marcar entrega concluida' });
+  }
+});
+
+// === LOGISTICA: Patio Liberado (avisar portaria que pode entrar outro caminhao) ===
+app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) => {
+  try {
+    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+
+    // Criar notificacao para a portaria
+    await pool.query(
+      'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [cid, 'patio_liberado', 'Patio Liberado', 'Logistica informou: patio esta liberado para entrada de novo veiculo.']
+    );
+
+    logAuditoria(cid, 'Logistica', 'Patio liberado', 'sistema', '', 'Portaria avisada: patio liberado para novo veiculo');
+    res.json({ ok: true, mensagem: 'Portaria notificada com sucesso' });
+  } catch (err) {
+    console.error('Erro ao notificar patio liberado:', err);
+    res.status(500).json({ erro: 'Erro ao notificar portaria' });
   }
 });
 

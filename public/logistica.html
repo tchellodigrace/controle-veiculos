@@ -67,6 +67,38 @@
   .status-badge.chegou{ background:#2196F3; }
   .status-badge.concluido{ background:#4caf50; }
 
+  /* Botoes de acao */
+  .mc-acoes{ display:flex; gap:6px; margin-top:8px; }
+  .mc-acoes button{
+    flex:1; padding:7px 10px; border:none; border-radius:8px; font-size:11px;
+    font-weight:700; cursor:pointer; transition:.15s; display:flex;
+    align-items:center; justify-content:center; gap:4px;
+  }
+  .btn-entrega-concluida{
+    background:#4caf50; color:#fff;
+  }
+  .btn-entrega-concluida:hover{ background:#43a047; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .btn-entrega-concluida:disabled{ background:#a5d6a7; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-patio-liberado{
+    background:#ff9800; color:#fff;
+  }
+  .btn-patio-liberado:hover{ background:#fb8c00; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+
+  /* Barra de acoes fixa */
+  .acoes-barra{
+    background:#fff; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+    padding:14px 16px; margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;
+  }
+  .acoes-barra button{
+    flex:1; min-width:180px; padding:12px 16px; border:none; border-radius:10px;
+    font-size:13px; font-weight:700; cursor:pointer; transition:.15s;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn-barra-entrega{ background:#4caf50; color:#fff; }
+  .btn-barra-entrega:hover{ background:#43a047; }
+  .btn-barra-patio{ background:#ff9800; color:#fff; }
+  .btn-barra-patio:hover{ background:#fb8c00; }
+
   /* Pre-registros */
   .pr-card{
     background:#fffbe6; border:1px solid #ffe082; border-radius:10px;
@@ -279,9 +311,10 @@ function carregarDados(){
         var cor = cores[idx % cores.length];
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+        var mid = d.motorista_id || '';
         listaHtml +=
-          '<div class="motorista-card ' + st.css + '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
-            '<div class="mc-topo">' +
+          '<div class="motorista-card ' + st.css + '">' +
+            '<div class="mc-topo" style="cursor:pointer" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
               '<div class="mc-cor" style="background:' + st.cor + '"></div>' +
               '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
               '<div class="status-badge ' + st.badge + '">' + st.label + '</div>' +
@@ -291,6 +324,10 @@ function carregarDados(){
               (d.empresa ? '<div>Empresa: ' + esc(d.empresa) + '</div>' : '') +
               (d.rua ? '<div class="mc-rua">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
               '<div class="mc-tempo">' + (d.chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>' +
+            '</div>' +
+            '<div class="mc-acoes">' +
+              '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', \'' + esc(d.placa || '') + '\')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
+              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado()">&#x1F6E4; Patio Liberado</button>' +
             '</div>' +
           '</div>';
       });
@@ -508,6 +545,39 @@ document.getElementById('modalOverlay').addEventListener('click', function(e){
 document.addEventListener('keydown', function(e){
   if(e.key === 'Escape') fecharModal();
 });
+
+// === ACOES DE LOGISTICA ===
+async function entregaConcluida(motoristaId, placa){
+  if(!confirm('Confirmar entrega concluida para este motorista?')) return;
+  try {
+    var body = {};
+    if(motoristaId) body.motorista_id = motoristaId;
+    else if(placa) body.placa = placa;
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/entrega-concluida', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if(!res.ok){ var err = await res.json(); alert(err.erro || 'Erro ao marcar entrega'); return; }
+    var data = await res.json();
+    alert(data.mensagem || 'Entrega concluida com sucesso');
+    carregarDados();
+  } catch(e){ alert('Erro de conexao com o servidor'); }
+}
+
+async function patioLiberado(){
+  if(!confirm('Avisar a portaria que o patio esta liberado para entrada de novo veiculo?')) return;
+  try {
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/patio-liberado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if(!res.ok){ var err = await res.json(); alert(err.erro || 'Erro ao notificar portaria'); return; }
+    var data = await res.json();
+    alert(data.mensagem || 'Portaria notificada com sucesso');
+  } catch(e){ alert('Erro de conexao com o servidor'); }
+}
 
 // Iniciar
 iniciarMapa();
