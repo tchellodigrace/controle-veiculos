@@ -68,11 +68,11 @@
   .status-badge.concluido{ background:#4caf50; }
 
   /* Botoes de acao */
-  .mc-acoes{ display:flex; gap:6px; margin-top:8px; }
+  .mc-acoes{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .mc-acoes button{
-    flex:1; padding:7px 10px; border:none; border-radius:8px; font-size:11px;
+    flex:1 1 0; min-width:0; padding:7px 10px; border:none; border-radius:8px; font-size:10px;
     font-weight:700; cursor:pointer; transition:.15s; display:flex;
-    align-items:center; justify-content:center; gap:4px;
+    align-items:center; justify-content:center; gap:4px; white-space:normal; line-height:1.2;
   }
   .btn-entrega-concluida{
     background:#4caf50; color:#fff;
@@ -91,11 +91,11 @@
   }
   .mc-adicionais b{ color:#1a1a2e; }
   .btn-imprimir{
-    background:#607d8b; color:#fff; font-size:10px; padding:4px 10px;
-    border:none; border-radius:6px; cursor:pointer; font-weight:700;
-    margin-top:4px; transition:.15s;
+    background:#607d8b; color:#fff; font-size:10px; padding:7px 10px;
+    border:none; border-radius:8px; cursor:pointer; font-weight:700;
+    transition:.15s; flex:0 0 auto; min-width:auto;
   }
-  .btn-imprimir:hover{ background:#455a64; }
+  .btn-imprimir:hover{ background:#455a64; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
 
   /* Barra de acoes fixa */
   .acoes-barra{
@@ -114,13 +114,14 @@
 
   /* Botao liberar portaria */
   .btn-liberar-portaria{
-    flex:1; min-width:180px; padding:12px 16px; border:none; border-radius:10px;
-    font-size:12px; font-weight:700; cursor:pointer; transition:.15s;
-    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:7px 10px; border:none; border-radius:8px; font-size:10px;
+    font-weight:700; cursor:pointer; transition:.15s;
+    display:flex; align-items:center; justify-content:center; gap:4px;
     background:linear-gradient(135deg,#1565c0,#1976d2); color:#fff;
+    white-space:normal; line-height:1.2;
   }
-  .btn-liberar-portaria:hover{ background:linear-gradient(135deg,#0d47a1,#1565c0); transform:translateY(-1px); }
-  .btn-liberar-portaria:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .btn-liberar-portaria:hover{ background:linear-gradient(135deg,#0d47a1,#1565c0); transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .btn-liberar-portaria:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 
   /* Pre-registros */
   .pr-card{
@@ -382,7 +383,7 @@ function carregarDados(){
               '</div>' : '') +
             '<div class="mc-acoes">' +
               '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x1F6E4; Patio Liberado</button>' +
-              (d.chegou && !d.saida_logistica ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Portaria pode liberar o veiculo para o patio</button>' : '') +
+              (d.chegou && !d.saida_logistica ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
