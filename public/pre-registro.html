@@ -721,12 +721,20 @@ async function verificarStatusPortaria(){
     var data = await res.json();
     var btn = document.getElementById('btnCaminho');
     if(data.ativo && data.chegou && !data.saida_logistica){
-      // Portaria marcou chegada
-      btn.textContent = '\u2705 Portaria confirmou sua chegada!';
+      // Portaria marcou chegada - parar GPS e mostrar "Ja cheguei"
+      if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+      if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
+      gpsUltimaPos = null;
+      // Esconder status de rastreamento
+      var gpsStatusEl = document.getElementById('gpsStatus');
+      gpsStatusEl.classList.remove('ativo');
+      gpsStatusEl.style.display = 'none';
+      // Mudar botao para "Ja cheguei!"
+      btn.textContent = '\u2705 Ja cheguei!';
       btn.disabled = true;
       btn.classList.remove('parando');
       btn.classList.add('chegou-confirmado');
-      document.getElementById('gpsStatus').classList.remove('ativo');
+      btn.onclick = null;
       // Parar verificacao pois ja foi confirmado
       if(verificarStatusInterval){ clearInterval(verificarStatusInterval); verificarStatusInterval = null; }
     } else if(data.ativo && data.saida_logistica){

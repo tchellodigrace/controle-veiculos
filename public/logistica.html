@@ -210,6 +210,14 @@
       <div class="card-header">
         <h3>&#x1F4E6; Entregas e Coletas</h3>
       </div>
+      <!-- Mensagem fixa: veiculos aguardando liberacao do patio -->
+      <div id="msgAguardandoPatio" style="display:none;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:2px solid #ff9800;border-radius:10px;padding:14px 16px;margin:12px 12px 0 12px;font-size:13px;color:#e65100;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:18px">&#x1F6E4;&#xFE0F;</span>
+          <b style="font-size:14px;color:#bf360c">Veiculo aguardando liberacao do patio</b>
+        </div>
+        <div id="msgAguardandoPatioDetalhes" style="color:#795548;line-height:1.5"></div>
+      </div>
       <div class="lista-section" id="listaContainer">
         <div style="text-align:center;color:#9aa4ad;font-size:13px;padding:20px">Carregando...</div>
       </div>
@@ -310,6 +318,20 @@ function carregarDados(){
       if(chegouCount > 0) countParts.push(chegouCount + ' chegou');
       if(concluidoCount > 0) countParts.push(concluidoCount + ' concluido');
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
+
+      // === Mensagem fixa: veiculos aguardando liberacao do patio ===
+      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica; });
+      var msgEl = document.getElementById('msgAguardandoPatio');
+      var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
+      if(aguardando.length > 0){
+        var detalhes = aguardando.map(function(d){
+          return (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : '');
+        }).join('<br>');
+        msgDetalhes.innerHTML = detalhes;
+        msgEl.style.display = 'block';
+      } else {
+        msgEl.style.display = 'none';
+      }
 
       var vazioEl = document.getElementById('mapaVazio');
       if(motoristas.length > 0){ vazioEl.style.display = 'none'; } else { vazioEl.style.display = 'flex'; }
