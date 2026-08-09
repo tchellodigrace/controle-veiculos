@@ -247,7 +247,7 @@
   <div class="sucesso" id="sucesso">
     <div class="icone">&#10004;</div>
     <h2>Pré-registro enviado!</h2>
-    <p>Seus dados já foram encaminhados para a portaria.<br>Apresente-se na chegada para confirmar.</p>
+    <p>Seus dados já foram encaminhados para a portaria.<br>O rastreamento GPS está sendo iniciado para aparecer no mapa.</p>
     <button onclick="resetar()">Novo Pré-Registro</button>
     <button onclick="sair()" style="background:#6c757d;margin-top:8px">Sair</button>
   </div>
@@ -478,6 +478,8 @@ async function enviar(e){
     document.getElementById("formPre").style.display = "none";
     document.getElementById("sucesso").style.display = "block";
     btn.disabled = false; btn.textContent = "Enviar Pré-Registro";
+    // Iniciar GPS automaticamente para aparecer no mapa da portaria/logistica
+    setTimeout(function(){ if(gpsWatchId === null) iniciarRastreamento(); }, 500);
   } catch(ex) { mostrarErro("erroForm", "Erro de conexão"); btn.disabled = false; btn.textContent = "Enviar Pré-Registro"; }
 }
 
