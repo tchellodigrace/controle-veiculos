@@ -911,6 +911,10 @@
               </div>
             </div>
             <div class="campo">
+              <label>RG</label>
+              <input id="vRg" placeholder="RG do visitante" maxlength="30">
+            </div>
+            <div class="campo">
               <label>Empresa</label>
               <input id="vEmpresa" placeholder="Empresa onde trabalha" maxlength="100">
             </div>
@@ -920,11 +924,25 @@
                 <option value="">Selecione</option>
                 <option>Entrega</option>
                 <option>Coleta</option>
+                <option>Visita</option>
+                <option>Prestador de Servico</option>
               </select>
             </div>
             <div class="campo">
-              <label>Placa</label>
-              <input id="vPlaca" placeholder="Placa do veículo" style="text-transform:uppercase" maxlength="8">
+              <label>Telefone</label>
+              <input id="vTelefone" placeholder="(00) 00000-0000" maxlength="30">
+            </div>
+            <div class="campo">
+              <label>Setor Visitado</label>
+              <input id="vSetor" placeholder="Setor visitado" maxlength="100">
+            </div>
+            <div class="campo">
+              <label>N. Cracha</label>
+              <input id="vCracha" placeholder="Numero do cracha" maxlength="50">
+            </div>
+            <div class="campo">
+              <label>Entrada Autorizada Por</label>
+              <input id="vAutorizado" placeholder="Nome de quem autorizou" maxlength="100">
             </div>
             <div class="campo">
               <label>Nota Fiscal / RT</label>
@@ -957,9 +975,14 @@
               <tr>
                 <th>#</th>
                 <th>Nome</th>
+                <th>CPF</th>
+                <th>RG</th>
                 <th>Empresa</th>
                 <th>Tipo</th>
-                <th>Placa</th>
+                <th>Cracha</th>
+                <th>Telefone</th>
+                <th>Setor</th>
+                <th>Autorizado Por</th>
                 <th>Nota/RT</th>
                 <th>Obs</th>
                 <th>Ações</th>
@@ -981,9 +1004,13 @@
                 <th>Pos.</th>
                 <th>Nome</th>
                 <th>CPF</th>
+                <th>RG</th>
                 <th>Empresa</th>
                 <th>Tipo</th>
-                <th>Placa</th>
+                <th>Cracha</th>
+                <th>Telefone</th>
+                <th>Setor</th>
+                <th>Autorizado Por</th>
                 <th>Nota/RT</th>
                 <th>Obs</th>
                 <th>Entrada</th>
@@ -1292,6 +1319,8 @@
               <input type="text" id="cvCpf" placeholder="CPF" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
               <input type="text" id="cvRg" placeholder="RG" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
               <input type="text" id="cvEmpresa" placeholder="Empresa" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cvTelefone" placeholder="Telefone" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
+              <input type="text" id="cvSetor" placeholder="Setor Visitado" style="padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px">
             </div>
             <button type="submit" class="btn btn-primario" style="margin-top:10px;padding:8px 16px;font-size:12px">Criar Conta</button>
           </form>
@@ -1857,7 +1886,9 @@ async function criarContaVisitante(e){
     nome: document.getElementById("cvNome").value.trim(),
     cpf: document.getElementById("cvCpf").value.trim(),
     rg: document.getElementById("cvRg").value.trim(),
-    empresa: document.getElementById("cvEmpresa").value.trim()
+    empresa: document.getElementById("cvEmpresa").value.trim(),
+    telefone: document.getElementById("cvTelefone").value.trim(),
+    setor_visitado: document.getElementById("cvSetor").value.trim()
   };
   if(!payload.usuario || !payload.senha || !payload.nome){ alert("Preencha todos os campos"); return; }
   try {
@@ -1871,6 +1902,8 @@ async function criarContaVisitante(e){
     document.getElementById("cvCpf").value = "";
     document.getElementById("cvRg").value = "";
     document.getElementById("cvEmpresa").value = "";
+    document.getElementById("cvTelefone").value = "";
+    document.getElementById("cvSetor").value = "";
     carregarContasVisitantes();
   } catch { alert("Erro ao criar conta"); }
 }
@@ -2427,9 +2460,14 @@ async function atualizarPreRegistrosVisitantes(){
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
         <td><b>${esc(d.nome)}</b></td>
+        <td>${esc(d.cpf) || "—"}</td>
+        <td>${esc(d.rg) || "—"}</td>
         <td>${esc(d.empresa) || "—"}</td>
         <td>${esc(d.tipo) || "—"}</td>
-        <td><b>${esc(d.placa) || "—"}</b></td>
+        <td>${esc(d.cracha) || "—"}</td>
+        <td>${esc(d.telefone) || "—"}</td>
+        <td>${esc(d.setor_visitado) || "—"}</td>
+        <td>${esc(d.autorizado_por) || "—"}</td>
         <td>${esc(d.nota) || "—"}</td>
         <td>${esc(d.obs) || "—"}</td>
         <td>
@@ -2593,9 +2631,13 @@ async function registrarVisitante(){
   const payload = {
     nome,
     cpf: document.getElementById("vCpf").value.trim(),
+    rg: document.getElementById("vRg").value.trim(),
     empresa: document.getElementById("vEmpresa").value.trim(),
     tipo: document.getElementById("vTipo").value,
-    placa: document.getElementById("vPlaca").value.trim().toUpperCase(),
+    cracha: document.getElementById("vCracha").value.trim(),
+    telefone: document.getElementById("vTelefone").value.trim(),
+    setor_visitado: document.getElementById("vSetor").value.trim(),
+    autorizado_por: document.getElementById("vAutorizado").value.trim(),
     nota: document.getElementById("vNota").value.trim(),
     obs: document.getElementById("vObs").value.trim()
   };
@@ -2612,9 +2654,13 @@ async function registrarVisitante(){
 function limparVisitante(){
   document.getElementById("vNome").value = "";
   document.getElementById("vCpf").value = "";
+  document.getElementById("vRg").value = "";
   document.getElementById("vEmpresa").value = "";
   document.getElementById("vTipo").value = "";
-  document.getElementById("vPlaca").value = "";
+  document.getElementById("vTelefone").value = "";
+  document.getElementById("vSetor").value = "";
+  document.getElementById("vCracha").value = "";
+  document.getElementById("vAutorizado").value = "";
   document.getElementById("vNota").value = "";
   document.getElementById("vObs").value = "";
   document.getElementById("vNome").focus();
@@ -2634,9 +2680,13 @@ async function atualizarVisitantes(){
         <td><b>${d.posicao || "—"}</b></td>
         <td><b>${esc(d.nome)}</b></td>
         <td>${esc(d.cpf) || "—"}</td>
+        <td>${esc(d.rg) || "—"}</td>
         <td>${esc(d.empresa) || "—"}</td>
         <td>${esc(d.tipo) || "—"}</td>
-        <td><b>${esc(d.placa) || "—"}</b></td>
+        <td>${esc(d.cracha) || "—"}</td>
+        <td>${esc(d.telefone) || "—"}</td>
+        <td>${esc(d.setor_visitado) || "—"}</td>
+        <td>${esc(d.autorizado_por) || "—"}</td>
         <td>${esc(d.nota) || "—"}</td>
         <td>${esc(d.obs) || "—"}</td>
         <td>${d.entrada}</td>

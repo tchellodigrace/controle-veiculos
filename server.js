@@ -653,7 +653,7 @@ app.put('/api/config', authMiddleware, apiLimiter, async (req, res) => {
 app.get('/api/visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, saida, posicao, data_registro FROM visitantes WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id ASC',
+      'SELECT id, cliente_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, entrada, saida, posicao, data_registro FROM visitantes WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id ASC',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
@@ -665,7 +665,7 @@ app.get('/api/visitantes', authMiddleware, apiLimiter, async (req, res) => {
 
 app.post('/api/visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
-    const { nome, cpf, empresa, tipo, placa, nota, obs } = req.body;
+    const { nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs } = req.body;
     if (!nome) return res.status(400).json({ erro: 'Nome é obrigatório' });
     const errNome = validarString(nome, 2, 100, 'Nome');
     if (errNome) return res.status(400).json({ erro: errNome });
@@ -689,9 +689,9 @@ app.post('/api/visitantes', authMiddleware, apiLimiter, async (req, res) => {
       [cid]
     );
     const result = await pool.query(
-      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, saida, posicao, data_registro`,
-      [cid, sanitizarString(nome).toUpperCase(), (cpf||'').replace(/[^0-9]/g, ''), sanitizarString(empresa), sanitizarString(tipo), (placa||'').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0,8), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), hora, pos.rows[0].prox]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, entrada, posicao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id, cliente_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, entrada, saida, posicao, data_registro`,
+      [cid, sanitizarString(nome).toUpperCase(), (cpf||'').replace(/[^0-9]/g, ''), (rg||'').replace(/[^0-9A-Za-z]/g, ''), sanitizarString(empresa), sanitizarString(tipo), sanitizarString(cracha).substring(0,50), (telefone||'').replace(/[^0-9()+\-\s]/g, '').substring(0,30), sanitizarString(setor_visitado).substring(0,100), sanitizarString(autorizado_por).substring(0,100), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), hora, pos.rows[0].prox]
     );
     res.status(201).json(result.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'visitante', nome.toUpperCase(), 'Empresa: ' + (empresa||'') + ' | Tipo: ' + (tipo||''));
@@ -1050,16 +1050,16 @@ app.post('/api/login-visitante', loginLimiter, async (req, res) => {
 
 app.post('/api/pre-registro-visitante', preRegistroLimiter, async (req, res) => {
   try {
-    const { cliente_id, visitante_id, nome, cpf, empresa, tipo, placa, nota, obs } = req.body;
+    const { cliente_id, visitante_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs } = req.body;
     const finalNome = nome || '';
     if (!cliente_id || !finalNome) return res.status(400).json({ erro: 'Nome e empresa são obrigatórios' });
     if (!/^\d+$/.test(String(cliente_id))) return res.status(400).json({ erro: 'ID de cliente invalido' });
     const errCpfPreV = validarCpf(cpf);
     if (errCpfPreV) return res.status(400).json({ erro: errCpfPreV });
     const result = await pool.query(
-      `INSERT INTO pre_registros_visitantes (cliente_id, visitante_id, nome, cpf, empresa, tipo, placa, nota, obs)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, cliente_id, visitante_id, nome, cpf, empresa, tipo, placa, nota, obs, criado_em`,
-      [cliente_id, visitante_id || null, sanitizarString(finalNome).toUpperCase(), (cpf||'').replace(/[^0-9]/g, ''), sanitizarString(empresa), sanitizarString(tipo), (placa||'').toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0,8), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500)]
+      `INSERT INTO pre_registros_visitantes (cliente_id, visitante_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id, cliente_id, visitante_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, criado_em`,
+      [cliente_id, visitante_id || null, sanitizarString(finalNome).toUpperCase(), (cpf||'').replace(/[^0-9]/g, ''), (rg||'').replace(/[^0-9A-Za-z]/g, ''), sanitizarString(empresa), sanitizarString(tipo), sanitizarString(cracha).substring(0,50), (telefone||'').replace(/[^0-9()+\-\s]/g, '').substring(0,30), sanitizarString(setor_visitado).substring(0,100), sanitizarString(autorizado_por).substring(0,100), sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500)]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -1071,7 +1071,7 @@ app.post('/api/pre-registro-visitante', preRegistroLimiter, async (req, res) => 
 app.get('/api/pre-registros-visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, cliente_id, visitante_id, nome, cpf, empresa, tipo, placa, nota, obs, criado_em FROM pre_registros_visitantes WHERE cliente_id = $1 ORDER BY id ASC',
+      'SELECT id, cliente_id, visitante_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, criado_em FROM pre_registros_visitantes WHERE cliente_id = $1 ORDER BY id ASC',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
@@ -1085,7 +1085,7 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, apiLimit
   try {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
     const cid = req.usuario.cliente_id;
-    const pre = await pool.query('SELECT id, cliente_id, visitante_id, nome, cpf, empresa, tipo, placa, nota, obs, criado_em FROM pre_registros_visitantes WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
+    const pre = await pool.query('SELECT id, cliente_id, visitante_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, criado_em FROM pre_registros_visitantes WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
     if (pre.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     const d = pre.rows[0];
     const hora = new Date().toLocaleTimeString('pt-BR'); // Sempre do servidor
@@ -1095,9 +1095,9 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, apiLimit
       [cid, hoje]
     );
     const visitante = await pool.query(
-      `INSERT INTO visitantes (cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, data_registro, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id, cliente_id, nome, cpf, empresa, tipo, placa, nota, obs, entrada, saida, data_registro, posicao`,
-      [cid, d.nome, d.cpf, d.empresa, d.tipo||'', d.placa||'', d.nota||'', d.obs||'', hora, hoje, pos.rows[0].prox]
+      `INSERT INTO visitantes (cliente_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, entrada, data_registro, posicao)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id, cliente_id, nome, cpf, rg, empresa, tipo, cracha, telefone, setor_visitado, autorizado_por, nota, obs, entrada, saida, data_registro, posicao`,
+      [cid, d.nome, d.cpf, d.rg||'', d.empresa, d.tipo||'', d.cracha||'', d.telefone||'', d.setor_visitado||'', d.autorizado_por||'', d.nota||'', d.obs||'', hora, hoje, pos.rows[0].prox]
     );
     await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1', [req.params.id]);
     res.status(201).json(visitante.rows[0]);
@@ -1111,7 +1111,7 @@ app.post('/api/pre-registros-visitantes/:id/confirmar', authMiddleware, apiLimit
 app.delete('/api/pre-registros-visitantes/:id', authMiddleware, apiLimiter, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
   try {
-    const result = await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1 AND cliente_id = $2 RETURNING id, cliente_id, nome, cpf, empresa', [req.params.id, req.usuario.cliente_id]);
+    const result = await pool.query('DELETE FROM pre_registros_visitantes WHERE id = $1 AND cliente_id = $2 RETURNING id, cliente_id, nome, cpf, empresa, rg, cracha, telefone', [req.params.id, req.usuario.cliente_id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     res.json({ mensagem: 'Pré-registro excluído' });
     logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao pre-registro', 'visitante', result.rows[0].nome, 'CPF: ' + (result.rows[0].cpf||''));
@@ -1123,7 +1123,7 @@ app.delete('/api/pre-registros-visitantes/:id', authMiddleware, apiLimiter, asyn
 
 app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
-    const { usuario, senha, nome, cpf, rg, empresa } = req.body;
+    const { usuario, senha, nome, cpf, rg, empresa, telefone, setor_visitado } = req.body;
     if (!usuario || !senha || !nome) return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
     if (senha.length < 8 || senha.length > 100) return res.status(400).json({ erro: 'Senha deve ter entre 8 e 100 caracteres' });
     const errComp5 = validarComplexidadeSenha(senha);
@@ -1134,8 +1134,8 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
     const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, usuario, nome',
-      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'']
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa, telefone, setor_visitado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, usuario, nome',
+      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'', telefone||'', setor_visitado||'']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -2364,6 +2364,11 @@ async function iniciar() {
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
       "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE",
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS rg VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS cracha VARCHAR(50) DEFAULT ''",
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS telefone VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS setor_visitado VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE pre_registros_visitantes ADD COLUMN IF NOT EXISTS autorizado_por VARCHAR(100) DEFAULT ''",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS telefone_fixo VARCHAR(20) DEFAULT ''",
       "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS obs VARCHAR(500) DEFAULT ''",
       "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS posicao INTEGER DEFAULT 0",
@@ -2387,6 +2392,14 @@ async function iniciar() {
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS rg VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS telefone VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS setor_visitado VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS autorizado_por VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS rg VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS cracha VARCHAR(50) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS telefone VARCHAR(30) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS setor_visitado VARCHAR(100) DEFAULT ''",
+      "ALTER TABLE visitantes ADD COLUMN IF NOT EXISTS autorizado_por VARCHAR(100) DEFAULT ''",
       "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_ativo BOOLEAN DEFAULT FALSE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_token VARCHAR(100) DEFAULT ''",
