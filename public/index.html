@@ -852,7 +852,6 @@
                 <th>Entrada</th>
                 <th>Saída</th>
                 <th>NF/RT</th>
-                <th>Obs</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -1604,7 +1603,7 @@ async function atualizar(){
     const tabela = document.getElementById("tabela");
     tabela.innerHTML = "";
     if(dados.length === 0){
-      tabela.innerHTML = `<tr><td colspan="14" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
+      tabela.innerHTML = `<tr><td colspan="13" class="vazio">Nenhum registro lançado ainda hoje.</td></tr>`;
       return;
     }
     const iconSaida = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
@@ -1624,7 +1623,6 @@ async function atualizar(){
         <td>${d.entrada}</td>
         <td>${d.saida ? d.saida : '<span class="badge-ativo">No local</span>'}</td>
         <td>${esc(d.nota) || "—"}</td>
-        <td>${esc(d.obs) || "—"}</td>
         <td>
           <div class="acoes-tabela">
             <button class="icon-btn btn-saida" title="Marcar saída" aria-label="Marcar saída do veículo" ${d.saida ? "disabled" : ""} onclick="marcarSaida(${d.id})">${iconSaida}</button>
