@@ -1165,6 +1165,42 @@
       </div>
     </div>
 
+    <div id="viewArquivos" style="display:none">
+      <div class="painel-topo">
+        <div class="card form-card" style="max-width:100%">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">Gerenciamento de Arquivos</h3>
+            <button class="btn btn-primario" onclick="document.getElementById('formUploadArquivo').style.display=document.getElementById('formUploadArquivo').style.display==='none'?'block':'none'" style="font-size:12px;padding:6px 14px;background:var(--verde-escuro)">+ Upload de Arquivo</button>
+          </div>
+
+          <div id="formUploadArquivo" style="display:none;background:#f7f9fb;border:1px solid var(--cinza-borda);border-radius:8px;padding:16px;margin-bottom:16px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+              <div style="grid-column:span 2">
+                <label style="display:block;font-size:12px;color:var(--cinza-texto);margin-bottom:4px;font-weight:600">Descricao (opcional)</label>
+                <input type="text" id="arquivoDescricao" placeholder="Ex: Manual de Seguranca 2025" style="width:100%;padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;box-sizing:border-box">
+              </div>
+              <div style="grid-column:span 2">
+                <label style="display:block;font-size:12px;color:var(--cinza-texto);margin-bottom:4px;font-weight:600">Arquivo</label>
+                <input type="file" id="arquivoInput" style="width:100%;padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;box-sizing:border-box">
+                <div style="font-size:10px;color:#8b93a1;margin-top:4px">Tipos aceitos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, JPG, PNG, GIF, ZIP, RAR, DWG, MP4, MP3 (max 25MB)</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button id="btnUploadArquivo" onclick="uploadArquivo()" class="btn btn-primario" style="font-size:12px;padding:8px 16px;background:var(--verde-escuro)">Enviar Arquivo</button>
+              <button onclick="document.getElementById('formUploadArquivo').style.display='none'" class="btn" style="font-size:12px;padding:8px 16px;background:#e0e3e7;color:#4a5568;border:1px solid var(--cinza-borda)">Cancelar</button>
+            </div>
+          </div>
+
+          <div id="listaArquivos"></div>
+          <div id="vazioArquivos" style="display:none;text-align:center;padding:40px;color:#5b6672">
+            <div style="font-size:48px;margin-bottom:12px">📁</div>
+            <p style="font-size:14px">Nenhum arquivo enviado ainda.</p>
+            <p style="font-size:12px;color:#8b93a1">Clique em "+ Upload de Arquivo" para comecar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
   <footer>
     <span id="footerEmpresa">Sistema de Controle de Portaria</span>
@@ -1325,42 +1361,6 @@
             <button type="submit" class="btn btn-primario" style="margin-top:10px;padding:8px 16px;font-size:12px">Criar Conta</button>
           </form>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div id="viewArquivos" style="display:none">
-  <div class="painel-topo">
-    <div class="card form-card" style="max-width:100%">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-        <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">Gerenciamento de Arquivos</h3>
-        <button class="btn btn-primario" onclick="document.getElementById('formUploadArquivo').style.display=document.getElementById('formUploadArquivo').style.display==='none'?'block':'none'" style="font-size:12px;padding:6px 14px;background:var(--verde-escuro)">+ Upload de Arquivo</button>
-      </div>
-
-      <div id="formUploadArquivo" style="display:none;background:#f7f9fb;border:1px solid var(--cinza-borda);border-radius:8px;padding:16px;margin-bottom:16px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-          <div style="grid-column:span 2">
-            <label style="display:block;font-size:12px;color:var(--cinza-texto);margin-bottom:4px;font-weight:600">Descricao (opcional)</label>
-            <input type="text" id="arquivoDescricao" placeholder="Ex: Manual de Seguranca 2025" style="width:100%;padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;box-sizing:border-box">
-          </div>
-          <div style="grid-column:span 2">
-            <label style="display:block;font-size:12px;color:var(--cinza-texto);margin-bottom:4px;font-weight:600">Arquivo</label>
-            <input type="file" id="arquivoInput" style="width:100%;padding:8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;box-sizing:border-box">
-            <div style="font-size:10px;color:#8b93a1;margin-top:4px">Tipos aceitos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, CSV, JPG, PNG, GIF, ZIP, RAR, DWG, MP4, MP3 (max 25MB)</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button id="btnUploadArquivo" onclick="uploadArquivo()" class="btn btn-primario" style="font-size:12px;padding:8px 16px;background:var(--verde-escuro)">Enviar Arquivo</button>
-          <button onclick="document.getElementById('formUploadArquivo').style.display='none'" class="btn" style="font-size:12px;padding:8px 16px;background:#e0e3e7;color:#4a5568;border:1px solid var(--cinza-borda)">Cancelar</button>
-        </div>
-      </div>
-
-      <div id="listaArquivos"></div>
-      <div id="vazioArquivos" style="display:none;text-align:center;padding:40px;color:#5b6672">
-        <div style="font-size:48px;margin-bottom:12px">📁</div>
-        <p style="font-size:14px">Nenhum arquivo enviado ainda.</p>
-        <p style="font-size:12px;color:#8b93a1">Clique em "+ Upload de Arquivo" para comecar.</p>
       </div>
     </div>
   </div>
@@ -2274,6 +2274,10 @@ function mostrarVeiculos(){
   document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
+  var va = document.getElementById("viewArquivos"); if(va) va.style.display = "none";
+  var vc = document.getElementById("viewCadastros"); if(vc) vc.style.display = "none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "veiculos");
 }
@@ -2290,6 +2294,8 @@ function mostrarVisitantes(){
   document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "visitantes");
   document.getElementById("vNome").focus();
@@ -2309,6 +2315,8 @@ function mostrarRastreamento(){
   document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
   localStorage.setItem("activeView", "rastreamento");
   iniciarMapaRastreamento();
   iniciarPollingRastreamento();
@@ -2327,6 +2335,8 @@ function mostrarAuditoria(){
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "auditoria");
   carregarAuditoria();
@@ -2344,6 +2354,8 @@ function mostrarMural(){
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAgendamentos").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "mural");
   carregarMural();
@@ -2511,7 +2523,7 @@ document.getElementById("navArquivos").addEventListener("click", mostrarArquivos
 function mostrarArquivos(){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById("navArquivos").classList.add("active");
-  var views = ['viewVeiculos','viewVisitantes','viewRastreamento','viewAgendamentos','viewAuditoria','viewMural','viewRelatorios'];
+  var views = ['viewVeiculos','viewVisitantes','viewRastreamento','viewAgendamentos','viewAuditoria','viewMural','viewRelatorios','viewArquivos','viewCadastros'];
   views.forEach(v=>{var el=document.getElementById(v);if(el)el.style.display='none';});
   document.getElementById("viewArquivos").style.display = "block";
   localStorage.setItem("activeView", "arquivos");
@@ -2735,6 +2747,8 @@ function mostrarAgendamentos(){
   document.getElementById("viewRastreamento").style.display = "none";
   document.getElementById("viewAuditoria").style.display = "none";
   document.getElementById("viewMural").style.display = "none";
+  var _va=document.getElementById("viewArquivos");if(_va)_va.style.display="none";
+  var _vc=document.getElementById("viewCadastros");if(_vc)_vc.style.display="none";
   pararPollingRastreamento();
   localStorage.setItem("activeView", "agendamentos");
   var dataInput = document.getElementById('agendamentoData');
