@@ -349,7 +349,7 @@ function carregarDados(){
               '</div>' : '') +
             '<div class="mc-acoes">' +
               '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', ' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
-              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado()">&#x1F6E4; Patio Liberado</button>' +
+              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x1F6E4; Patio Liberado</button>' +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
@@ -611,14 +611,16 @@ async function entregaConcluida(motoristaId, placa){
   }
 }
 
-async function patioLiberado(){
-  if(!confirm('Avisar a portaria que o patio esta liberado para entrada de novo veiculo?')) return;
+async function patioLiberado(placa){
+  if(!confirm('Avisar a portaria que o patio esta liberado para este veiculo?')) return;
   try {
-    console.log('[LOGISTICA] Enviando patio-liberado, TOKEN:', TOKEN ? TOKEN.substring(0,8) + '...' : 'VAZIO');
+    console.log('[LOGISTICA] Enviando patio-liberado, TOKEN:', TOKEN ? TOKEN.substring(0,8) + '...' : 'VAZIO', 'placa:', placa);
+    var body = {};
+    if(placa) body.placa = placa;
     var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/patio-liberado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify(body)
     });
     console.log('[LOGISTICA] Resposta patio-liberado status:', res.status);
     if(!res.ok){

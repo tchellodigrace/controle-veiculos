@@ -264,7 +264,7 @@ app.get('/api/verificar-token', authMiddleware, (req, res) => {
 app.get('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id ASC',
+      'SELECT id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro, patio_liberado FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id ASC',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
@@ -370,11 +370,15 @@ app.put('/api/registros/:id/saida', authMiddleware, apiLimiter, async (req, res)
     const hora = new Date().toLocaleTimeString('pt-BR'); // Sempre do servidor
     // Primeiro buscar o registro completo para pegar placa, finalidade, etc.
     const regInfo = await pool.query(
-      'SELECT id, cliente_id, placa, motorista, finalidade FROM registros WHERE id = $1 AND saida = $2 AND cliente_id = $3',
+      'SELECT id, cliente_id, placa, motorista, finalidade, patio_liberado FROM registros WHERE id = $1 AND saida = $2 AND cliente_id = $3',
       [req.params.id, '', req.usuario.cliente_id]
     );
     if (regInfo.rows.length === 0) return res.status(404).json({ erro: 'Registro não encontrado ou já possui saída' });
     const reg = regInfo.rows[0];
+    // Verificar se o patio foi liberado pela logistica antes de permitir a saida
+    if (!reg.patio_liberado) {
+      return res.status(403).json({ erro: 'Aguardando liberação do pátio pela Logística. O botão "Marcar Saída" será habilitado quando a Logística liberar o pátio.' });
+    }
     const result = await pool.query(
       'UPDATE registros SET saida = $1 WHERE id = $2 RETURNING id, cliente_id, placa, modelo, saida',
       [hora, req.params.id]
@@ -2025,11 +2029,8 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
       ['Entrega', m.motorista_id, cid]
     );
 
-    // Se existir registro aberto na portaria, marcar saida tambem
-    await pool.query(
-      'UPDATE registros SET saida = $1 WHERE cliente_id = $2 AND placa = $3 AND saida = $4',
-      [new Date().toLocaleTimeString('pt-BR'), cid, m.placa, '']
-    ).catch(() => {});
+    // NOTA: Nao marca saida automaticamente no registro da portaria.
+    // A saida so sera marcada pela portaria APOS o patio ser liberado.
 
     // Notificar portaria via notificacao no sistema
     await pool.query(
@@ -2049,20 +2050,32 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
   }
 });
 
-// === LOGISTICA: Patio Liberado (avisar portaria que pode entrar outro caminhao) ===
+// === LOGISTICA: Patio Liberado (avisar portaria + liberar saida do veiculo) ===
 app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) => {
   try {
+    const { placa } = req.body;
     const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
 
+    // Marcar patio_liberado no registro da portaria para habilitar o botao Marcar Saida
+    if (placa) {
+      await pool.query(
+        'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
+        [cid, placa, '']
+      );
+    }
+
     // Criar notificacao para a portaria
+    const descricaoNotif = placa
+      ? 'Logistica liberou a saida do veiculo placa: ' + placa
+      : 'Logistica informou: patio esta liberado para entrada de novo veiculo.';
     await pool.query(
       'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
-      [cid, 'patio_liberado', 'Patio Liberado', 'Logistica informou: patio esta liberado para entrada de novo veiculo.']
+      [cid, 'patio_liberado', 'Patio Liberado', descricaoNotif]
     );
 
-    logAuditoria(cid, 'Logistica', 'Patio liberado', 'sistema', '', 'Portaria avisada: patio liberado para novo veiculo');
+    logAuditoria(cid, 'Logistica', 'Patio liberado', 'veiculo', placa || '', 'Portaria avisada: patio liberado' + (placa ? ' para placa ' + placa : ''));
     res.json({ ok: true, mensagem: 'Portaria notificada com sucesso' });
   } catch (err) {
     console.error('Erro ao notificar patio liberado:', err);
@@ -2601,6 +2614,7 @@ async function iniciar() {
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS checkin_ativo BOOLEAN DEFAULT TRUE",
       "ALTER TABLE registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS origem VARCHAR(20) DEFAULT 'portaria'",
+      "ALTER TABLE registros ADD COLUMN IF NOT EXISTS patio_liberado BOOLEAN DEFAULT FALSE",
       "CREATE TABLE IF NOT EXISTS agendamentos (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, motorista VARCHAR(200) DEFAULT '', placa VARCHAR(20) DEFAULT '', empresa VARCHAR(200) DEFAULT '', finalidade VARCHAR(50) DEFAULT '', data_agendada DATE NOT NULL, horario VARCHAR(10) DEFAULT '', doca VARCHAR(50) DEFAULT '', nota VARCHAR(500) DEFAULT '', status VARCHAR(20) DEFAULT 'agendado', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE INDEX IF NOT EXISTS idx_agendamentos_cliente ON agendamentos(cliente_id, data_agendada)",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS whatsapp_ativo BOOLEAN DEFAULT FALSE",
