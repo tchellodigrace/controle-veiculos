@@ -1295,7 +1295,7 @@ app.put('/api/admin/config', adminMiddleware, apiLimiter, async (req, res) => {
 
 app.get('/api/admin/clientes', adminMiddleware, apiLimiter, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, compras_ativo, compras_token, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
+    const result = await pool.query('SELECT id, empresa, cnpj, responsavel, email, telefone, telefone_fixo, plano, valor_mensal, data_expiracao, dominio, ativo, logistica_ativo, logistica_token, criado_em, whatsapp_ativo, whatsapp_provedor, whatsapp_telefone, whatsapp_telefone_notif, whatsapp_url, whatsapp_instancia, email_ativo, email_smtp_host, email_smtp_port, email_smtp_user, email_remetente, email_destinatario FROM clientes ORDER BY criado_em DESC');
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar clientes:', err);
@@ -1886,92 +1886,6 @@ app.put('/api/admin/clientes/:id/logistica', adminMiddleware, apiLimiter, async 
   }
 });
 
-// === ADMIN: TOGGLE COMPRAS ===
-app.put('/api/admin/clientes/:id/compras', adminMiddleware, apiLimiter, async (req, res) => {
-  try {
-    const { ativo } = req.body;
-    const id = parseInt(req.params.id);
-    if (typeof ativo !== 'boolean') return res.status(400).json({ erro: 'Parametro ativo obrigatorio (boolean)' });
-    if (ativo) {
-      const existing = await pool.query('SELECT compras_token FROM clientes WHERE id = $1', [id]);
-      var token = existing.rows[0]?.compras_token || '';
-      if (!token) {
-        token = crypto.randomBytes(16).toString('hex');
-      }
-      await pool.query('UPDATE clientes SET compras_ativo = TRUE, compras_token = $1 WHERE id = $2', [token, id]);
-      res.json({ ativo: true, token: token });
-    } else {
-      await pool.query('UPDATE clientes SET compras_ativo = FALSE WHERE id = $1', [id]);
-      res.json({ ativo: false });
-    }
-  } catch (err) {
-    console.error('Erro ao toggle compras:', err);
-    res.status(500).json({ erro: 'Erro ao atualizar' });
-  }
-});
-
-// === ROTA COMPRAS (PUBLICA VIA TOKEN) ===
-app.get('/c/:token', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, empresa, compras_token, compras_ativo FROM clientes WHERE compras_token = $1', [req.params.token]);
-    if (!result.rows.length) return res.status(404).send('Link invalido ou desativado');
-    const c = result.rows[0];
-    if (!c.compras_ativo) return res.status(404).send('Painel de Compras desativado para esta empresa');
-    res.redirect(302, '/compras.html?token=' + encodeURIComponent(c.compras_token) + '&cliente_id=' + c.id + '&empresa=' + encodeURIComponent(c.empresa) + '&_t=' + Date.now());
-  } catch { res.status(500).send('Erro'); }
-});
-
-app.get('/api/compras/:token', apiLimiter, async (req, res) => {
-  try {
-    const cliente = await pool.query('SELECT id, empresa, compras_ativo FROM clientes WHERE compras_token = $1', [req.params.token]);
-    if (!cliente.rows.length) {
-      return res.status(404).json({ erro: 'Link invalido' });
-    }
-    if (!cliente.rows[0].compras_ativo) {
-      return res.status(403).json({ erro: 'Painel de Compras desativado' });
-    }
-    const cid = cliente.rows[0].id;
-    const status = req.query.status || '';
-    let query = 'SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\'';
-    const params = [cid];
-    if (status) {
-      query += ' AND status_checkin = $2';
-      params.push(status);
-    }
-    query += ' ORDER BY criado_em DESC LIMIT 200';
-    const checkins = await pool.query(query, params);
-    res.json({ empresa: cliente.rows[0].empresa, checkins: checkins.rows });
-  } catch (err) {
-    console.error('Erro API compras:', err);
-    res.status(500).json({ erro: 'Erro ao buscar dados' });
-  }
-});
-
-// Confirmar check-in via token de compras (publico, sem auth)
-app.put('/api/compras/:token/checkins/:id/status', apiLimiter, async (req, res) => {
-  try {
-    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
-    const { status_checkin } = req.body;
-    if (!['em_transito', 'aguardando', 'confirmado'].includes(status_checkin)) {
-      return res.status(400).json({ erro: 'Status invalido' });
-    }
-    // Valida token
-    const cliente = await pool.query('SELECT id, compras_ativo FROM clientes WHERE compras_token = $1', [req.params.token]);
-    if (!cliente.rows.length || !cliente.rows[0].compras_ativo) {
-      return res.status(403).json({ erro: 'Painel desativado' });
-    }
-    const cid = cliente.rows[0].id;
-    const result = await pool.query(
-      'UPDATE pre_registros SET status_checkin = $1 WHERE id = $2 AND cliente_id = $3 AND origem = \'checkin_qr\' RETURNING *',
-      [status_checkin, req.params.id, cid]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ erro: 'Check-in não encontrado' });
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Erro ao confirmar checkin via compras:', err);
-    res.status(500).json({ erro: 'Erro ao atualizar status' });
-  }
-});
 
 // === MOTORISTA DESPACHO (PAINEL DO MOTORISTA) ===
 // GET: buscar dados do check-in pelo token do motorista
@@ -2366,8 +2280,6 @@ async function iniciar() {
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS data_previsao DATE DEFAULT NULL",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS tipo_checkin VARCHAR(20) DEFAULT 'chegada'",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS status_checkin VARCHAR(20) DEFAULT 'aguardando'",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS compras_ativo BOOLEAN DEFAULT FALSE",
-      "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS compras_token VARCHAR(100) DEFAULT ''",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS motorista_token VARCHAR(100) DEFAULT ''",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_inicio TIMESTAMP DEFAULT NULL",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lat DECIMAL(10,7) DEFAULT NULL",

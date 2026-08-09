@@ -838,22 +838,7 @@ async function verDetalhes(id){
         : '<div style="font-size:11px;color:#6b7685">Ative para gerar um link exclusivo de rastreamento para o almoxarifado.</div>'}
       </div>`;
 
-    const comprasUrl = c.compras_token ? (baseUrl + '/c/' + c.compras_token) : '';
-    const comprasAtivo = !!c.compras_ativo;
-    const comprasHtml = `
-      <div style="background:${comprasAtivo ? '#d1ecf1' : '#f7f8fa'};border:1px solid ${comprasAtivo ? '#17a2b8' : '#e0e3e7'};border-radius:8px;padding:14px;margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <b style="font-size:12px;color:#1a1a2e">&#x1F4E6; Painel do Setor de Compras</b>
-          <button onclick="toggleCompras(${c.id}, ${!comprasAtivo})" style="padding:6px 16px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;transition:.2s;${comprasAtivo ? 'background:#dc3545;color:#fff' : 'background:#17a2b8;color:#fff'}">
-            ${comprasAtivo ? 'Desativar' : 'Ativar'}
-          </button>
-        </div>
-        ${comprasAtivo ? '<div style="font-size:11px;margin-bottom:8px;color:#0c5460">&#x2705; Ativo — Compartilhe este link com o setor de compras:</div>' +
-          '<div style="display:flex;gap:6px;align-items:center"><input id="comprasLinkInput" value="' + comprasUrl + '" readonly style="flex:1;padding:8px 10px;border:1px solid #17a2b8;border-radius:6px;font-size:12px;background:#fff;color:#333">' +
-          '<button onclick="copiarLinkCompras()" style="padding:8px 14px;background:#17a2b8;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">Copiar Link</button></div>' +
-          '<div style="font-size:10px;color:#6b7685;margin-top:6px">Acesso sem login. O setor de compras acompanha os check-ins de transportadoras na portaria em tempo real.</div>'
-        : '<div style="font-size:11px;color:#6b7685">Ative para gerar um link exclusivo para o setor de compras acompanhar check-ins.</div>'}
-      </div>`;
+
 
     const encodedMsg = encodeURIComponent(msgCompartilhamento);
     const clienteNome = encodeURIComponent(c.empresa);
@@ -907,7 +892,6 @@ async function verDetalhes(id){
       ${credenciaisHtml}
       ${linksHtml}
       ${logisticaHtml}
-      ${comprasHtml}
       ${compartilharHtml}
     `;
 
@@ -969,29 +953,7 @@ function copiarLinkLogistica(){
   });
 }
 
-async function toggleCompras(clienteId, ativar){
-  try {
-    const res = await fetch(API + '/api/admin/clientes/' + clienteId + '/compras', {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify({ ativo: ativar })
-    });
-    if(!res.ok){ alert('Erro ao ' + (ativar ? 'ativar' : 'desativar') + ' painel de compras'); return; }
-    verDetalhes(clienteId);
-  } catch(e){ alert('Erro de conexao'); }
-}
 
-function copiarLinkCompras(){
-  const input = document.getElementById('comprasLinkInput');
-  if(!input) return;
-  navigator.clipboard.writeText(input.value).then(function(){
-    alert('Link copiado!');
-  }).catch(function(){
-    input.select();
-    document.execCommand('copy');
-    alert('Link copiado!');
-  });
-}
 
 async function ativarDesativarCliente(id, ativo){
   try {
