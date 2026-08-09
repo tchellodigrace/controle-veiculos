@@ -324,7 +324,6 @@ function carregarDados(){
         var cor = cores[idx % cores.length];
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
-        var mid = d.motorista_id ? ('\'' + d.motorista_id + '\'') : 'null';
         var placaJS = d.placa ? ('\'' + String(d.placa).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\'') : 'null';
         listaHtml +=
           '<div class="motorista-card ' + st.css + '">' +
@@ -348,7 +347,6 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', ' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
               '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x1F6E4; Patio Liberado</button>' +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
@@ -578,38 +576,6 @@ document.addEventListener('keydown', function(e){
 });
 
 // === ACOES DE LOGISTICA ===
-async function entregaConcluida(motoristaId, placa){
-  if(!confirm('Confirmar entrega concluida para este motorista?')) return;
-  try {
-    var body = {};
-    // Aceitar tanto motorista_id numerico quanto placa string
-    if(motoristaId !== null && motoristaId !== undefined && motoristaId !== '') body.motorista_id = parseInt(motoristaId);
-    if(!body.motorista_id && placa !== null && placa !== undefined && placa !== '') body.placa = placa;
-    if(!body.motorista_id && !body.placa){
-      alert('Erro: dados do motorista nao encontrados. Recarregue a pagina.');
-      return;
-    }
-    console.log('[LOGISTICA] Enviando entrega-concluida:', JSON.stringify(body));
-    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/entrega-concluida', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    console.log('[LOGISTICA] Resposta status:', res.status);
-    if(!res.ok){
-      var err = await res.json();
-      console.error('[LOGISTICA] Erro entrega-concluida:', err);
-      alert(err.erro || 'Erro ao marcar entrega (HTTP ' + res.status + ')');
-      return;
-    }
-    var data = await res.json();
-    alert(data.mensagem || 'Entrega concluida com sucesso');
-    carregarDados();
-  } catch(e){
-    console.error('[LOGISTICA] Excecao entrega-concluida:', e);
-    alert('Erro de conexao com o servidor: ' + e.message);
-  }
-}
 
 async function patioLiberado(placa){
   if(!confirm('Avisar a portaria que o patio esta liberado para este veiculo?')) return;

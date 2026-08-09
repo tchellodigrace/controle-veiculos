@@ -3159,16 +3159,24 @@ var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '�
 function tocarBeepNotificacao(frequencia, duracao){
   try{
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = frequencia || 800;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (duracao || 0.1));
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + (duracao || 0.1));
+    var totalDur = duracao || 2;
+    // Sininho: serie de notas descendentes com sustain longo
+    var notas = [1200, 1000, 800, 650];
+    var tempoNota = totalDur / notas.length;
+    notas.forEach(function(freq, i){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      var inicio = ctx.currentTime + (i * tempoNota);
+      gain.gain.setValueAtTime(0, inicio);
+      gain.gain.linearRampToValueAtTime(0.25, inicio + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + tempoNota * 0.95);
+      osc.start(inicio);
+      osc.stop(inicio + tempoNota);
+    });
   }catch(e){}
 }
 
@@ -3194,15 +3202,10 @@ function mostrarToast(titulo, descricao, tipo, duracao){
     '</div>' +
     '<button class="toast-fechar" onclick="fecharToast(this.parentElement)" aria-label="Fechar aviso">&times;</button>';
   container.appendChild(toast);
-  // Som diferente para patio_liberado
-  if(tipo === 'patio_liberado'){
-    tocarBeepNotificacao(600, 0.3);
-    setTimeout(function(){ tocarBeepNotificacao(800, 0.3); }, 350);
-  } else {
-    tocarBeepNotificacao(800, 0.15);
-  }
+  // Som de sininho
+  tocarBeepNotificacao(800, 2);
   // Auto-fechar
-  var tempo = duracao || (tipo === 'patio_liberado' ? 8000 : 5000);
+  var tempo = duracao || (tipo === 'patio_liberado' ? 10000 : 5000);
   setTimeout(function(){ fecharToast(toast); }, tempo);
 }
 
