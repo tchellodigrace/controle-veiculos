@@ -2021,13 +2021,12 @@ app.get('/api/arquivos/:id/view', authMiddleware, async (req, res) => {
   }
 });
 
-// Visualizacao publica via hash temporario (para Google Docs Viewer)
-app.get('/api/arquivos/:id/public-view/:hash', apiLimiter, async (req, res) => {
+// Visualizacao publica via hash temporario (para Google Docs Viewer e Office Online)
+app.get('/api/arquivos/:id/public-view/:hash/:nome?', apiLimiter, async (req, res) => {
   try {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
     const secret = process.env.JWT_SECRET || 'dsrh-portaria-2024';
-    // Hash valido por 2 horas: sha256(id + secret + data_dia)
-    const hoje = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+    const hoje = new Date().toISOString().slice(0, 13);
     const hashEsperado = crypto.createHash('sha256').update(req.params.id + secret + hoje).digest('hex').substring(0, 16);
     if (req.params.hash !== hashEsperado) return res.status(403).json({ erro: 'Link expirado ou invalido' });
     const result = await pool.query('SELECT id, nome, nome_original, tipo, caminho, cliente_id FROM arquivos WHERE id = $1', [req.params.id]);
@@ -2037,6 +2036,8 @@ app.get('/api/arquivos/:id/public-view/:hash', apiLimiter, async (req, res) => {
     res.setHeader('Content-Type', arq.tipo || 'application/octet-stream');
     res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(arq.nome_original) + '"');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.sendFile(path.resolve(arq.caminho));
   } catch (err) {
     console.error('Erro ao visualizar arquivo publico:', err);

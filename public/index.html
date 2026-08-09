@@ -2561,6 +2561,14 @@ function getGoogleDocsUrl(tipo, nome){
   return null;
 }
 
+function getOfficeOnlineUrl(tipo, nome){
+  var ext = nome.split('.').pop().toLowerCase();
+  if(['doc','docx','xls','xlsx','ppt','pptx'].includes(ext)){
+    return 'https://view.officeapps.live.com/op/view.aspx?src=';
+  }
+  return null;
+}
+
 async function carregarArquivos(){
   try {
     var res = await fetch(API + '/api/arquivos', { headers: getHeaders() });
@@ -2572,9 +2580,10 @@ async function carregarArquivos(){
     vazio.style.display = 'none';
     lista.innerHTML = arquivos.map(function(a){
       var icone = getIconeArquivo(a.tipo);
-      var podeVerOnline = !!getGoogleDocsUrl(a.tipo, a.nome_original);
-      var publicUrl = window.location.origin + '/api/arquivos/' + a.id + '/public-view/' + (a.public_hash || '');
-      var viewUrl = podeVerOnline ? getGoogleDocsUrl(a.tipo, a.nome_original) + encodeURIComponent(publicUrl) : null;
+      var nomeSeguro = (a.nome_original || 'arquivo').replace(/[^a-zA-Z0-9._-]/g, '_');
+      var publicUrl = window.location.origin + '/api/arquivos/' + a.id + '/public-view/' + (a.public_hash || '') + '/' + nomeSeguro;
+      var googleUrl = getGoogleDocsUrl(a.tipo, a.nome_original) ? getGoogleDocsUrl(a.tipo, a.nome_original) + encodeURIComponent(publicUrl) : null;
+      var officeUrl = getOfficeOnlineUrl(a.tipo, a.nome_original) ? getOfficeOnlineUrl(a.tipo, a.nome_original) + encodeURIComponent(publicUrl) : null;
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--cinza-borda);border-radius:8px;margin-bottom:8px;flex-wrap:wrap">' +
         '<span style="font-size:28px;flex-shrink:0">' + icone + '</span>' +
         '<div style="flex:1;min-width:200px">' +
@@ -2588,7 +2597,8 @@ async function carregarArquivos(){
         '</div>' +
         '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<a href="/api/arquivos/' + a.id + '/download" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:var(--verde-escuro);color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">⬇ Download</a>' +
-          (viewUrl ? '<a href="' + viewUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#4285f4;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">🌐 Abrir Online</a>' : '') +
+          (officeUrl ? '<a href="' + officeUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#d83b01;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">📋 Office Online</a>' : '') +
+          (googleUrl ? '<a href="' + googleUrl + '" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#4285f4;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none">🌐 Google Docs</a>' : '') +
           '<button onclick="excluirArquivo(' + a.id + ')" style="padding:6px 12px;background:#e53e3e;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Excluir</button>' +
         '</div>' +
       '</div>';
