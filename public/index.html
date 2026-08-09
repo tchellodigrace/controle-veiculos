@@ -2065,7 +2065,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
     // Timer unificado - reduz de 5 para 2 timers (relogio + dados)
     setInterval(async function(){
       await Promise.all([atualizar(), atualizarVisitantes(), atualizarPreRegistros(), verificarBadges(), atualizarBadgeRastreamento()]);
-    }, 30000);
+    }, 10000);
   } catch(e) {
     mostrarErroAuth('Erro ao inicializar: ' + e.message);
   }
@@ -3300,7 +3300,7 @@ async function buscarNotificoesNovas(){
 }
 
 verificarNotificacoesNaoLidas();
-setInterval(verificarNotificacoesNaoLidas, 30000);
+setInterval(verificarNotificacoesNaoLidas, 5000);
 
 // === Handler global de erros JS ===
 window.onerror = function(msg, url, line, col, err) {
