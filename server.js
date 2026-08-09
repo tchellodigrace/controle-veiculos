@@ -6,6 +6,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('./db');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const whatsapp = require('./services/whatsapp');
 const email = require('./services/email');
@@ -137,6 +139,27 @@ app.use((req, res, next) => {
   res.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: https: https://unpkg.com; font-src 'self' https://unpkg.com; connect-src 'self'"); // connect-src 'self' restringe fetch/XHR ao mesmo origem; ajustar se houver APIs externas necessarias
   res.set('Permissions-Policy', 'camera=(), microphone=(), payment=()');
   next();
+});
+
+// Configuracao de upload de arquivos
+const uploadsDir = path.join(__dirname, 'public', 'uploads', 'arquivos');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storageArquivos = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, Date.now() + '_' + Math.random().toString(36).substring(2, 8) + ext);
+  }
+});
+const uploadArquivo = multer({
+  storage: storageArquivos,
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const extensoes = ['.pdf','.doc','.docx','.xls','.xlsx','.ppt','.pptx','.txt','.csv','.jpg','.jpeg','.png','.gif','.bmp','.zip','.rar','.mp4','.mp3','.avi','.mov','.dwg','.svg','.odt','.ods'];
+    if (extensoes.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('Tipo de arquivo nao permitido. Tipos aceitos: PDF, DOC, XLS, PPT, TXT, CSV, JPG, PNG, GIF, ZIP, RAR, DWG, MP4, MP3'));
+  }
 });
 
 // HTTPS redirect (producao)
@@ -1925,6 +1948,81 @@ app.put('/api/admin/clientes/:id/logistica', adminMiddleware, apiLimiter, async 
 });
 
 
+// === ARQUIVOS (UPLOAD / DOWNLOAD / GERENCIAR) ===
+app.post('/api/arquivos/upload', authMiddleware, apiLimiter, uploadArquivo.single('arquivo'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ erro: 'Nenhum arquivo enviado' });
+    const { descricao } = req.body;
+    const result = await pool.query(
+      'INSERT INTO arquivos (cliente_id, nome, nome_original, tipo, tamanho, caminho, descricao, criado_por) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, nome_original, tipo, tamanho, descricao, criado_por, criado_em',
+      [req.usuario.cliente_id, req.file.filename, sanitizarString(req.file.originalname).substring(0,255), req.file.mimetype, req.file.size, req.file.path, sanitizarString(descricao||'').substring(0,500), req.usuario.usuario||'portaria']
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao fazer upload:', err);
+    res.status(500).json({ erro: 'Erro ao fazer upload' });
+  }
+});
+
+app.get('/api/arquivos', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, nome_original, tipo, tamanho, descricao, criado_por, criado_em FROM arquivos WHERE cliente_id = $1 ORDER BY criado_em DESC',
+      [req.usuario.cliente_id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar arquivos:', err);
+    res.status(500).json({ erro: 'Erro ao buscar arquivos' });
+  }
+});
+
+app.get('/api/arquivos/:id/download', authMiddleware, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const result = await pool.query('SELECT id, nome, nome_original, tipo, caminho, cliente_id FROM arquivos WHERE id = $1 AND cliente_id = $2', [req.params.id, req.usuario.cliente_id]);
+    if (!result.rows.length) return res.status(404).json({ erro: 'Arquivo nao encontrado' });
+    const arq = result.rows[0];
+    if (!fs.existsSync(arq.caminho)) return res.status(404).json({ erro: 'Arquivo nao encontrado no servidor' });
+    res.setHeader('Content-Disposition', 'attachment; filename="' + encodeURIComponent(arq.nome_original) + '"');
+    res.setHeader('Content-Type', arq.tipo || 'application/octet-stream');
+    res.sendFile(path.resolve(arq.caminho));
+  } catch (err) {
+    console.error('Erro ao baixar arquivo:', err);
+    res.status(500).json({ erro: 'Erro ao baixar arquivo' });
+  }
+});
+
+app.get('/api/arquivos/:id/view', authMiddleware, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const result = await pool.query('SELECT id, nome, nome_original, tipo, caminho, cliente_id FROM arquivos WHERE id = $1 AND cliente_id = $2', [req.params.id, req.usuario.cliente_id]);
+    if (!result.rows.length) return res.status(404).json({ erro: 'Arquivo nao encontrado' });
+    const arq = result.rows[0];
+    if (!fs.existsSync(arq.caminho)) return res.status(404).json({ erro: 'Arquivo nao encontrado no servidor' });
+    res.setHeader('Content-Type', arq.tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(arq.nome_original) + '"');
+    res.sendFile(path.resolve(arq.caminho));
+  } catch (err) {
+    console.error('Erro ao visualizar arquivo:', err);
+    res.status(500).json({ erro: 'Erro ao visualizar' });
+  }
+});
+
+app.delete('/api/arquivos/:id', authMiddleware, apiLimiter, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const result = await pool.query('SELECT id, caminho, cliente_id FROM arquivos WHERE id = $1 AND cliente_id = $2', [req.params.id, req.usuario.cliente_id]);
+    if (!result.rows.length) return res.status(404).json({ erro: 'Arquivo nao encontrado' });
+    try { if (fs.existsSync(result.rows[0].caminho)) fs.unlinkSync(result.rows[0].caminho); } catch {}
+    await pool.query('DELETE FROM arquivos WHERE id = $1 AND cliente_id = $2', [req.params.id, req.usuario.cliente_id]);
+    res.json({ mensagem: 'Arquivo excluido' });
+  } catch (err) {
+    console.error('Erro ao excluir arquivo:', err);
+    res.status(500).json({ erro: 'Erro ao excluir arquivo' });
+  }
+});
+
 // === MOTORISTA DESPACHO (PAINEL DO MOTORISTA) ===
 // GET: buscar dados do check-in pelo token do motorista
 app.get('/api/motorista-despacho/:token', apiLimiter, async (req, res) => {
@@ -2272,6 +2370,7 @@ async function iniciar() {
       "CREATE TABLE IF NOT EXISTS faturamento (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, valor DECIMAL(10,2) NOT NULL, descricao VARCHAR(200) DEFAULT '', data_pagamento DATE DEFAULT CURRENT_DATE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS logs_acesso (id SERIAL PRIMARY KEY, admin_id INTEGER, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', ip VARCHAR(100) DEFAULT '', user_agent TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS chamados (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', status VARCHAR(20) DEFAULT 'aberto', prioridade VARCHAR(20) DEFAULT 'media', resposta TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+      "CREATE TABLE IF NOT EXISTS arquivos (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, nome VARCHAR(255) NOT NULL, nome_original VARCHAR(255) NOT NULL, tipo VARCHAR(100), tamanho BIGINT DEFAULT 0, caminho VARCHAR(500), descricao TEXT DEFAULT '', criado_por VARCHAR(100) DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS historico_clientes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE SET NULL, admin_usuario VARCHAR(100) DEFAULT '', acao VARCHAR(200) NOT NULL, detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE TABLE IF NOT EXISTS config_geral (chave VARCHAR(100) PRIMARY KEY, valor TEXT DEFAULT '', descricao VARCHAR(200) DEFAULT '')",
       "CREATE TABLE IF NOT EXISTS logs_auditoria (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, usuario VARCHAR(100) DEFAULT '', acao VARCHAR(100) NOT NULL, tipo VARCHAR(50) DEFAULT '', alvo VARCHAR(200) DEFAULT '', detalhes TEXT DEFAULT '', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
