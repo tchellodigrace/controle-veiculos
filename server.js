@@ -743,9 +743,10 @@ app.post('/api/cadastro-motorista', preRegistroLimiter, async (req, res) => {
     const existe = await pool.query('SELECT id FROM contas_motoristas WHERE cliente_id = $1 AND usuario = $2', [cliente_id, usuario.toLowerCase()]);
     if (existe.rows.length > 0) return res.status(400).json({ erro: 'Usuário já existe' });
     const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaExibicao = senha.substring(0, 20);
     const result = await pool.query(
-      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, nome, empresa, ativo) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING id, usuario, nome',
-      [cliente_id, usuario.toLowerCase(), senhaHash, nome.toUpperCase(), empresa||'']
+      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome',
+      [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
     res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
   } catch (err) {
@@ -944,10 +945,11 @@ app.post('/api/contas-motoristas', authMiddleware, apiLimiter, async (req, res) 
     const errComp3 = validarComplexidadeSenha(senha);
     if (errComp3) return res.status(400).json({ erro: errComp3 });
     const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, nome, empresa) VALUES ($1, $2, $3, $4, $5) RETURNING id, usuario, nome, empresa',
-      [cid, usuario.toLowerCase(), senhaHash, nome.toUpperCase(), empresa||'']
+      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, usuario, nome, empresa',
+      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -990,9 +992,10 @@ app.post('/api/cadastro-visitante', preRegistroLimiter, async (req, res) => {
     const existe = await pool.query('SELECT id FROM contas_visitantes WHERE cliente_id = $1 AND usuario = $2', [cliente_id, usuario.toLowerCase()]);
     if (existe.rows.length > 0) return res.status(400).json({ erro: 'Usuário já existe' });
     const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaExibicao = senha.substring(0, 20);
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, nome, cpf, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome',
-      [cliente_id, usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'']
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE) RETURNING id, usuario, nome',
+      [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', empresa||'']
     );
     res.status(201).json({ mensagem: 'Conta criada. Aguarde ativação da portaria.', visitante: result.rows[0] });
   } catch (err) {
@@ -1105,10 +1108,11 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
     const errCpfCV = validarCpf(cpf);
     if (errCpfCV) return res.status(400).json({ erro: errCpfCV });
     const senhaHash = await bcrypt.hash(senha, 10);
+    const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, nome, cpf, empresa) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, usuario, nome',
-      [cid, usuario.toLowerCase(), senhaHash, nome.toUpperCase(), cpf||'', empresa||'']
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, empresa) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, usuario, nome',
+      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', empresa||'']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -1121,7 +1125,7 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
 app.get('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, usuario, nome, cpf, empresa, ativo, criado_em FROM contas_visitantes WHERE cliente_id = $1 ORDER BY nome',
+      'SELECT id, usuario, nome, cpf, empresa, ativo, senha_exibicao, criado_em FROM contas_visitantes WHERE cliente_id = $1 ORDER BY nome',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);

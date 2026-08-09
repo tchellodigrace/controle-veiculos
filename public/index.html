@@ -1761,8 +1761,14 @@ async function carregarContasVisitantes(){
     const contas = await res.json();
     const div = document.getElementById("listaContasVisitantes");
     div.innerHTML = contas.map(c => `
-      <div class="usuario-item">
-        <span>${esc(c.nome)} <small>(${esc(c.usuario)})</small></span>
+      <div class="usuario-item" style="flex-wrap:wrap">
+        <div style="flex:1;min-width:150px">
+          <span style="cursor:pointer;font-weight:600" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'" title="Clique para ver login e senha">${esc(c.nome)}</span>
+          <div style="display:none;background:#fff;border:1px solid var(--cinza-borda);border-radius:6px;padding:10px;margin-top:6px;font-size:12px">
+            <div style="margin-bottom:6px"><b style="color:#4a5568">Login:</b> <span style="color:#1a1a2e;font-weight:600">${esc(c.usuario)}</span></div>
+            <div style="display:flex;align-items:center;gap:8px"><b style="color:#4a5568">Senha:</b> <span id="senha-vis-${c.id}" data-senha="${esc(c.senha_exibicao || '***')}" data-show="0" style="font-weight:700;color:#1a1a2e;cursor:pointer" onclick="toggleSenha(this)">\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022</span> <small style="color:#8b93a1">(clique para ver)</small></div>
+          </div>
+        </div>
         <div style="display:flex;gap:6px;align-items:center">
 
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
