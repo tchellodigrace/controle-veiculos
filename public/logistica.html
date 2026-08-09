@@ -324,7 +324,8 @@ function carregarDados(){
         var cor = cores[idx % cores.length];
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
-        var mid = d.motorista_id || '';
+        var mid = d.motorista_id ? ('\'' + d.motorista_id + '\'') : 'null';
+        var placaJS = d.placa ? ('\'' + String(d.placa).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\'') : 'null';
         listaHtml +=
           '<div class="motorista-card ' + st.css + '">' +
             '<div class="mc-topo" style="cursor:pointer" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
@@ -347,9 +348,9 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', \'' + esc(d.placa || '') + '\')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
+              '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', ' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
               '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado()">&#x1F6E4; Patio Liberado</button>' +
-              '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + mid + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
+              '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
       });
@@ -581,32 +582,57 @@ async function entregaConcluida(motoristaId, placa){
   if(!confirm('Confirmar entrega concluida para este motorista?')) return;
   try {
     var body = {};
-    if(motoristaId) body.motorista_id = motoristaId;
-    else if(placa) body.placa = placa;
+    // Aceitar tanto motorista_id numerico quanto placa string
+    if(motoristaId !== null && motoristaId !== undefined && motoristaId !== '') body.motorista_id = parseInt(motoristaId);
+    if(!body.motorista_id && placa !== null && placa !== undefined && placa !== '') body.placa = placa;
+    if(!body.motorista_id && !body.placa){
+      alert('Erro: dados do motorista nao encontrados. Recarregue a pagina.');
+      return;
+    }
+    console.log('[LOGISTICA] Enviando entrega-concluida:', JSON.stringify(body));
     var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/entrega-concluida', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if(!res.ok){ var err = await res.json(); alert(err.erro || 'Erro ao marcar entrega'); return; }
+    console.log('[LOGISTICA] Resposta status:', res.status);
+    if(!res.ok){
+      var err = await res.json();
+      console.error('[LOGISTICA] Erro entrega-concluida:', err);
+      alert(err.erro || 'Erro ao marcar entrega (HTTP ' + res.status + ')');
+      return;
+    }
     var data = await res.json();
     alert(data.mensagem || 'Entrega concluida com sucesso');
     carregarDados();
-  } catch(e){ alert('Erro de conexao com o servidor'); }
+  } catch(e){
+    console.error('[LOGISTICA] Excecao entrega-concluida:', e);
+    alert('Erro de conexao com o servidor: ' + e.message);
+  }
 }
 
 async function patioLiberado(){
   if(!confirm('Avisar a portaria que o patio esta liberado para entrada de novo veiculo?')) return;
   try {
+    console.log('[LOGISTICA] Enviando patio-liberado, TOKEN:', TOKEN ? TOKEN.substring(0,8) + '...' : 'VAZIO');
     var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/patio-liberado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({})
     });
-    if(!res.ok){ var err = await res.json(); alert(err.erro || 'Erro ao notificar portaria'); return; }
+    console.log('[LOGISTICA] Resposta patio-liberado status:', res.status);
+    if(!res.ok){
+      var err = await res.json();
+      console.error('[LOGISTICA] Erro patio-liberado:', err);
+      alert(err.erro || 'Erro ao notificar portaria (HTTP ' + res.status + ')');
+      return;
+    }
     var data = await res.json();
     alert(data.mensagem || 'Portaria notificada com sucesso');
-  } catch(e){ alert('Erro de conexao com o servidor'); }
+  } catch(e){
+    console.error('[LOGISTICA] Excecao patio-liberado:', e);
+    alert('Erro de conexao com o servidor: ' + e.message);
+  }
 }
 
 // === IMPRIMIR FICHA DO MOTORISTA ===
@@ -615,6 +641,7 @@ var motoristasCache = [];
 // (usado dentro de carregarDados - ja atualiza a lista)
 
 function imprimirMotorista(motoristaId){
+  if(!motoristaId){ alert('Motorista nao identificado'); return; }
   // Buscar dados dos motoristas carregados
   fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN))
     .then(function(res){ return res.json(); })
