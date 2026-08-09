@@ -980,7 +980,7 @@ app.put('/api/contas-motoristas/:id', authMiddleware, apiLimiter, async (req, re
 
 app.post('/api/cadastro-visitante', preRegistroLimiter, async (req, res) => {
   try {
-    const { cliente_id, nome, usuario, senha, cpf, empresa } = req.body;
+    const { cliente_id, nome, usuario, senha, cpf, rg, empresa } = req.body;
     if (!cliente_id || !nome || !usuario || !senha) return res.status(400).json({ erro: 'Nome, usuário e senha são obrigatórios' });
     if (!/^\d+$/.test(String(cliente_id))) return res.status(400).json({ erro: 'ID de cliente invalido' });
     if (senha.length < 8) return res.status(400).json({ erro: 'Senha deve ter pelo menos 8 caracteres' });
@@ -994,8 +994,8 @@ app.post('/api/cadastro-visitante', preRegistroLimiter, async (req, res) => {
     const senhaHash = await bcrypt.hash(senha, 10);
     const senhaExibicao = senha.substring(0, 20);
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE) RETURNING id, usuario, nome',
-      [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', empresa||'']
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id, usuario, nome',
+      [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'']
     );
     res.status(201).json({ mensagem: 'Conta criada. Aguarde ativação da portaria.', visitante: result.rows[0] });
   } catch (err) {
@@ -1100,7 +1100,7 @@ app.delete('/api/pre-registros-visitantes/:id', authMiddleware, apiLimiter, asyn
 
 app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
-    const { usuario, senha, nome, cpf, empresa } = req.body;
+    const { usuario, senha, nome, cpf, rg, empresa } = req.body;
     if (!usuario || !senha || !nome) return res.status(400).json({ erro: 'Usuário, senha e nome são obrigatórios' });
     if (senha.length < 8 || senha.length > 100) return res.status(400).json({ erro: 'Senha deve ter entre 8 e 100 caracteres' });
     const errComp5 = validarComplexidadeSenha(senha);
@@ -1111,8 +1111,8 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
     const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, empresa) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, usuario, nome',
-      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', empresa||'']
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, usuario, nome',
+      [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -1125,7 +1125,7 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
 app.get('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, usuario, nome, cpf, empresa, ativo, senha_exibicao, criado_em FROM contas_visitantes WHERE cliente_id = $1 ORDER BY nome',
+      'SELECT id, usuario, nome, cpf, rg, empresa, ativo, senha_exibicao, criado_em FROM contas_visitantes WHERE cliente_id = $1 ORDER BY nome',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
@@ -2287,6 +2287,7 @@ async function iniciar() {
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
+      "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS rg VARCHAR(30) DEFAULT ''",
       "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_ativo BOOLEAN DEFAULT FALSE",
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS logistica_token VARCHAR(100) DEFAULT ''",
