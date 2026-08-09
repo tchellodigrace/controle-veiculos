@@ -792,7 +792,8 @@ app.get('/api/verificar-ativacao', apiLimiter, async (req, res) => {
   try {
     const { cliente_id, usuario } = req.query;
     if (!cliente_id || !usuario) return res.status(400).json({ erro: 'cliente_id e usuario obrigatorios' });
-    const result = await pool.query('SELECT ativo FROM contas_motoristas WHERE cliente_id = $1 AND usuario = $2', [cliente_id, usuario.toLowerCase()]);
+    const result = await pool.query('SELECT ativo FROM contas_motoristas WHERE cliente_id = $1 AND usuario = $2', [parseInt(cliente_id), usuario.toLowerCase()]);
+    console.log('[VERIFICAR_ATIVACAO] cliente_id:', cliente_id, 'usuario:', usuario, 'resultado:', result.rows.length > 0 ? 'ativo=' + result.rows[0].ativo : 'nao encontrado');
     if (!result.rows.length) return res.json({ ativo: false });
     res.json({ ativo: result.rows[0].ativo });
   } catch (err) {

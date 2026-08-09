@@ -162,6 +162,10 @@
     <div id="msgAguardando" style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:16px;margin:16px 0;font-size:13px;color:#5d4037;text-align:center">
       Seu cadastro será ativado em até 5 minutos, por favor aguarde!
     </div>
+    <div id="statusVerificacao" style="text-align:center;margin-top:8px;font-size:11px;color:#999">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4FB0C6;animation:pulsar 1.5s ease-in-out infinite;vertical-align:middle"></span>
+      Verificando automaticamente...
+    </div>
     <button onclick="mostrarTelaLogin2(event)" style="background:#6c757d" id="btnAguardando">Voltar ao Login</button>
   </div>
 
@@ -331,7 +335,8 @@ async function criarConta(e){
 async function verificarAtivacao(){
   if(!usuarioAguardando || !CLIENTE_ID) return;
   try {
-    var url = API + '/api/verificar-ativacao?cliente_id=' + encodeURIComponent(CLIENTE_ID) + '&usuario=' + encodeURIComponent(usuarioAguardando);
+    var cid = parseInt(CLIENTE_ID);
+    var url = API + '/api/verificar-ativacao?cliente_id=' + cid + '&usuario=' + encodeURIComponent(usuarioAguardando.toLowerCase());
     console.log('[ATIVACAO] Verificando...', url);
     var res = await fetch(url);
     if(!res.ok){ console.log('[ATIVACAO] Erro HTTP:', res.status); return; }
@@ -341,6 +346,8 @@ async function verificarAtivacao(){
       // Conta ativada! Parar verificacao e mostrar mensagem de sucesso
       if(verificarAtivacaoInterval){ clearInterval(verificarAtivacaoInterval); verificarAtivacaoInterval = null; }
       console.log('[ATIVACAO] Conta ATIVADA! Atualizando tela...');
+      var statusEl = document.getElementById('statusVerificacao');
+      if(statusEl) statusEl.style.display = 'none';
       document.getElementById('tituloAguardando').textContent = 'Cadastro Ativado!';
       document.getElementById('tituloAguardando').style.color = '#28a745';
       document.getElementById('subAguardando').textContent = '';
