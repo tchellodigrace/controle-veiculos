@@ -128,23 +128,41 @@
         <label>Tipo *</label>
         <select id="vTipo" required>
           <option value="">Selecione</option>
+          <option>Visita</option>
+          <option>Prestador de Servico</option>
           <option>Entrega</option>
           <option>Coleta</option>
         </select>
       </div>
       <div class="campo">
-        <label>Placa do Veículo *</label>
-        <input type="text" id="vPlaca" placeholder="Ex.: ABC1D23" required style="text-transform:uppercase">
+        <label>RG</label>
+        <input type="text" id="vRg" placeholder="Numero do RG">
+      </div>
+      <div class="campo">
+        <label>Telefone</label>
+        <input type="tel" id="vTelefone" placeholder="(00) 00000-0000">
+      </div>
+      <div class="campo">
+        <label>Setor Visitado</label>
+        <input type="text" id="vSetor" placeholder="Setor que vai visitar">
+      </div>
+      <div class="campo">
+        <label>Entrada Autorizada Por</label>
+        <input type="text" id="vAutorizado" placeholder="Nome de quem autorizou">
+      </div>
+      <div class="campo">
+        <label>N. Cracha</label>
+        <input type="text" id="vCracha" placeholder="Numero da cracha">
       </div>
       <div class="campo">
         <label>Nota Fiscal / RT</label>
         <input type="text" id="vNota" placeholder="Informe a nota fiscal / RT">
       </div>
       <div class="campo">
-        <label>Observações</label>
-        <input type="text" id="vObs" placeholder="Informações adicionais">
+        <label>Observacoes</label>
+        <input type="text" id="vObs" placeholder="Informacoes adicionais">
       </div>
-      <button type="submit" id="btnEnviar">Enviar Pré-Registro</button>
+      <button type="submit" id="btnEnviar">Enviar Pre-Registro</button>
     </form>
   </div>
 
@@ -275,14 +293,7 @@ function sair(){
 async function enviar(e){
   e.preventDefault(); ocultarErro("erroForm");
   var tipo = document.getElementById("vTipo").value;
-  var placa = document.getElementById("vPlaca").value.trim().toUpperCase();
-  if(!tipo){ mostrarErro("erroForm", "Informe o tipo (Entrega ou Coleta)."); return; }
-  if(!placa){ mostrarErro("erroForm", "Informe a placa do veículo."); return; }
-  var placaClean = placa.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-  if (placaClean.length < 6 || placaClean.length > 8) {
-    mostrarErro("erroForm", "Placa inválida. Deve ter entre 6 e 8 caracteres.");
-    return;
-  }
+  if(!tipo){ mostrarErro("erroForm", "Informe o tipo de visita."); return; }
   var btn = document.getElementById("btnEnviar");
   btn.disabled = true; btn.textContent = "Enviando...";
   var payload = {
@@ -292,7 +303,11 @@ async function enviar(e){
     cpf: visitanteLogado?.cpf || '',
     empresa: visitanteLogado?.empresa || '',
     tipo: tipo,
-    placa: placa,
+    rg: document.getElementById("vRg").value.trim(),
+    telefone: document.getElementById("vTelefone").value.trim(),
+    setor_visitado: document.getElementById("vSetor").value.trim(),
+    autorizado_por: document.getElementById("vAutorizado").value.trim(),
+    cracha: document.getElementById("vCracha").value.trim(),
     nota: document.getElementById("vNota").value.trim(),
     obs: document.getElementById("vObs").value.trim()
   };
@@ -317,7 +332,6 @@ function resetar(){
   document.getElementById("btnEnviar").textContent = "Enviar Pré-Registro";
 }
 
-document.getElementById("vPlaca").addEventListener("input", function(){ this.value = this.value.toUpperCase(); });
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
 </script>
 </body>
