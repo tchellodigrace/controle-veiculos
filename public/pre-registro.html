@@ -629,17 +629,21 @@ async function cheguei(){
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista }
     });
   } catch(e){}
-  // Parar envio de GPS e watch, mas manter verificacao de status
+  // Parar envio de GPS e watch
   if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
   if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
   gpsUltimaPos = null;
-  document.getElementById('gpsStatus').classList.remove('ativo');
+  // Esconder completamente o status de rastreamento
+  var gpsStatusEl = document.getElementById('gpsStatus');
+  gpsStatusEl.classList.remove('ativo');
+  gpsStatusEl.style.display = 'none';
   // Mostrar feedback permanente - NAO resetar para "Estou a caminho"
   var btn = document.getElementById('btnCaminho');
   btn.textContent = '\u2705 Chegada registrada! Aguardando portaria...';
   btn.disabled = true;
   btn.classList.remove('parando');
   btn.classList.add('chegou-confirmado');
+  btn.onclick = null; // impedir clique adicional
   // Manter verificacao de status para saber quando a portaria confirmar
   if(verificarStatusInterval === null){
     verificarStatusInterval = setInterval(verificarStatusPortaria, 10000);
@@ -651,11 +655,14 @@ function pararRastreamento(){
   if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
   if(verificarStatusInterval !== null){ clearInterval(verificarStatusInterval); verificarStatusInterval = null; }
   gpsUltimaPos = null;
-  document.getElementById('gpsStatus').classList.remove('ativo');
+  var gpsStatusEl = document.getElementById('gpsStatus');
+  gpsStatusEl.classList.remove('ativo');
+  gpsStatusEl.style.display = '';
   // Restaurar botao para estado original
   var btn = document.getElementById('btnCaminho');
   btn.textContent = '\ud83d\ude9a Estou a Caminho';
   btn.classList.remove('parando');
+  btn.classList.remove('chegou-confirmado');
   btn.disabled = false;
   btn.onclick = function(){ iniciarRastreamento(); };
 }

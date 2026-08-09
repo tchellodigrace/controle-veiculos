@@ -2006,7 +2006,7 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
   try {
     const { motorista_id, placa } = req.body;
     if (!motorista_id && !placa) return res.status(400).json({ erro: 'motorista_id ou placa obrigatorio' });
-    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
 
@@ -2054,7 +2054,7 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
 app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) => {
   try {
     const { placa } = req.body;
-    const cliente = await pool.query('SELECT id, empresa FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
 
