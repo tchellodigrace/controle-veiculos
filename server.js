@@ -353,8 +353,8 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
     );
     // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
     await pool.query(
-      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
-      [cid, placaClean]
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
+      [cid, placaClean, sanitizarString(cnh).substring(0,50), sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,100), sanitizarString(nota).substring(0,100), sanitizarString(obs).substring(0,500)]
     ).catch(() => {});
     res.status(201).json(result.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + (motorista||'') + ' | Empresa: ' + empresa);
@@ -823,7 +823,7 @@ function motoristaAuthMiddleware(req, res, next) {
 // === MOTORISTA LOCALIZACAO (GPS) ===
 app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
   try {
-    const { lat, lng, placa, empresa } = req.body;
+    const { lat, lng, placa, empresa, modelo, finalidade, cnh, nota, obs } = req.body;
     if (lat === undefined || lng === undefined) return res.status(400).json({ erro: 'Coordenadas obrigatórias' });
     const latNum = parseFloat(lat);
     const lngNum = parseFloat(lng);
@@ -845,8 +845,8 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
     }
     await pool.query('DELETE FROM localizacoes_motoristas WHERE motorista_id = $1', [req.motorista.id]);
     await pool.query(
-      `INSERT INTO localizacoes_motoristas (motorista_id, cliente_id, nome, placa, empresa, lat, lng, rua, a_caminho, atualizado_em)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, NOW())`,
+      `INSERT INTO localizacoes_motoristas (motorista_id, cliente_id, nome, placa, empresa, lat, lng, rua, a_caminho, cnh, modelo, finalidade, nota, obs, atualizado_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10, $11, $12, $13, NOW())`,
       [
       req.motorista.id,
       req.motorista.cliente_id,
@@ -855,7 +855,12 @@ app.post('/api/motorista/localizacao', motoristaAuthMiddleware, apiLimiter, asyn
       sanitizarString(empresa || '').substring(0, 200),
       latNum,
       lngNum,
-      sanitizarString(rua).substring(0, 200)
+      sanitizarString(rua).substring(0, 200),
+      sanitizarString(cnh || '').substring(0, 50),
+      sanitizarString(modelo || '').substring(0, 100),
+      sanitizarString(finalidade || '').substring(0, 100),
+      sanitizarString(nota || '').substring(0, 100),
+      sanitizarString(obs || '').substring(0, 500)
     ]);
     res.json({ ok: true });
   } catch (err) {
@@ -950,8 +955,8 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
     await pool.query(
-      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
-      [cid, d.placa]
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
+      [cid, d.placa, sanitizarString(d.cnh||'').substring(0,50), sanitizarString(d.modelo||'').substring(0,100), sanitizarString(d.finalidade||'').substring(0,100), sanitizarString(d.nota||'').substring(0,100), sanitizarString(d.obs||'').substring(0,500)]
     ).catch(() => {});
     res.status(201).json(registro.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao pre-registro', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
@@ -1944,7 +1949,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros, checkinsQR] = await Promise.all([
-      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, finalidade_tipo, saida_em, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC", [cid]),
+      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, finalidade_tipo, saida_em, cnh, modelo, finalidade, nota, obs, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid]),
       pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\' ORDER BY criado_em DESC LIMIT 200', [cid])
     ]);
@@ -2537,6 +2542,11 @@ async function iniciar() {
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS saida_logistica BOOLEAN DEFAULT FALSE",
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS finalidade_tipo VARCHAR(50) DEFAULT ''",
       "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS saida_em TIMESTAMP DEFAULT NULL",
+    "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS cnh VARCHAR(50) DEFAULT ''",
+    "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS modelo VARCHAR(100) DEFAULT ''",
+    "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS finalidade VARCHAR(100) DEFAULT ''",
+    "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS nota VARCHAR(100) DEFAULT ''",
+    "ALTER TABLE localizacoes_motoristas ADD COLUMN IF NOT EXISTS obs TEXT DEFAULT ''",
       "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_motoristas ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",
       "ALTER TABLE contas_visitantes ADD COLUMN IF NOT EXISTS trocar_senha BOOLEAN DEFAULT FALSE",

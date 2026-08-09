@@ -45,7 +45,7 @@
   .mapa-vazio svg{ width:48px; height:48px; opacity:.3; }
 
   /* Lista lateral */
-  .lista-section{ display:flex; flex-direction:column; gap:12px; max-height:620px; overflow-y:auto; padding:12px; }
+  .lista-section{ display:flex; flex-direction:column; gap:12px; max-height:700px; overflow-y:auto; padding:12px; }
   .motorista-card{
     background:#f7f9fb; border:1px solid #e0e3e7; border-radius:10px;
     padding:12px; cursor:pointer; transition:.15s;
@@ -83,6 +83,19 @@
     background:#ff9800; color:#fff;
   }
   .btn-patio-liberado:hover{ background:#fb8c00; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+
+  /* Informacoes adicionais */
+  .mc-adicionais{
+    margin-top:6px; padding:8px 10px; background:#f0f4f8; border-radius:8px;
+    font-size:11px; color:#4a5568; display:flex; flex-direction:column; gap:2px;
+  }
+  .mc-adicionais b{ color:#1a1a2e; }
+  .btn-imprimir{
+    background:#607d8b; color:#fff; font-size:10px; padding:4px 10px;
+    border:none; border-radius:6px; cursor:pointer; font-weight:700;
+    margin-top:4px; transition:.15s;
+  }
+  .btn-imprimir:hover{ background:#455a64; }
 
   /* Barra de acoes fixa */
   .acoes-barra{
@@ -325,9 +338,18 @@ function carregarDados(){
               (d.rua ? '<div class="mc-rua">&#x1F4CD; ' + esc(d.rua) + '</div>' : '') +
               '<div class="mc-tempo">' + (d.chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>' +
             '</div>' +
+            (d.finalidade || d.cnh || d.modelo || d.nota || d.obs ?
+              '<div class="mc-adicionais">' +
+                (d.finalidade ? '<div><b>Finalidade:</b> ' + esc(d.finalidade) + '</div>' : '') +
+                (d.cnh ? '<div><b>CNH:</b> ' + esc(d.cnh) + '</div>' : '') +
+                (d.modelo ? '<div><b>Modelo:</b> ' + esc(d.modelo) + '</div>' : '') +
+                (d.nota ? '<div><b>Nota/RT:</b> ' + esc(d.nota) + '</div>' : '') +
+                (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
+              '</div>' : '') +
             '<div class="mc-acoes">' +
               '<button class="btn-entrega-concluida" onclick="event.stopPropagation(); entregaConcluida(' + mid + ', \'' + esc(d.placa || '') + '\')" ' + (!d.chegou ? 'disabled' : '') + '>&#x2705; Entrega Concluida</button>' +
               '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado()">&#x1F6E4; Patio Liberado</button>' +
+              '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + mid + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
       });
@@ -357,6 +379,14 @@ function carregarDados(){
               (horaSaida ? '<div><b>Saida: ' + horaSaida + '</b></div>' : '') +
               '<div class="mc-tempo">' + (d.rua ? '&#x1F4CD; ' + esc(d.rua) : '') + '</div>' +
             '</div>' +
+            (d.finalidade || d.cnh || d.modelo || d.nota || d.obs ?
+              '<div class="mc-adicionais">' +
+                (d.finalidade ? '<div><b>Finalidade:</b> ' + esc(d.finalidade) + '</div>' : '') +
+                (d.cnh ? '<div><b>CNH:</b> ' + esc(d.cnh) + '</div>' : '') +
+                (d.modelo ? '<div><b>Modelo:</b> ' + esc(d.modelo) + '</div>' : '') +
+                (d.nota ? '<div><b>Nota/RT:</b> ' + esc(d.nota) + '</div>' : '') +
+                (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
+              '</div>' : '') +
           '</div>';
       });
 
@@ -577,6 +607,58 @@ async function patioLiberado(){
     var data = await res.json();
     alert(data.mensagem || 'Portaria notificada com sucesso');
   } catch(e){ alert('Erro de conexao com o servidor'); }
+}
+
+// === IMPRIMIR FICHA DO MOTORISTA ===
+var motoristasCache = [];
+// Salvar cache de motoristas para impressao
+// (usado dentro de carregarDados - ja atualiza a lista)
+
+function imprimirMotorista(motoristaId){
+  // Buscar dados dos motoristas carregados
+  fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN))
+    .then(function(res){ return res.json(); })
+    .then(function(data){
+      if(!data || !data.motoristas) return;
+      var m = data.motoristas.find(function(d){ return d.motorista_id === motoristaId; });
+      if(!m){ alert('Motorista nao encontrado'); return; }
+      var st = getStatusInfo(m);
+      var horaChegada = m.chegada_em ? new Date(m.chegada_em).toLocaleTimeString('pt-BR') : '---';
+      var horaSaida = m.saida_em ? new Date(m.saida_em).toLocaleTimeString('pt-BR') : '';
+      var dataHora = m.chegada_em ? new Date(m.chegada_em).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+
+      var win = window.open('', '_blank', 'width=400,height=600');
+      win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motorista</title>' +
+        '<style>' +
+        '*{box-sizing:border-box;margin:0;padding:0}' +
+        'body{font-family:Arial,sans-serif;padding:20px;max-width:350px;margin:0 auto;color:#333}' +
+        '.header{text-align:center;border-bottom:2px solid #1a1a2e;padding-bottom:12px;margin-bottom:16px}' +
+        '.header h1{font-size:16px;color:#1a1a2e;margin-bottom:4px}' +
+        '.header p{font-size:11px;color:#666}' +
+        '.status{text-align:center;padding:8px;border-radius:8px;margin-bottom:16px;font-size:14px;font-weight:700;color:#fff;background:' + st.cor + '}' +
+        '.campo{display:flex;padding:8px 0;border-bottom:1px solid #eee;font-size:12px}' +
+        '.campo .label{min-width:100px;color:#666;font-weight:600}' +
+        '.campo .valor{flex:1;color:#1a1a2e;font-weight:700}' +
+        '.footer{text-align:center;margin-top:20px;padding-top:12px;border-top:1px solid #ddd;font-size:9px;color:#999}' +
+        '@media print{body{padding:10px}.header{border-bottom:2px solid #000}}' +
+        '</style></head><body>' +
+        '<div class="header"><h1>DSRH - Controle de Portaria</h1><p>' + esc(EMPRESA) + '</p></div>' +
+        '<div class="status">' + st.label + '</div>' +
+        '<div class="campo"><div class="label">Motorista</div><div class="valor">' + esc(m.nome || '---') + '</div></div>' +
+        '<div class="campo"><div class="label">Placa</div><div class="valor">' + esc(m.placa || '---') + '</div></div>' +
+        '<div class="campo"><div class="label">Empresa</div><div class="valor">' + esc(m.empresa || '---') + '</div></div>' +
+        (m.modelo ? '<div class="campo"><div class="label">Modelo</div><div class="valor">' + esc(m.modelo) + '</div></div>' : '') +
+        '<div class="campo"><div class="label">Chegada</div><div class="valor">' + horaChegada + '</div></div>' +
+        (horaSaida ? '<div class="campo"><div class="label">Saida</div><div class="valor">' + horaSaida + '</div></div>' : '') +
+        (m.finalidade ? '<div class="campo"><div class="label">Finalidade</div><div class="valor">' + esc(m.finalidade) + '</div></div>' : '') +
+        (m.cnh ? '<div class="campo"><div class="label">CNH</div><div class="valor">' + esc(m.cnh) + '</div></div>' : '') +
+        (m.nota ? '<div class="campo"><div class="label">Nota/RT</div><div class="valor">' + esc(m.nota) + '</div></div>' : '') +
+        (m.obs ? '<div class="campo"><div class="label">Info Adicionais</div><div class="valor">' + esc(m.obs) + '</div></div>' : '') +
+        '<div class="footer">Impresso em ' + dataHora + '</div>' +
+        '<script>window.onload=function(){window.print()}</script>' +
+        '</body></html>');
+      win.document.close();
+    });
 }
 
 // Iniciar

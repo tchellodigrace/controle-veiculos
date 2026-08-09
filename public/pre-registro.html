@@ -604,10 +604,15 @@ async function enviarLocalizacao(coords){
   try{
     var empresa = document.getElementById('empresa') ? document.getElementById('empresa').value.trim() : '';
     var placa = document.getElementById('placa') ? document.getElementById('placa').value.trim() : '';
+    var modelo = document.getElementById('modelo') ? document.getElementById('modelo').value.trim() : '';
+    var finalidade = document.getElementById('finalidade') ? document.getElementById('finalidade').value.trim() : '';
+    var cnh = document.getElementById('cnh') ? document.getElementById('cnh').value.trim() : '';
+    var nota = document.getElementById('nota') ? document.getElementById('nota').value.trim() : '';
+    var obs = document.getElementById('obs') ? document.getElementById('obs').value.trim() : '';
     await fetch(API + '/api/motorista/localizacao', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista },
-      body: JSON.stringify({ lat: coords.latitude, lng: coords.longitude, placa: placa, empresa: empresa })
+      body: JSON.stringify({ lat: coords.latitude, lng: coords.longitude, placa: placa, empresa: empresa, modelo: modelo, finalidade: finalidade, cnh: cnh, nota: nota, obs: obs })
     });
   } catch(e){ /* erro silencioso - nao interromper o rastreamento */ }
 }
