@@ -351,11 +351,18 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro`,
       [cid, hora, placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,50), sanitizarString(empresa).substring(0,100), sanitizarString(motorista).substring(0,100), sanitizarString(cnh).substring(0,20), hora, sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), pos.rows[0].prox]
     );
-    // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
-    await pool.query(
-      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
-      [cid, placaClean, sanitizarString(cnh).substring(0,50), sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,100), sanitizarString(nota).substring(0,100), sanitizarString(obs).substring(0,500)]
-    ).catch(() => {});
+    // Atualizar ou inserir em localizacoes_motoristas para aparecer na logistica
+    const updateResult = await pool.query(
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, empresa = $8, nome = $9, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND (a_caminho = TRUE OR chegou = FALSE)',
+      [cid, placaClean, sanitizarString((cnh||'').toString()).substring(0,50), sanitizarString((modelo||'').toString()).substring(0,100), sanitizarString((finalidade||'').toString()).substring(0,100), sanitizarString((nota||'').toString()).substring(0,100), sanitizarString((obs||'').toString()).substring(0,500), sanitizarString(empresa).substring(0,100), sanitizarString((motorista||'').toString()).substring(0,100)]
+    );
+    // Se nao existia registro (chegou direto pela portaria sem app), criar um novo
+    if(updateResult.rowCount === 0){
+      await pool.query(
+        'INSERT INTO localizacoes_motoristas (cliente_id, placa, empresa, nome, a_caminho, chegou, chegada_em, cnh, modelo, finalidade, nota, obs, atualizado_em) VALUES ($1,$2,$3,$4,FALSE,TRUE,NOW(),$5,$6,$7,$8,$9,NOW())',
+        [cid, placaClean, sanitizarString(empresa).substring(0,100), sanitizarString((motorista||'').toString()).substring(0,100), sanitizarString((cnh||'').toString()).substring(0,50), sanitizarString((modelo||'').toString()).substring(0,100), sanitizarString((finalidade||'').toString()).substring(0,100), sanitizarString((nota||'').toString()).substring(0,100), sanitizarString((obs||'').toString()).substring(0,500)]
+      ).catch(() => {});
+    }
     res.status(201).json(result.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + (motorista||'') + ' | Empresa: ' + empresa);
   } catch (err) {
