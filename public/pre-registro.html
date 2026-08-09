@@ -157,12 +157,12 @@
     <div class="logo">
       <svg viewBox="0 0 24 24" fill="none" stroke="#e08a1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:48px;height:48px;display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </div>
-    <h1 style="color:#e08a1e">Conta Aguardando Ativação</h1>
-    <p class="sub">Sua conta foi criada com sucesso e está aguardando a portaria ativar seu acesso.</p>
-    <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:16px;margin:16px 0;font-size:13px;color:#5d4037;text-align:center">
+    <h1 style="color:#e08a1e" id="tituloAguardando">Conta Aguardando Ativação</h1>
+    <p class="sub" id="subAguardando">Sua conta foi criada com sucesso e está aguardando a portaria ativar seu acesso.</p>
+    <div id="msgAguardando" style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:16px;margin:16px 0;font-size:13px;color:#5d4037;text-align:center">
       Seu cadastro será ativado em até 5 minutos, por favor aguarde!
     </div>
-    <button onclick="mostrarTelaLogin2(event)" style="background:#6c757d">Voltar ao Login</button>
+    <button onclick="mostrarTelaLogin2(event)" style="background:#6c757d" id="btnAguardando">Voltar ao Login</button>
   </div>
 
   <div id="telaForm" style="display:none">
@@ -268,6 +268,8 @@ if(!CLIENTE_ID){
 
 var tokenMotorista = localStorage.getItem('tokenMotorista_' + CLIENTE_ID);
 var motoristaLogado = JSON.parse(localStorage.getItem('motoristaLogado_' + CLIENTE_ID) || 'null');
+var usuarioAguardando = '';
+var verificarAtivacaoInterval = null;
 
 if(tokenMotorista && motoristaLogado){
   mostrarTelaForm();
@@ -315,10 +317,37 @@ async function criarConta(e){
     });
     if(!res.ok){ var err = await res.json(); mostrarErro("erroCadastro", err.erro || "Erro ao criar conta"); btn.disabled = false; btn.textContent = "Criar Conta"; return; }
     document.getElementById("formCadastro").reset();
+    usuarioAguardando = usuario;
     document.getElementById("telaCadastro").style.display = "none";
     document.getElementById("telaAguardando").style.display = "block";
     btn.disabled = false; btn.textContent = "Criar Conta";
+    // Verificar a cada 10s se a portaria ativou a conta
+    if(verificarAtivacaoInterval) clearInterval(verificarAtivacaoInterval);
+    verificarAtivacaoInterval = setInterval(verificarAtivacao, 10000);
   } catch(ex) { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
+}
+
+async function verificarAtivacao(){
+  if(!usuarioAguardando || !CLIENTE_ID) return;
+  try {
+    var res = await fetch(API + '/api/verificar-ativacao?cliente_id=' + encodeURIComponent(CLIENTE_ID) + '&usuario=' + encodeURIComponent(usuarioAguardando));
+    if(!res.ok) return;
+    var data = await res.json();
+    if(data.ativo){
+      // Conta ativada! Parar verificacao e mostrar mensagem de sucesso
+      if(verificarAtivacaoInterval){ clearInterval(verificarAtivacaoInterval); verificarAtivacaoInterval = null; }
+      document.getElementById('tituloAguardando').textContent = 'Cadastro Ativado!';
+      document.getElementById('tituloAguardando').style.color = '#28a745';
+      document.getElementById('subAguardando').textContent = '';
+      document.getElementById('msgAguardando').style.background = '#d4edda';
+      document.getElementById('msgAguardando').style.borderColor = '#28a745';
+      document.getElementById('msgAguardando').style.color = '#155724';
+      document.getElementById('msgAguardando').innerHTML = 'Cadastro de login ativado com sucesso pela portaria. Siga com seu login e senha que você cadastrou no painel de login!';
+      document.getElementById('btnAguardando').textContent = 'Ir para o Login';
+      document.getElementById('btnAguardando').style.background = '#28a745';
+      document.getElementById('btnAguardando').onclick = function(e){ mostrarTelaLogin2(e); };
+    }
+  } catch(e){}
 }
 
 async function fazerLogin(e){
