@@ -323,6 +323,7 @@ async function criarConta(e){
     btn.disabled = false; btn.textContent = "Criar Conta";
     // Verificar a cada 10s se a portaria ativou a conta
     if(verificarAtivacaoInterval) clearInterval(verificarAtivacaoInterval);
+    verificarAtivacao(); // primeira verificacao imediata
     verificarAtivacaoInterval = setInterval(verificarAtivacao, 10000);
   } catch(ex) { mostrarErro("erroCadastro", "Erro de conexão"); btn.disabled = false; btn.textContent = "Criar Conta"; }
 }
@@ -330,12 +331,16 @@ async function criarConta(e){
 async function verificarAtivacao(){
   if(!usuarioAguardando || !CLIENTE_ID) return;
   try {
-    var res = await fetch(API + '/api/verificar-ativacao?cliente_id=' + encodeURIComponent(CLIENTE_ID) + '&usuario=' + encodeURIComponent(usuarioAguardando));
-    if(!res.ok) return;
+    var url = API + '/api/verificar-ativacao?cliente_id=' + encodeURIComponent(CLIENTE_ID) + '&usuario=' + encodeURIComponent(usuarioAguardando);
+    console.log('[ATIVACAO] Verificando...', url);
+    var res = await fetch(url);
+    if(!res.ok){ console.log('[ATIVACAO] Erro HTTP:', res.status); return; }
     var data = await res.json();
+    console.log('[ATIVACAO] Resposta:', JSON.stringify(data));
     if(data.ativo){
       // Conta ativada! Parar verificacao e mostrar mensagem de sucesso
       if(verificarAtivacaoInterval){ clearInterval(verificarAtivacaoInterval); verificarAtivacaoInterval = null; }
+      console.log('[ATIVACAO] Conta ATIVADA! Atualizando tela...');
       document.getElementById('tituloAguardando').textContent = 'Cadastro Ativado!';
       document.getElementById('tituloAguardando').style.color = '#28a745';
       document.getElementById('subAguardando').textContent = '';
@@ -347,7 +352,7 @@ async function verificarAtivacao(){
       document.getElementById('btnAguardando').style.background = '#28a745';
       document.getElementById('btnAguardando').onclick = function(e){ mostrarTelaLogin2(e); };
     }
-  } catch(e){}
+  } catch(e){ console.log('[ATIVACAO] Erro:', e.message); }
 }
 
 async function fazerLogin(e){

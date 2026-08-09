@@ -788,7 +788,7 @@ app.post('/api/cadastro-motorista', preRegistroLimiter, async (req, res) => {
 });
 
 // Verificar se conta de motorista esta ativa (usado pelo app para auto-check)
-app.get('/api/verificar-ativacao', preRegistroLimiter, async (req, res) => {
+app.get('/api/verificar-ativacao', apiLimiter, async (req, res) => {
   try {
     const { cliente_id, usuario } = req.query;
     if (!cliente_id || !usuario) return res.status(400).json({ erro: 'cliente_id e usuario obrigatorios' });
