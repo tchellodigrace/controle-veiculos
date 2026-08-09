@@ -524,6 +524,7 @@ function mostrarTelaLogin2(e){
 var gpsWatchId = null;
 var gpsIntervalo = null;
 var gpsUltimaPos = null;
+var verificarStatusInterval = null;
 
 function mostrarErroGPS(msg){
   var el = document.getElementById('gpsErro');
@@ -577,6 +578,9 @@ async function iniciarRastreamento(){
     gpsIntervalo = setInterval(function(){
       if(gpsUltimaPos) enviarLocalizacao(gpsUltimaPos);
     }, 15000);
+
+    // Verificar status a cada 10s (se a portaria marcou chegada/saida)
+    verificarStatusInterval = setInterval(verificarStatusPortaria, 10000);
 
     // Auto-stop e deslogar ao fechar a pagina
     window.addEventListener('beforeunload', function(){ pararRastreamento(); sairSilencioso(); });
@@ -634,8 +638,44 @@ async function cheguei(){
 function pararRastreamento(){
   if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
   if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
+  if(verificarStatusInterval !== null){ clearInterval(verificarStatusInterval); verificarStatusInterval = null; }
   gpsUltimaPos = null;
   document.getElementById('gpsStatus').classList.remove('ativo');
+  // Restaurar botao para estado original
+  var btn = document.getElementById('btnCaminho');
+  btn.textContent = '\ud83d\ude9a Estou a Caminho';
+  btn.classList.remove('parando');
+  btn.disabled = false;
+  btn.onclick = function(){ iniciarRastreamento(); };
+}
+
+async function verificarStatusPortaria(){
+  if(!tokenMotorista) return;
+  try {
+    var res = await fetch(API + '/api/motorista/status', {
+      headers: { 'Authorization': 'Bearer ' + tokenMotorista }
+    });
+    if(!res.ok) return;
+    var data = await res.json();
+    var btn = document.getElementById('btnCaminho');
+    if(data.ativo && data.chegou && !data.saida_logistica){
+      // Portaria marcou chegada
+      btn.textContent = '\u2705 Chegada registrada pela portaria';
+      btn.disabled = true;
+      btn.classList.add('parando');
+      document.getElementById('gpsStatus').classList.remove('ativo');
+      // Parar verificacao pois ja foi confirmado
+      if(verificarStatusInterval){ clearInterval(verificarStatusInterval); verificarStatusInterval = null; }
+      // Parar envio de GPS mas manter watch para caso precise voltar
+      if(gpsIntervalo){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
+    } else if(data.ativo && data.saida_logistica){
+      // Portaria marcou saida - liberar para novo rastreamento
+      pararRastreamento();
+      btn.textContent = '\ud83d\ude9a Estou a Caminho';
+      btn.disabled = false;
+      mostrarErroGPS('Saída registrada pela portaria. Você pode iniciar um novo rastreamento.');
+    }
+  } catch(e){}
 }
 
 function mostrarTelaForm(){

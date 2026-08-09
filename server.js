@@ -351,6 +351,11 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro`,
       [cid, hora, placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,50), sanitizarString(empresa).substring(0,100), sanitizarString(motorista).substring(0,100), sanitizarString(cnh).substring(0,20), hora, sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), pos.rows[0].prox]
     );
+    // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
+    await pool.query(
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
+      [cid, placaClean]
+    ).catch(() => {});
     res.status(201).json(result.rows[0]);
     logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + (motorista||'') + ' | Empresa: ' + empresa);
   } catch (err) {
@@ -884,6 +889,29 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   } catch (err) {
     console.error('Erro ao buscar localizacoes:', err);
     res.status(500).json({ erro: 'Erro ao buscar localizações' });
+  }
+});
+
+// Endpoint para o motorista verificar seu proprio status de rastreamento
+app.get('/api/motorista/status', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT a_caminho, chegou, saida_logistica, chegada_em, saida_em FROM localizacoes_motoristas WHERE motorista_id = $1 AND cliente_id = $2 ORDER BY atualizado_em DESC LIMIT 1',
+      [req.motorista.id, req.motorista.cliente_id]
+    );
+    if (!result.rows.length) return res.json({ ativo: false });
+    const d = result.rows[0];
+    res.json({
+      ativo: true,
+      a_caminho: d.a_caminho,
+      chegou: d.chegou,
+      saida_logistica: d.saida_logistica,
+      chegada_em: d.chegada_em,
+      saida_em: d.saida_em
+    });
+  } catch (err) {
+    console.error('Erro ao buscar status motorista:', err);
+    res.status(500).json({ erro: 'Erro ao buscar status' });
   }
 });
 
