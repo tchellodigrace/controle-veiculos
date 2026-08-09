@@ -322,17 +322,25 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
     if (!placa || !empresa) return res.status(400).json({ erro: 'Placa e Empresa são obrigatórios' });
     const placaClean = placa.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (placaClean.length < 6 || placaClean.length > 8) return res.status(400).json({ erro: 'Placa inválida (deve ter 6-8 caracteres alfanuméricos)' });
-    const errEmpresa = validarString(empresa, 2, 100, 'Empresa');
+    // Tudo em maiusculas
+    const empresaUp = (empresa || '').trim().toUpperCase();
+    const modeloUp = (modelo || '').trim().toUpperCase();
+    const finalidadeUp = (finalidade || '').trim().toUpperCase();
+    const motoristaUp = (motorista || '').trim().toUpperCase();
+    const cnhUp = (cnh || '').trim().toUpperCase();
+    const notaUp = (nota || '').trim().toUpperCase();
+    const obsUp = (obs || '').trim().toUpperCase();
+    const errEmpresa = validarString(empresaUp, 2, 100, 'Empresa');
     if (errEmpresa) return res.status(400).json({ erro: errEmpresa });
-    const errModelo = validarString(modelo, 0, 100, 'Modelo');
+    const errModelo = validarString(modeloUp, 0, 100, 'Modelo');
     if (errModelo) return res.status(400).json({ erro: errModelo });
-    const errMotorista = validarString(motorista, 0, 100, 'Motorista');
+    const errMotorista = validarString(motoristaUp, 0, 100, 'Motorista');
     if (errMotorista) return res.status(400).json({ erro: errMotorista });
-    const errCnh = validarString(cnh, 0, 20, 'CNH');
+    const errCnh = validarString(cnhUp, 0, 20, 'CNH');
     if (errCnh) return res.status(400).json({ erro: errCnh });
-    const errNota = validarString(nota, 0, 50, 'Nota');
+    const errNota = validarString(notaUp, 0, 50, 'Nota');
     if (errNota) return res.status(400).json({ erro: errNota });
-    const errObs = validarString(obs, 0, 500, 'Observacao');
+    const errObs = validarString(obsUp, 0, 500, 'Observacao');
     if (errObs) return res.status(400).json({ erro: errObs });
     // Detecção de duplicado: mesma placa sem saída no mesmo dia
     const dup = await pool.query(
@@ -349,22 +357,35 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, posicao)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro`,
-      [cid, hora, placaClean, sanitizarString(modelo).substring(0,100), sanitizarString(finalidade).substring(0,50), sanitizarString(empresa).substring(0,100), sanitizarString(motorista).substring(0,100), sanitizarString(cnh).substring(0,20), hora, sanitizarString(nota).substring(0,50), sanitizarString(obs).substring(0,500), pos.rows[0].prox]
+      [cid, hora, placaClean, sanitizarString(modeloUp).substring(0,100), sanitizarString(finalidadeUp).substring(0,50), sanitizarString(empresaUp).substring(0,100), sanitizarString(motoristaUp).substring(0,100), sanitizarString(cnhUp).substring(0,20), hora, sanitizarString(notaUp).substring(0,50), sanitizarString(obsUp).substring(0,500), pos.rows[0].prox]
     );
     // Atualizar ou inserir em localizacoes_motoristas para aparecer na logistica
     const updateResult = await pool.query(
       'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, empresa = $8, nome = $9, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND (a_caminho = TRUE OR chegou = FALSE)',
-      [cid, placaClean, sanitizarString((cnh||'').toString()).substring(0,50), sanitizarString((modelo||'').toString()).substring(0,100), sanitizarString((finalidade||'').toString()).substring(0,100), sanitizarString((nota||'').toString()).substring(0,100), sanitizarString((obs||'').toString()).substring(0,500), sanitizarString(empresa).substring(0,100), sanitizarString((motorista||'').toString()).substring(0,100)]
+      [cid, placaClean, sanitizarString(cnhUp).substring(0,50), sanitizarString(modeloUp).substring(0,100), sanitizarString(finalidadeUp).substring(0,100), sanitizarString(notaUp).substring(0,100), sanitizarString(obsUp).substring(0,500), sanitizarString(empresaUp).substring(0,100), sanitizarString(motoristaUp).substring(0,100)]
     );
     // Se nao existia registro (chegou direto pela portaria sem app), criar um novo
     if(updateResult.rowCount === 0){
       await pool.query(
         'INSERT INTO localizacoes_motoristas (cliente_id, placa, empresa, nome, a_caminho, chegou, chegada_em, cnh, modelo, finalidade, nota, obs, atualizado_em) VALUES ($1,$2,$3,$4,FALSE,TRUE,NOW(),$5,$6,$7,$8,$9,NOW())',
-        [cid, placaClean, sanitizarString(empresa).substring(0,100), sanitizarString((motorista||'').toString()).substring(0,100), sanitizarString((cnh||'').toString()).substring(0,50), sanitizarString((modelo||'').toString()).substring(0,100), sanitizarString((finalidade||'').toString()).substring(0,100), sanitizarString((nota||'').toString()).substring(0,100), sanitizarString((obs||'').toString()).substring(0,500)]
+        [cid, placaClean, sanitizarString(empresaUp).substring(0,100), sanitizarString(motoristaUp).substring(0,100), sanitizarString(cnhUp).substring(0,50), sanitizarString(modeloUp).substring(0,100), sanitizarString(finalidadeUp).substring(0,100), sanitizarString(notaUp).substring(0,100), sanitizarString(obsUp).substring(0,500)]
       ).catch(() => {});
     }
+    // Criar conta de motorista se ainda nao existe (registro direto pela portaria)
+    if(motoristaUp){
+      var usuarioGen = placaClean.toLowerCase();
+      var existeMotorista = await pool.query('SELECT id FROM contas_motoristas WHERE cliente_id = $1 AND (usuario = $2 OR nome = $3)', [cid, usuarioGen, motoristaUp]);
+      if(!existeMotorista.rows.length){
+        var senhaTemp = placaClean.toLowerCase() + '@Portaria';
+        var senhaHash = await bcrypt.hash(senhaTemp, 10);
+        await pool.query(
+          'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1,$2,$3,$4,$5,$6,TRUE)',
+          [cid, usuarioGen, senhaHash, senhaTemp.substring(0,20), motoristaUp, empresaUp]
+        ).catch(() => {});
+      }
+    }
     res.status(201).json(result.rows[0]);
-    logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + (motorista||'') + ' | Empresa: ' + empresa);
+    logAuditoria(cid, req.usuario?.nome || '', 'Entrada', 'veiculo', placa.toUpperCase(), 'Motorista: ' + motoristaUp + ' | Empresa: ' + empresaUp);
   } catch (err) {
     console.error('Erro ao criar registro:', err);
     res.status(500).json({ erro: 'Erro ao criar registro' });
