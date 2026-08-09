@@ -1039,6 +1039,19 @@ app.put('/api/contas-motoristas/:id', authMiddleware, apiLimiter, async (req, re
   }
 });
 
+app.delete('/api/contas-motoristas/:id', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const result = await pool.query('DELETE FROM contas_motoristas WHERE id = $1 AND cliente_id = $2 RETURNING id, nome', [req.params.id, req.usuario.cliente_id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Conta nao encontrada' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao conta motorista', 'motorista', '', 'Nome: ' + result.rows[0].nome);
+    res.json({ mensagem: 'Conta excluida com sucesso' });
+  } catch (err) {
+    console.error('Erro ao excluir conta motorista:', err);
+    res.status(500).json({ erro: 'Erro ao excluir conta' });
+  }
+});
+
 app.post('/api/cadastro-visitante', preRegistroLimiter, async (req, res) => {
   try {
     const { cliente_id, nome, usuario, senha, cpf, rg, empresa } = req.body;
@@ -1228,6 +1241,19 @@ app.put('/api/contas-visitantes/:id', authMiddleware, apiLimiter, async (req, re
   } catch (err) {
     console.error('Erro ao atualizar conta visitante:', err);
     res.status(500).json({ erro: 'Erro ao atualizar conta' });
+  }
+});
+
+app.delete('/api/contas-visitantes/:id', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const result = await pool.query('DELETE FROM contas_visitantes WHERE id = $1 AND cliente_id = $2 RETURNING id, nome', [req.params.id, req.usuario.cliente_id]);
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Conta nao encontrada' });
+    logAuditoria(req.usuario.cliente_id, req.usuario?.nome || '', 'Exclusao conta visitante', 'visitante', '', 'Nome: ' + result.rows[0].nome);
+    res.json({ mensagem: 'Conta excluida com sucesso' });
+  } catch (err) {
+    console.error('Erro ao excluir conta visitante:', err);
+    res.status(500).json({ erro: 'Erro ao excluir conta' });
   }
 });
 

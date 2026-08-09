@@ -1818,6 +1818,7 @@ async function carregarContasMotoristas(){
         <div style="display:flex;gap:6px;align-items:center">
 
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
+          <button class="btn-excluir" onclick="excluirContaMotorista(${c.id}, '${esc(c.nome)}')" title="Apagar conta" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:13px;color:#fff;background:#dc3545" title="Apagar">&#x1F5D1;</button>
           <button class="btn-excluir" onclick="alternarContaMotorista(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '&#x2716;' : '&#x2714;'}</button>
         </div>
       </div>
@@ -1851,6 +1852,16 @@ async function alternarContaMotorista(id, ativo){
     carregarContasMotoristas();
   } catch {}
 }
+async function excluirContaMotorista(id, nome){
+  if(!confirm('Tem certeza que deseja APAGAR a conta do motorista "' + nome + '"? Esta acao nao pode ser desfeita.')) return;
+  try {
+    const res = await fetch(API + '/api/contas-motoristas/' + id, {
+      method: 'DELETE', headers: getHeaders()
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro ao apagar'); return; }
+    carregarContasMotoristas();
+  } catch { alert('Erro ao apagar conta'); }
+}
 async function carregarContasVisitantes(){
   try {
     const res = await fetch(API + '/api/contas-visitantes', { headers: getHeaders() });
@@ -1870,6 +1881,7 @@ async function carregarContasVisitantes(){
         <div style="display:flex;gap:6px;align-items:center">
 
           <span class="usuario-status ${c.ativo ? '' : 'badge-admin'}">${c.ativo ? 'Ativo' : 'Inativo'}</span>
+          <button class="btn-excluir" onclick="excluirContaVisitante(${c.id}, '${esc(c.nome)}')" title="Apagar conta" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:13px;color:#fff;background:#dc3545" title="Apagar">&#x1F5D1;</button>
           <button class="btn-excluir" onclick="alternarContaVisitante(${c.id}, ${!c.ativo})" title="${c.ativo ? 'Desativar' : 'Ativar'}" style="width:24px;height:24px;border-radius:4px;border:none;cursor:pointer;font-size:11px;color:#fff;background:${c.ativo ? '#e53e3e' : '#38a169'}">${c.ativo ? '&#x2716;' : '&#x2714;'}</button>
         </div>
       </div>
@@ -1912,6 +1924,16 @@ async function alternarContaVisitante(id, ativo){
     });
     carregarContasVisitantes();
   } catch {}
+}
+async function excluirContaVisitante(id, nome){
+  if(!confirm('Tem certeza que deseja APAGAR a conta do visitante "' + nome + '"? Esta acao nao pode ser desfeita.')) return;
+  try {
+    const res = await fetch(API + '/api/contas-visitantes/' + id, {
+      method: 'DELETE', headers: getHeaders()
+    });
+    if(!res.ok){ const err = await res.json(); alert(err.erro || 'Erro ao apagar'); return; }
+    carregarContasVisitantes();
+  } catch { alert('Erro ao apagar conta'); }
 }
 async function carregarRelatorio(){
   const dataInicio = document.getElementById("filtroDataInicio").value;
