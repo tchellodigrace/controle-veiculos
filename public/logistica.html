@@ -228,6 +228,8 @@
   </div>
 </div>
 
+<div class="toast-container-log" id="toastContainerLog" style="position:fixed;top:16px;right:16px;z-index:10000;display:flex;flex-direction:column;gap:10px;max-width:380px"></div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 var API = window.location.origin;
@@ -656,10 +658,83 @@ function imprimirMotorista(motoristaId){
     });
 }
 
+// === TOAST NOTIFICATIONS ===
+function tocarSininhoLogistica(){
+  try{
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var notas = [1200, 1000, 800, 650];
+    var tempoNota = 0.5;
+    notas.forEach(function(freq, i){
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      var inicio = ctx.currentTime + (i * tempoNota);
+      gain.gain.setValueAtTime(0, inicio);
+      gain.gain.linearRampToValueAtTime(0.2, inicio + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, inicio + tempoNota * 0.95);
+      osc.start(inicio);
+      osc.stop(inicio + tempoNota);
+    });
+  }catch(e){}
+}
+
+var notifsAnterioresLog = 0;
+
+function mostrarToastLog(titulo, descricao, tipo){
+  var container = document.getElementById('toastContainerLog');
+  if(!container) return;
+  var toast = document.createElement('div');
+  var bg = '#fff', border = '#e3e7eb', corTitulo = '#1a1a2e', icone = '🔔';
+  if(tipo === 'entrada'){ bg = '#e9f1fa'; border = '#2f6fb0'; icone = '🚛'; }
+  else if(tipo === 'patio_liberado'){ bg = '#fff8e1'; border = '#e08a1e'; icone = '🅿️'; }
+  toast.style.cssText = 'background:' + bg + ';border-left:4px solid ' + border + ';border-radius:10px;padding:14px 16px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:flex-start;gap:12px;animation:toastSlideIn .3s ease;max-width:380px';
+  var hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  toast.innerHTML = '<div style="font-size:24px;flex-shrink:0">' + icone + '</div>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-size:13px;font-weight:700;color:' + corTitulo + '">' + titulo + '</div>' +
+      '<div style="font-size:12px;color:#5b6672;margin-top:3px;word-wrap:break-word">' + descricao + '</div>' +
+      '<div style="font-size:10px;color:#999;margin-top:4px">' + hora + '</div>' +
+    '</div>' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;font-size:18px;color:#999;cursor:pointer;padding:0;flex-shrink:0" aria-label="Fechar">&times;</button>';
+  container.appendChild(toast);
+  tocarSininhoLogistica();
+  setTimeout(function(){ if(toast.parentElement) toast.remove(); }, 10000);
+}
+
+async function verificarNotificacoesLog(){
+  if(!TOKEN) return;
+  try {
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/notificacoes');
+    if(!res.ok) return;
+    var notifs = await res.json();
+    var total = notifs.length;
+    if(total > notifsAnterioresLog){
+      var novas = notifs.slice(0, total - notifsAnterioresLog);
+      novas.forEach(function(n){
+        mostrarToastLog(n.titulo || 'Notificacao', n.descricao || '', n.tipo);
+      });
+    }
+    notifsAnterioresLog = total;
+    // Marcar como lidas
+    if(total > 0){
+      fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/notificacoes/ler-todas', { method: 'PUT' }).catch(function(){});
+    }
+  } catch(e){}
+}
+
 // Iniciar
 iniciarMapa();
 carregarDados();
 setInterval(carregarDados, 10000);
+verificarNotificacoesLog();
+setInterval(verificarNotificacoesLog, 5000);
 </script>
+
+<style>
+@keyframes toastSlideIn{ from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+</style>
 </body>
 </html>

@@ -993,8 +993,8 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     whatsapp.notificarEntrada(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade, hora }).catch(() => {});
     // Notificar via Email (entrada confirmada)
     email.notificarEntrada(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade, hora }).catch(() => {});
-    // Criar notificação no sistema
-    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cid, 'entrada', 'Entrada de veículo', 'Motorista: ' + (d.motorista||'') + ' | Placa: ' + d.placa + ' | Empresa: ' + d.empresa]).catch(() => {});
+    // Criar notificacao no sistema (portaria + logistica)
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cid, 'entrada', 'Veículo aguardando liberação do pátio', 'Motorista: ' + (d.motorista||'') + ' | Placa: ' + d.placa + ' | Empresa: ' + d.empresa]).catch(() => {});
   } catch (err) {
     console.error('Erro ao confirmar pre-registro:', err);
     res.status(500).json({ erro: 'Erro ao confirmar pré-registro' });
@@ -2013,6 +2013,36 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
   } catch (err) {
     console.error('Erro API logistica:', err);
     res.status(500).json({ erro: 'Erro ao buscar dados' });
+  }
+});
+
+// === LOGISTICA: Notificacoes (para toast no painel) ===
+app.get('/api/logistica/:token/notificacoes', apiLimiter, async (req, res) => {
+  try {
+    const cliente = await pool.query('SELECT id, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+    const result = await pool.query(
+      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE ORDER BY criado_em DESC LIMIT 10',
+      [cid]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar notificacoes logistica:', err);
+    res.status(500).json({ erro: 'Erro ao buscar notificacoes' });
+  }
+});
+
+app.put('/api/logistica/:token/notificacoes/ler-todas', apiLimiter, async (req, res) => {
+  try {
+    const cliente = await pool.query('SELECT id, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+    await pool.query('UPDATE notificacoes SET lida = TRUE WHERE cliente_id = $1 AND lida = FALSE', [cid]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao marcar notificacoes lidas logistica:', err);
+    res.status(500).json({ erro: 'Erro ao marcar notificacoes' });
   }
 });
 
