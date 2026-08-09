@@ -698,6 +698,7 @@
     <div class="nav-item" id="navCadastros">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       Cadastros
+      <span class="nav-badge" id="badgeCadastros" style="display:none">0</span>
     </div>
     <div class="nav-item" id="navArquivos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3 3 3-3"/></svg>
@@ -2038,6 +2039,7 @@ document.getElementById("btnToggleSidebar").addEventListener("click", ()=>{
 
 let badgesVeiculosAnterior = 0;
 let badgesVisitantesAnterior = 0;
+let badgesCadastrosAnterior = 0;
 
 async function verificarBadges(){
   try {
@@ -2086,6 +2088,27 @@ async function verificarBadges(){
     } else {
       badgeVisit.style.display = "none";
       badgesVisitantesAnterior = 0;
+    }
+    // Badge Cadastros: contas inativas (motoristas + visitantes)
+    let totalCadastros = 0;
+    if(resContasM.ok){
+      const contas = await resContasM.json();
+      totalCadastros += contas.filter(c => !c.ativo).length;
+    }
+    if(resContasVisit.ok){
+      const contas = await resContasVisit.json();
+      totalCadastros += contas.filter(c => !c.ativo).length;
+    }
+    const badgeCad = document.getElementById("badgeCadastros");
+    if(totalCadastros > 0){
+      badgeCad.textContent = totalCadastros;
+      badgeCad.style.display = "inline";
+      if(totalCadastros > badgesCadastrosAnterior) badgeCad.classList.add("pulse");
+      else badgeCad.classList.remove("pulse");
+      badgesCadastrosAnterior = totalCadastros;
+    } else {
+      badgeCad.style.display = "none";
+      badgesCadastrosAnterior = 0;
     }
   } catch {}
 }
