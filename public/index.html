@@ -566,6 +566,14 @@
     display:inline-block;background:#f3e8ff;color:#7c3aed;padding:2px 8px;border-radius:10px;
     font-size:10px;font-weight:700;margin-left:6px;
   }
+  .badge-chegou{
+    display:inline-block;background:#d4edda;color:#155724;padding:2px 8px;border-radius:10px;
+    font-size:10px;font-weight:700;margin-left:6px;
+  }
+  .badge-caminho{
+    display:inline-block;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:10px;
+    font-size:10px;font-weight:700;margin-left:6px;
+  }
   .agendamento-select-status{
     padding:4px 8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:12px;
     cursor:pointer;background:#fafbfc;color:#26313a;
@@ -1510,9 +1518,15 @@ async function atualizarPreRegistros(){
     const iconConfirmar = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 13l4 4L19 7"/></svg>`;
     const iconExcluir = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
     dados.forEach((d,i) => {
+      let statusBadge = '';
+      if(d.gps_chegou){
+        statusBadge = ' <span class="badge-chegou">📍 Cheguei</span>';
+      } else if(d.gps_a_caminho){
+        statusBadge = ' <span class="badge-caminho">🚛 A caminho</span>';
+      }
       tbody.innerHTML += `<tr>
         <td>${i+1}</td>
-        <td><b>${esc(d.motorista)}</b>${d.origem === 'checkin_qr' ? ' <span class="badge-qr-code">📱 QR Code</span>' : ''}</td>
+        <td><b>${esc(d.motorista)}</b>${d.origem === 'checkin_qr' ? ' <span class="badge-qr-code">📱 QR Code</span>' : ''}${statusBadge}</td>
         <td>${esc(d.empresa)}</td>
         <td>${esc(d.placa)}</td>
         <td>${esc(d.modelo) || "—"}</td>

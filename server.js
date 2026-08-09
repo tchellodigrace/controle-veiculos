@@ -923,7 +923,17 @@ app.get('/api/motorista/status', motoristaAuthMiddleware, apiLimiter, async (req
 app.get('/api/pre-registros', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id ASC',
+      `SELECT pr.id, pr.cliente_id, pr.empresa, pr.motorista, pr.cnh, pr.placa, pr.modelo, pr.finalidade, pr.nota, pr.obs, pr.criado_em,
+              COALESCE(lm.a_caminho, FALSE) AS gps_a_caminho, COALESCE(lm.chegou, FALSE) AS gps_chegou, lm.chegada_em AS gps_chegada_em
+       FROM pre_registros pr
+       LEFT JOIN LATERAL (
+         SELECT a_caminho, chegou, chegada_em
+         FROM localizacoes_motoristas
+         WHERE cliente_id = pr.cliente_id AND placa = pr.placa
+         ORDER BY atualizado_em DESC LIMIT 1
+       ) lm ON true
+       WHERE pr.cliente_id = $1
+       ORDER BY pr.id ASC`,
       [req.usuario.cliente_id]
     );
     res.json(result.rows);

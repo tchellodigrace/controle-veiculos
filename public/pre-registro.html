@@ -70,6 +70,8 @@
   .btn-caminho:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
   .btn-caminho.parando{ background:linear-gradient(135deg,#e08a1e,#f0ad4e); box-shadow:0 4px 15px rgba(224,138,30,.35); }
   .btn-caminho.parando:hover{ box-shadow:0 6px 20px rgba(224,138,30,.45); }
+  .btn-caminho.chegou-confirmado{ background:linear-gradient(135deg,#28a745,#20c997); box-shadow:0 4px 15px rgba(40,167,69,.35); cursor:default; }
+  .gps-status.ativo-portaria{ display:flex; background:#d4edda; color:#155724; }
   .gps-status{
     display:none; text-align:center; padding:14px; margin-top:12px;
     background:#d4edda; border-radius:10px; font-size:13px; color:#155724;
@@ -627,17 +629,21 @@ async function cheguei(){
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenMotorista }
     });
   } catch(e){}
-  pararRastreamento();
-  // Mostrar feedback
+  // Parar envio de GPS e watch, mas manter verificacao de status
+  if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
+  if(gpsIntervalo !== null){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
+  gpsUltimaPos = null;
+  document.getElementById('gpsStatus').classList.remove('ativo');
+  // Mostrar feedback permanente - NAO resetar para "Estou a caminho"
   var btn = document.getElementById('btnCaminho');
-  btn.textContent = '✅ Chegada registrada!';
+  btn.textContent = '\u2705 Chegada registrada! Aguardando portaria...';
   btn.disabled = true;
-  setTimeout(function(){
-    btn.disabled = false;
-    btn.textContent = '🚛 Estou a Caminho';
-    btn.classList.remove('parando');
-    btn.onclick = function(){ iniciarRastreamento(); };
-  }, 3000);
+  btn.classList.remove('parando');
+  btn.classList.add('chegou-confirmado');
+  // Manter verificacao de status para saber quando a portaria confirmar
+  if(verificarStatusInterval === null){
+    verificarStatusInterval = setInterval(verificarStatusPortaria, 10000);
+  }
 }
 
 function pararRastreamento(){
@@ -665,19 +671,20 @@ async function verificarStatusPortaria(){
     var btn = document.getElementById('btnCaminho');
     if(data.ativo && data.chegou && !data.saida_logistica){
       // Portaria marcou chegada
-      btn.textContent = '\u2705 Chegada registrada pela portaria';
+      btn.textContent = '\u2705 Portaria confirmou sua chegada!';
       btn.disabled = true;
-      btn.classList.add('parando');
+      btn.classList.remove('parando');
+      btn.classList.add('chegou-confirmado');
       document.getElementById('gpsStatus').classList.remove('ativo');
       // Parar verificacao pois ja foi confirmado
       if(verificarStatusInterval){ clearInterval(verificarStatusInterval); verificarStatusInterval = null; }
-      // Parar envio de GPS mas manter watch para caso precise voltar
-      if(gpsIntervalo){ clearInterval(gpsIntervalo); gpsIntervalo = null; }
     } else if(data.ativo && data.saida_logistica){
       // Portaria marcou saida - liberar para novo rastreamento
       pararRastreamento();
       btn.textContent = '\ud83d\ude9a Estou a Caminho';
       btn.disabled = false;
+      btn.classList.remove('chegou-confirmado');
+      btn.onclick = function(){ iniciarRastreamento(); };
       mostrarErroGPS('Saída registrada pela portaria. Você pode iniciar um novo rastreamento.');
     }
   } catch(e){}
