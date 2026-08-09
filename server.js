@@ -2135,6 +2135,39 @@ app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) =>
   }
 });
 
+// === LOGISTICA: Liberar veiculo para portaria (registro direto) ===
+app.post('/api/logistica/:token/liberar-portaria', apiLimiter, async (req, res) => {
+  try {
+    const { placa } = req.body;
+    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+
+    // Marcar patio_liberado no registro da portaria
+    if (placa) {
+      await pool.query(
+        'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
+        [cid, placa, '']
+      );
+    }
+
+    // Criar notificacao para a portaria com a mensagem especifica
+    const descricaoNotif = placa
+      ? 'Logistica autorizou: portaria pode liberar o veiculo placa ' + placa + ' para o patio'
+      : 'Logistica autorizou: portaria pode liberar veiculo para o patio';
+    await pool.query(
+      'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [cid, 'liberar_portaria', 'Portaria pode liberar o veiculo para o patio', descricaoNotif]
+    );
+
+    logAuditoria(cid, 'Logistica', 'Liberar veiculo para portaria', 'veiculo', placa || '', 'Portaria notificada para liberar veiculo' + (placa ? ' placa ' + placa : ''));
+    res.json({ ok: true, mensagem: 'Portaria notificada com sucesso' });
+  } catch (err) {
+    console.error('Erro ao notificar portaria (liberar-portaria):', err);
+    res.status(500).json({ erro: 'Erro ao notificar portaria' });
+  }
+});
+
 // === ADMIN: TOGGLE LOGISTICA ===
 app.put('/api/admin/clientes/:id/logistica', adminMiddleware, apiLimiter, async (req, res) => {
   try {
