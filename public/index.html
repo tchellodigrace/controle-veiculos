@@ -2049,16 +2049,18 @@ async function verificarBadges(){
       fetch(API + '/api/contas-motoristas', { headers: getHeaders() }),
       fetch(API + '/api/contas-visitantes', { headers: getHeaders() })
     ]);
+    // Parsear JSON apenas uma vez por response e guardar em variaveis
+    let dadosPreV = [], dadosPreVisit = [], contasM = [], contasVisit = [];
+    if(resPreV.ok) dadosPreV = await resPreV.json();
+    if(resPreVisit.ok) dadosPreVisit = await resPreVisit.json();
+    if(resContasM.ok) contasM = await resContasM.json();
+    if(resContasVisit.ok) contasVisit = await resContasVisit.json();
+
     let totalV = 0;
     let totalVisit = 0;
-    if(resPreV.ok){
-      const dados = await resPreV.json();
-      totalV += dados.length;
-    }
-    if(resContasM.ok){
-      const contas = await resContasM.json();
-      totalV += contas.filter(c => !c.ativo).length;
-    }
+    totalV += dadosPreV.length;
+    totalV += contasM.filter(c => !c.ativo).length;
+
     const badgeV = document.getElementById("badgeVeiculos");
     if(totalV > 0){
       badgeV.textContent = totalV;
@@ -2070,14 +2072,9 @@ async function verificarBadges(){
       badgeV.style.display = "none";
       badgesVeiculosAnterior = 0;
     }
-    if(resPreVisit.ok){
-      const dados = await resPreVisit.json();
-      totalVisit += dados.length;
-    }
-    if(resContasVisit.ok){
-      const contas = await resContasVisit.json();
-      totalVisit += contas.filter(c => !c.ativo).length;
-    }
+
+    totalVisit += dadosPreVisit.length;
+    totalVisit += contasVisit.filter(c => !c.ativo).length;
     const badgeVisit = document.getElementById("badgeVisitantes");
     if(totalVisit > 0){
       badgeVisit.textContent = totalVisit;
@@ -2089,16 +2086,9 @@ async function verificarBadges(){
       badgeVisit.style.display = "none";
       badgesVisitantesAnterior = 0;
     }
-    // Badge Cadastros: contas inativas (motoristas + visitantes)
-    let totalCadastros = 0;
-    if(resContasM.ok){
-      const contas = await resContasM.json();
-      totalCadastros += contas.filter(c => !c.ativo).length;
-    }
-    if(resContasVisit.ok){
-      const contas = await resContasVisit.json();
-      totalCadastros += contas.filter(c => !c.ativo).length;
-    }
+
+    // Badge Cadastros: contas inativas (motoristas + visitantes) aguardando ativacao
+    const totalCadastros = contasM.filter(c => !c.ativo).length + contasVisit.filter(c => !c.ativo).length;
     const badgeCad = document.getElementById("badgeCadastros");
     if(totalCadastros > 0){
       badgeCad.textContent = totalCadastros;
