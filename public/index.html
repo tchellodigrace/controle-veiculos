@@ -1703,6 +1703,34 @@ function trocarTab(btn, tabId){
 }
 function toggleSenha(el){ el.textContent = el.dataset.show === '1' ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' : el.dataset.senha; el.dataset.show = el.dataset.show === '1' ? '0' : '1'; }
 
+async function redefinirSenhaMotorista(id, btn){
+  if(!confirm('Gerar uma nova senha para este motorista?')) return;
+  btn.disabled = true; btn.textContent = 'Gerando...';
+  try {
+    const res = await fetch(API + '/api/contas-motoristas/' + id + '/redefinir-senha', { method:'PUT', headers:getHeaders() });
+    if(!res.ok){ alert('Erro ao redefinir senha'); btn.disabled=false; btn.textContent='Redefinir Senha'; return; }
+    const data = await res.json();
+    const senhaSpan = document.getElementById('senha-mot-' + id);
+    if(senhaSpan){ senhaSpan.dataset.senha = data.senha_exibicao; senhaSpan.dataset.show = '1'; senhaSpan.textContent = data.senha_exibicao; }
+    alert('Nova senha: ' + data.senha_exibicao);
+    btn.disabled = false; btn.textContent = 'Redefinir Senha';
+  } catch(e){ alert('Erro de conexao'); btn.disabled=false; btn.textContent='Redefinir Senha'; }
+}
+
+async function redefinirSenhaVisitante(id, btn){
+  if(!confirm('Gerar uma nova senha para este visitante?')) return;
+  btn.disabled = true; btn.textContent = 'Gerando...';
+  try {
+    const res = await fetch(API + '/api/contas-visitantes/' + id + '/redefinir-senha', { method:'PUT', headers:getHeaders() });
+    if(!res.ok){ alert('Erro ao redefinir senha'); btn.disabled=false; btn.textContent='Redefinir Senha'; return; }
+    const data = await res.json();
+    const senhaSpan = document.getElementById('senha-vis-' + id);
+    if(senhaSpan){ senhaSpan.dataset.senha = data.senha_exibicao; senhaSpan.dataset.show = '1'; senhaSpan.textContent = data.senha_exibicao; }
+    alert('Nova senha: ' + data.senha_exibicao);
+    btn.disabled = false; btn.textContent = 'Redefinir Senha';
+  } catch(e){ alert('Erro de conexao'); btn.disabled=false; btn.textContent='Redefinir Senha'; }
+}
+
 async function carregarContasMotoristas(){
   try {
     const res = await fetch(API + '/api/contas-motoristas', { headers: getHeaders() });
@@ -1716,6 +1744,7 @@ async function carregarContasMotoristas(){
           <div style="display:none;background:#fff;border:1px solid var(--cinza-borda);border-radius:6px;padding:10px;margin-top:6px;font-size:12px">
             <div style="margin-bottom:6px"><b style="color:#4a5568">Login:</b> <span style="color:#1a1a2e;font-weight:600">${esc(c.usuario)}</span></div>
             <div style="display:flex;align-items:center;gap:8px"><b style="color:#4a5568">Senha:</b> <span id="senha-mot-${c.id}" data-senha="${esc(c.senha_exibicao || '***')}" data-show="0" style="font-weight:700;color:#1a1a2e;cursor:pointer" onclick="toggleSenha(this)">\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022</span> <small style="color:#8b93a1">(clique para ver)</small></div>
+          <div style="margin-top:8px"><button onclick="redefinirSenhaMotorista(${c.id}, this)" style="padding:5px 12px;border:1px solid #e0e3e7;border-radius:5px;background:#fff;color:#4a5568;font-size:11px;font-weight:600;cursor:pointer">Redefinir Senha</button></div>
           </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1767,6 +1796,7 @@ async function carregarContasVisitantes(){
           <div style="display:none;background:#fff;border:1px solid var(--cinza-borda);border-radius:6px;padding:10px;margin-top:6px;font-size:12px">
             <div style="margin-bottom:6px"><b style="color:#4a5568">Login:</b> <span style="color:#1a1a2e;font-weight:600">${esc(c.usuario)}</span></div>
             <div style="display:flex;align-items:center;gap:8px"><b style="color:#4a5568">Senha:</b> <span id="senha-vis-${c.id}" data-senha="${esc(c.senha_exibicao || '***')}" data-show="0" style="font-weight:700;color:#1a1a2e;cursor:pointer" onclick="toggleSenha(this)">\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022</span> <small style="color:#8b93a1">(clique para ver)</small></div>
+          <div style="margin-top:8px"><button onclick="redefinirSenhaVisitante(${c.id}, this)" style="padding:5px 12px;border:1px solid #e0e3e7;border-radius:5px;background:#fff;color:#4a5568;font-size:11px;font-weight:600;cursor:pointer">Redefinir Senha</button></div>
           </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center">

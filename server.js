@@ -1135,6 +1135,23 @@ app.get('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) =
   }
 });
 
+// Redefinir senha de motorista
+app.put('/api/contas-motoristas/:id/redefinir-senha', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const cid = req.usuario.cliente_id;
+    const conta = await pool.query('SELECT id FROM contas_motoristas WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
+    if (!conta.rows.length) return res.status(404).json({ erro: 'Conta nao encontrada' });
+    const novaSenha = 'Mt' + crypto.randomBytes(4).toString('hex') + '!@';
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query('UPDATE contas_motoristas SET senha = $1, senha_exibicao = $2, trocar_senha = TRUE WHERE id = $3 AND cliente_id = $4', [senhaHash, novaSenha, req.params.id, cid]);
+    res.json({ senha_exibicao: novaSenha });
+  } catch (err) {
+    console.error('Erro ao redefinir senha:', err);
+    res.status(500).json({ erro: 'Erro ao redefinir senha' });
+  }
+});
+
 app.put('/api/contas-visitantes/:id', authMiddleware, apiLimiter, async (req, res) => {
   if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
   try {
@@ -1150,6 +1167,23 @@ app.put('/api/contas-visitantes/:id', authMiddleware, apiLimiter, async (req, re
   } catch (err) {
     console.error('Erro ao atualizar conta visitante:', err);
     res.status(500).json({ erro: 'Erro ao atualizar conta' });
+  }
+});
+
+// Redefinir senha de visitante
+app.put('/api/contas-visitantes/:id/redefinir-senha', authMiddleware, apiLimiter, async (req, res) => {
+  if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+  try {
+    const cid = req.usuario.cliente_id;
+    const conta = await pool.query('SELECT id FROM contas_visitantes WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
+    if (!conta.rows.length) return res.status(404).json({ erro: 'Conta nao encontrada' });
+    const novaSenha = 'Vi' + crypto.randomBytes(4).toString('hex') + '!@';
+    const senhaHash = await bcrypt.hash(novaSenha, 10);
+    await pool.query('UPDATE contas_visitantes SET senha = $1, senha_exibicao = $2, trocar_senha = TRUE WHERE id = $3 AND cliente_id = $4', [senhaHash, novaSenha, req.params.id, cid]);
+    res.json({ senha_exibicao: novaSenha });
+  } catch (err) {
+    console.error('Erro ao redefinir senha visitante:', err);
+    res.status(500).json({ erro: 'Erro ao redefinir senha' });
   }
 });
 
