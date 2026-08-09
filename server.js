@@ -1970,7 +1970,12 @@ app.get('/api/arquivos', authMiddleware, apiLimiter, async (req, res) => {
       'SELECT id, nome_original, tipo, tamanho, descricao, criado_por, criado_em FROM arquivos WHERE cliente_id = $1 ORDER BY criado_em DESC',
       [req.usuario.cliente_id]
     );
-    res.json(result.rows);
+    // Adicionar hash de visualizacao publica a cada arquivo
+    const arquivos = result.rows.map(a => ({
+      ...a,
+      public_hash: gerarHashPublicView(String(a.id))
+    }));
+    res.json(arquivos);
   } catch (err) {
     console.error('Erro ao buscar arquivos:', err);
     res.status(500).json({ erro: 'Erro ao buscar arquivos' });
@@ -1993,6 +1998,13 @@ app.get('/api/arquivos/:id/download', authMiddleware, async (req, res) => {
   }
 });
 
+// Gerar hash de visualizacao publica para Google Docs Viewer
+function gerarHashPublicView(id) {
+  const secret = process.env.JWT_SECRET || 'dsrh-portaria-2024';
+  const hoje = new Date().toISOString().slice(0, 13);
+  return crypto.createHash('sha256').update(id + secret + hoje).digest('hex').substring(0, 16);
+}
+
 app.get('/api/arquivos/:id/view', authMiddleware, async (req, res) => {
   try {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
@@ -2005,6 +2017,29 @@ app.get('/api/arquivos/:id/view', authMiddleware, async (req, res) => {
     res.sendFile(path.resolve(arq.caminho));
   } catch (err) {
     console.error('Erro ao visualizar arquivo:', err);
+    res.status(500).json({ erro: 'Erro ao visualizar' });
+  }
+});
+
+// Visualizacao publica via hash temporario (para Google Docs Viewer)
+app.get('/api/arquivos/:id/public-view/:hash', apiLimiter, async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
+    const secret = process.env.JWT_SECRET || 'dsrh-portaria-2024';
+    // Hash valido por 2 horas: sha256(id + secret + data_dia)
+    const hoje = new Date().toISOString().slice(0, 13); // YYYY-MM-DDTHH
+    const hashEsperado = crypto.createHash('sha256').update(req.params.id + secret + hoje).digest('hex').substring(0, 16);
+    if (req.params.hash !== hashEsperado) return res.status(403).json({ erro: 'Link expirado ou invalido' });
+    const result = await pool.query('SELECT id, nome, nome_original, tipo, caminho, cliente_id FROM arquivos WHERE id = $1', [req.params.id]);
+    if (!result.rows.length) return res.status(404).json({ erro: 'Arquivo nao encontrado' });
+    const arq = result.rows[0];
+    if (!fs.existsSync(arq.caminho)) return res.status(404).json({ erro: 'Arquivo nao encontrado no servidor' });
+    res.setHeader('Content-Type', arq.tipo || 'application/octet-stream');
+    res.setHeader('Content-Disposition', 'inline; filename="' + encodeURIComponent(arq.nome_original) + '"');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.sendFile(path.resolve(arq.caminho));
+  } catch (err) {
+    console.error('Erro ao visualizar arquivo publico:', err);
     res.status(500).json({ erro: 'Erro ao visualizar' });
   }
 });

@@ -2555,8 +2555,8 @@ function getIconeArquivo(tipo){
 
 function getGoogleDocsUrl(tipo, nome){
   var ext = nome.split('.').pop().toLowerCase();
-  if(['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','rtf','odt','ods'].includes(ext)){
-    return 'https://docs.google.com/viewer?url=';
+  if(['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','rtf','odt','ods','csv'].includes(ext)){
+    return 'https://docs.google.com/viewer?embedded=true&url=';
   }
   return null;
 }
@@ -2573,7 +2573,8 @@ async function carregarArquivos(){
     lista.innerHTML = arquivos.map(function(a){
       var icone = getIconeArquivo(a.tipo);
       var podeVerOnline = !!getGoogleDocsUrl(a.tipo, a.nome_original);
-      var viewUrl = podeVerOnline ? getGoogleDocsUrl(a.tipo, a.nome_original) + encodeURIComponent(window.location.origin + '/api/arquivos/' + a.id + '/view') : null;
+      var publicUrl = window.location.origin + '/api/arquivos/' + a.id + '/public-view/' + (a.public_hash || '');
+      var viewUrl = podeVerOnline ? getGoogleDocsUrl(a.tipo, a.nome_original) + encodeURIComponent(publicUrl) : null;
       return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--cinza-borda);border-radius:8px;margin-bottom:8px;flex-wrap:wrap">' +
         '<span style="font-size:28px;flex-shrink:0">' + icone + '</span>' +
         '<div style="flex:1;min-width:200px">' +
