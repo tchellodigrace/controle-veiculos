@@ -655,7 +655,7 @@ function imprimirMotorista(motoristaId){
         (m.nota ? '<div class="campo"><div class="label">Nota/RT</div><div class="valor">' + esc(m.nota) + '</div></div>' : '') +
         (m.obs ? '<div class="campo"><div class="label">Info Adicionais</div><div class="valor">' + esc(m.obs) + '</div></div>' : '') +
         '<div class="footer">Impresso em ' + dataHora + '</div>' +
-        '<script>window.onload=function(){window.print()}</script>' +
+        '<scr' + 'ipt>window.onload=function(){window.print()}</scr' + 'ipt>' +
         '</body></html>');
       win.document.close();
     });
