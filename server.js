@@ -1998,10 +1998,10 @@ app.get('/api/arquivos/:id/download', authMiddleware, async (req, res) => {
   }
 });
 
-// Gerar hash de visualizacao publica para Google Docs Viewer
+// Gerar hash de visualizacao publica (valido por 24h)
 function gerarHashPublicView(id) {
   const secret = process.env.JWT_SECRET || 'dsrh-portaria-2024';
-  const hoje = new Date().toISOString().slice(0, 13);
+  const hoje = new Date().toISOString().slice(0, 10); // dia atual, valida por 24h
   return crypto.createHash('sha256').update(id + secret + hoje).digest('hex').substring(0, 16);
 }
 
@@ -2022,13 +2022,19 @@ app.get('/api/arquivos/:id/view', authMiddleware, async (req, res) => {
 });
 
 // Visualizacao publica via hash temporario (para Google Docs Viewer e Office Online)
-app.get('/api/arquivos/:id/public-view/:hash/:nome?', apiLimiter, async (req, res) => {
+// Valido por 24h (usa data do dia)
+app.get('/api/arquivos/:id/public-view/:hash/:nome?', async (req, res) => {
   try {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
     const secret = process.env.JWT_SECRET || 'dsrh-portaria-2024';
-    const hoje = new Date().toISOString().slice(0, 13);
-    const hashEsperado = crypto.createHash('sha256').update(req.params.id + secret + hoje).digest('hex').substring(0, 16);
-    if (req.params.hash !== hashEsperado) return res.status(403).json({ erro: 'Link expirado ou invalido' });
+    // Verifica hash do dia atual E do dia anterior (cobrir virada de meia-noite)
+    const hoje = new Date().toISOString().slice(0, 10);
+    const ontem = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const hashHoje = crypto.createHash('sha256').update(req.params.id + secret + hoje).digest('hex').substring(0, 16);
+    const hashOntem = crypto.createHash('sha256').update(req.params.id + secret + ontem).digest('hex').substring(0, 16);
+    if (req.params.hash !== hashHoje && req.params.hash !== hashOntem) {
+      return res.status(403).json({ erro: 'Link expirado ou invalido' });
+    }
     const result = await pool.query('SELECT id, nome, nome_original, tipo, caminho, cliente_id FROM arquivos WHERE id = $1', [req.params.id]);
     if (!result.rows.length) return res.status(404).json({ erro: 'Arquivo nao encontrado' });
     const arq = result.rows[0];
@@ -2038,6 +2044,7 @@ app.get('/api/arquivos/:id/public-view/:hash/:nome?', apiLimiter, async (req, re
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.sendFile(path.resolve(arq.caminho));
   } catch (err) {
     console.error('Erro ao visualizar arquivo publico:', err);
