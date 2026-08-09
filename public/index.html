@@ -631,9 +631,25 @@
     text-align:center;padding:32px 16px;color:#9aa4ad;font-size:13px;
   }
   .notificacao-vazio span{font-size:28px;display:block;margin-bottom:8px;}
+  /* === TOAST NOTIFICATIONS === */
+  .toast-container{position:fixed;top:16px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:380px;width:100%}
+  .toast{pointer-events:auto;background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 8px 30px rgba(0,0,0,.18);display:flex;align-items:flex-start;gap:12px;animation:toastIn .4s ease-out forwards;border-left:4px solid #4F86C6;transform:translateX(120%);opacity:0}
+  .toast.removendo{animation:toastOut .3s ease-in forwards}
+  .toast-destaque{border-left-color:#e08a1e;background:linear-gradient(135deg,#fff8f0,#fff)}
+  .toast-sucesso{border-left-color:#28a745;background:linear-gradient(135deg,#f0fff4,#fff)}
+  .toast-icone{font-size:24px;flex-shrink:0;line-height:1}
+  .toast-corpo{flex:1;min-width:0}
+  .toast-titulo{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:3px}
+  .toast-desc{font-size:12px;color:#5b6672;line-height:1.4;word-break:break-word}
+  .toast-hora{font-size:10px;color:#9aa4ad;margin-top:4px}
+  .toast-fechar{background:none;border:none;font-size:16px;color:#8b93a1;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1}
+  .toast-fechar:hover{color:#e53e3e}
+  @keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(120%);opacity:0}}
 </style>
 </head>
 <body>
+<div class="toast-container" id="toastContainer"></div>
 <a href="#mainContent" class="skip-link">Pular para conteudo principal</a>
 <noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
 <div class="app">
@@ -2079,8 +2095,10 @@ async function verificarBadges(){
     if(totalV > 0){
       badgeV.textContent = totalV;
       badgeV.style.display = "inline";
-      if(totalV > badgesVeiculosAnterior) badgeV.classList.add("pulse");
-      else badgeV.classList.remove("pulse");
+      if(totalV > badgesVeiculosAnterior){
+        badgeV.classList.add("pulse");
+        tocarBeepNotificacao(1000, 0.12);
+      } else badgeV.classList.remove("pulse");
       badgesVeiculosAnterior = totalV;
     } else {
       badgeV.style.display = "none";
@@ -2093,8 +2111,10 @@ async function verificarBadges(){
     if(totalVisit > 0){
       badgeVisit.textContent = totalVisit;
       badgeVisit.style.display = "inline";
-      if(totalVisit > badgesVisitantesAnterior) badgeVisit.classList.add("pulse");
-      else badgeVisit.classList.remove("pulse");
+      if(totalVisit > badgesVisitantesAnterior){
+        badgeVisit.classList.add("pulse");
+        tocarBeepNotificacao(1000, 0.12);
+      } else badgeVisit.classList.remove("pulse");
       badgesVisitantesAnterior = totalVisit;
     } else {
       badgeVisit.style.display = "none";
@@ -2107,8 +2127,10 @@ async function verificarBadges(){
     if(totalCadastros > 0){
       badgeCad.textContent = totalCadastros;
       badgeCad.style.display = "inline";
-      if(totalCadastros > badgesCadastrosAnterior) badgeCad.classList.add("pulse");
-      else badgeCad.classList.remove("pulse");
+      if(totalCadastros > badgesCadastrosAnterior){
+        badgeCad.classList.add("pulse");
+        tocarBeepNotificacao(1000, 0.12);
+      } else badgeCad.classList.remove("pulse");
       badgesCadastrosAnterior = totalCadastros;
     } else {
       badgeCad.style.display = "none";
@@ -3130,20 +3152,60 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️' };
 
-function tocarBeepNotificacao(){
+function tocarBeepNotificacao(frequencia, duracao){
   try{
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.frequency.value = 800;
+    osc.frequency.value = frequencia || 800;
     osc.type = 'sine';
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (duracao || 0.1));
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.1);
+    osc.stop(ctx.currentTime + (duracao || 0.1));
   }catch(e){}
+}
+
+// === TOAST NOTIFICATION SYSTEM ===
+function mostrarToast(titulo, descricao, tipo, duracao){
+  var container = document.getElementById('toastContainer');
+  if(!container) return;
+  var toast = document.createElement('div');
+  var classeTipo = 'toast';
+  var icone = '🔔';
+  if(tipo === 'patio_liberado'){ classeTipo += ' toast-destaque'; icone = '🍿'; }
+  else if(tipo === 'entrega_concluida'){ classeTipo += ' toast-sucesso'; icone = '📦'; }
+  else if(tipo === 'checkin_qr'){ classeTipo += ' toast-destaque'; icone = '📱'; }
+  else if(tipo === 'entrada'){ icone = '🚚'; }
+  else if(tipo === 'saida'){ classeTipo += ' toast-sucesso'; icone = '✅'; }
+  toast.className = classeTipo;
+  var hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  toast.innerHTML = '<div class="toast-icone">' + icone + '</div>' +
+    '<div class="toast-corpo">' +
+      '<div class="toast-titulo">' + esc(titulo) + '</div>' +
+      '<div class="toast-desc">' + esc(descricao || '') + '</div>' +
+      '<div class="toast-hora">' + hora + '</div>' +
+    '</div>' +
+    '<button class="toast-fechar" onclick="fecharToast(this.parentElement)" aria-label="Fechar aviso">&times;</button>';
+  container.appendChild(toast);
+  // Som diferente para patio_liberado
+  if(tipo === 'patio_liberado'){
+    tocarBeepNotificacao(600, 0.3);
+    setTimeout(function(){ tocarBeepNotificacao(800, 0.3); }, 350);
+  } else {
+    tocarBeepNotificacao(800, 0.15);
+  }
+  // Auto-fechar
+  var tempo = duracao || (tipo === 'patio_liberado' ? 8000 : 5000);
+  setTimeout(function(){ fecharToast(toast); }, tempo);
+}
+
+function fecharToast(el){
+  if(!el || el.classList.contains('removendo')) return;
+  el.classList.add('removendo');
+  setTimeout(function(){ if(el.parentElement) el.parentElement.removeChild(el); }, 300);
 }
 
 async function verificarNotificacoesNaoLidas(){
@@ -3160,7 +3222,8 @@ async function verificarNotificacoesNaoLidas(){
       badge.style.display = 'none';
     }
     if(total > notificacoesAnteriores){
-      tocarBeepNotificacao();
+      // Carregar notificacoes para mostrar toasts das novas
+      buscarNotificoesNovas();
     }
     notificacoesAnteriores = total;
   }catch(e){}
@@ -3209,6 +3272,23 @@ async function marcarTodasNotificacoesLidas(){
     document.querySelectorAll('.notificacao-item').forEach(function(el){ el.classList.add('lida'); });
     notificacoesAnteriores = 0;
     verificarNotificacoesNaoLidas();
+  }catch(e){}
+}
+
+async function buscarNotificoesNovas(){
+  try{
+    var res = await fetch(API + '/api/notificacoes', { headers: getHeaders() });
+    if(!res.ok) return;
+    var notifs = await res.json();
+    if(!notifs || !notifs.length) return;
+    // Mostrar toast so para as nao lidas (max 3 por vez)
+    var mostrou = 0;
+    notifs.forEach(function(n){
+      if(!n.lida && mostrou < 3){
+        mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo);
+        mostrou++;
+      }
+    });
   }catch(e){}
 }
 
