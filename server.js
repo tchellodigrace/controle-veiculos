@@ -926,7 +926,7 @@ app.delete('/api/pre-registros/:id', authMiddleware, apiLimiter, async (req, res
 app.get('/api/contas-motoristas', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, usuario, nome, empresa, ativo, criado_em FROM contas_motoristas WHERE cliente_id = $1 ORDER BY nome',
+      'SELECT id, usuario, nome, empresa, ativo, senha_exibicao, criado_em FROM contas_motoristas WHERE cliente_id = $1 ORDER BY nome',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
