@@ -3156,9 +3156,31 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
+// AudioContext global persistente - reutiliza para evitar bloqueio do navegador
+var _audioCtxGlobal = null;
+function getAudioCtx(){
+  if(!_audioCtxGlobal){
+    _audioCtxGlobal = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(_audioCtxGlobal.state === 'suspended'){
+    _audioCtxGlobal.resume();
+  }
+  return _audioCtxGlobal;
+}
+// Desbloqueia o AudioContext no primeiro clique/touch do usuario na pagina
+function unlockAudio(){
+  try{
+    var c = getAudioCtx();
+    if(c.state === 'suspended') c.resume();
+  }catch(e){}
+}
+document.addEventListener('click', unlockAudio, {once: false});
+document.addEventListener('touchstart', unlockAudio, {once: false});
+document.addEventListener('keydown', unlockAudio, {once: false});
+
 function tocarBeepNotificacao(frequencia, duracao){
   try{
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var ctx = getAudioCtx();
     var totalDur = duracao || 2;
     // Sininho: serie de notas descendentes com sustain longo
     var notas = [1200, 1000, 800, 650];
@@ -3172,7 +3194,7 @@ function tocarBeepNotificacao(frequencia, duracao){
       osc.type = 'sine';
       var inicio = ctx.currentTime + (i * tempoNota);
       gain.gain.setValueAtTime(0, inicio);
-      gain.gain.linearRampToValueAtTime(0.25, inicio + 0.05);
+      gain.gain.linearRampToValueAtTime(0.3, inicio + 0.05);
       gain.gain.exponentialRampToValueAtTime(0.001, inicio + tempoNota * 0.95);
       osc.start(inicio);
       osc.stop(inicio + tempoNota);
