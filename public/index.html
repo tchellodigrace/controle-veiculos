@@ -2101,7 +2101,6 @@ async function verificarBadges(){
       badgeV.style.display = "inline";
       if(totalV > badgesVeiculosAnterior){
         badgeV.classList.add("pulse");
-        tocarBeepNotificacao(1000, 0.12);
       } else badgeV.classList.remove("pulse");
       badgesVeiculosAnterior = totalV;
     } else {
@@ -2117,7 +2116,6 @@ async function verificarBadges(){
       badgeVisit.style.display = "inline";
       if(totalVisit > badgesVisitantesAnterior){
         badgeVisit.classList.add("pulse");
-        tocarBeepNotificacao(1000, 0.12);
       } else badgeVisit.classList.remove("pulse");
       badgesVisitantesAnterior = totalVisit;
     } else {
@@ -2133,7 +2131,6 @@ async function verificarBadges(){
       badgeCad.style.display = "inline";
       if(totalCadastros > badgesCadastrosAnterior){
         badgeCad.classList.add("pulse");
-        tocarBeepNotificacao(1000, 0.12);
       } else badgeCad.classList.remove("pulse");
       badgesCadastrosAnterior = totalCadastros;
     } else {
@@ -3156,48 +3153,22 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
-// AudioContext global persistente - reutiliza para evitar bloqueio do navegador
-var _audioCtxGlobal = null;
-function getAudioCtx(){
-  if(!_audioCtxGlobal){
-    _audioCtxGlobal = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if(_audioCtxGlobal.state === 'suspended'){
-    _audioCtxGlobal.resume();
-  }
-  return _audioCtxGlobal;
-}
-// Desbloqueia o AudioContext no primeiro clique/touch do usuario na pagina
-function unlockAudio(){
+// Som de notificacao via arquivo MP3 - mais confiavel que Web Audio API
+var _somNotificacao = null;
+function tocarBeepNotificacao(){
   try{
-    var c = getAudioCtx();
-    if(c.state === 'suspended') c.resume();
-  }catch(e){}
-}
-document.addEventListener('click', unlockAudio, {once: false});
-document.addEventListener('touchstart', unlockAudio, {once: false});
-document.addEventListener('keydown', unlockAudio, {once: false});
-
-function tocarBeepNotificacao(frequencia, duracao){
-  try{
-    var ctx = getAudioCtx();
-    var totalDur = duracao || 2;
-    // Sininho: serie de notas descendentes com sustain longo
-    var notas = [1200, 1000, 800, 650];
-    var tempoNota = totalDur / notas.length;
-    notas.forEach(function(freq, i){
-      var osc = ctx.createOscillator();
-      var gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      var inicio = ctx.currentTime + (i * tempoNota);
-      gain.gain.setValueAtTime(0, inicio);
-      gain.gain.linearRampToValueAtTime(0.3, inicio + 0.05);
-      gain.gain.exponentialRampToValueAtTime(0.001, inicio + tempoNota * 0.95);
-      osc.start(inicio);
-      osc.stop(inicio + tempoNota);
+    if(!_somNotificacao){
+      _somNotificacao = new Audio('/sounds/notificacao.mp3');
+      _somNotificacao.volume = 0.8;
+    }
+    _somNotificacao.currentTime = 0;
+    _somNotificacao.play().catch(function(){
+      // Se play falhar, tenta novamente com interacao
+      document.addEventListener('click', function playOnClick(){
+        _somNotificacao.currentTime = 0;
+        _somNotificacao.play().catch(function(){});
+        document.removeEventListener('click', playOnClick);
+      }, {once: true});
     });
   }catch(e){}
 }
@@ -3224,8 +3195,6 @@ function mostrarToast(titulo, descricao, tipo, duracao){
     '</div>' +
     '<button class="toast-fechar" onclick="fecharToast(this.parentElement)" aria-label="Fechar aviso">&times;</button>';
   container.appendChild(toast);
-  // Som de sininho
-  tocarBeepNotificacao(800, 2);
   // Auto-fechar
   var tempo = duracao || (tipo === 'patio_liberado' ? 10000 : 5000);
   setTimeout(function(){ fecharToast(toast); }, tempo);
@@ -3251,12 +3220,14 @@ async function verificarNotificacoesNaoLidas(){
       badge.style.display = 'none';
     }
     if(total > notificacoesAnteriores){
-      // Carregar notificacoes para mostrar toasts das novas
       buscarNotificoesNovas();
     }
     notificacoesAnteriores = total;
   }catch(e){}
 }
+
+// Rastrear IDs ja processados para nao repetir toast
+var _notificacoesProcessadas = {};
 
 async function carregarNotificacoes(){
   try{
@@ -3310,11 +3281,14 @@ async function buscarNotificoesNovas(){
     if(!res.ok) return;
     var notifs = await res.json();
     if(!notifs || !notifs.length) return;
-    // Mostrar toast so para as nao lidas (max 3 por vez)
     var mostrou = 0;
     notifs.forEach(function(n){
-      if(!n.lida && mostrou < 3){
+      // Mostrar toast apenas para notificacoes nao lidas E nao processadas ainda
+      if(!n.lida && !_notificacoesProcessadas[n.id] && mostrou < 3){
+        _notificacoesProcessadas[n.id] = true;
         mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo);
+        // Tocar som de notificacao
+        tocarBeepNotificacao();
         mostrou++;
       }
     });
