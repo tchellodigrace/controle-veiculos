@@ -809,6 +809,10 @@ app.post('/api/cadastro-motorista', preRegistroLimiter, async (req, res) => {
       [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
     res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
+    // Notificar portaria sobre novo cadastro de motorista
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
+      cliente_id, 'novo_cadastro', 'Novo cadastro de motorista', 'Motorista: ' + (nome||'').toUpperCase() + (empresa ? ' | Empresa: ' + empresa : '') + ' | Aguardando ativacao'
+    ]).catch(() => {});
   } catch (err) {
     console.error('Erro ao cadastrar motorista:', err);
     res.status(500).json({ erro: 'Erro ao criar conta' });
@@ -1070,6 +1074,10 @@ app.post('/api/contas-motoristas', authMiddleware, apiLimiter, async (req, res) 
       [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
     res.status(201).json(result.rows[0]);
+    // Notificar portaria sobre novo cadastro de motorista
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
+      cid, 'novo_cadastro', 'Novo cadastro de motorista', 'Motorista: ' + (nome||'').toUpperCase() + (empresa ? ' | Empresa: ' + empresa : '')
+    ]).catch(() => {});
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ erro: 'Usuário já existe' });
     console.error('Erro ao criar conta motorista:', err);
@@ -1246,6 +1254,10 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
       [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'', telefone||'', setor_visitado||'']
     );
     res.status(201).json(result.rows[0]);
+    // Notificar portaria sobre novo cadastro de visitante
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
+      cid, 'novo_cadastro', 'Novo cadastro de visitante', 'Visitante: ' + (nome||'').toUpperCase() + (empresa ? ' | Empresa: ' + empresa : '') + ' | Aguardando ativacao'
+    ]).catch(() => {});
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ erro: 'Usuário já existe' });
     console.error('Erro ao criar conta visitante:', err);
