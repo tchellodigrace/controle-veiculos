@@ -808,11 +808,11 @@ app.post('/api/cadastro-motorista', preRegistroLimiter, async (req, res) => {
       'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome',
       [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
-    res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
     // Notificar portaria sobre novo cadastro de motorista
-    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
+    await pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
       cliente_id, 'novo_cadastro', 'Novo cadastro de motorista', 'Motorista: ' + (nome||'').toUpperCase() + (empresa ? ' | Empresa: ' + empresa : '') + ' | Aguardando ativacao'
-    ]).catch(() => {});
+    ]);
+    res.status(201).json({ mensagem: 'Conta criada com sucesso. Aguarde a ativação da portaria.', motorista: result.rows[0] });
   } catch (err) {
     console.error('Erro ao cadastrar motorista:', err);
     res.status(500).json({ erro: 'Erro ao criar conta' });
@@ -1136,6 +1136,10 @@ app.post('/api/cadastro-visitante', preRegistroLimiter, async (req, res) => {
       'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE) RETURNING id, usuario, nome',
       [cliente_id, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'']
     );
+    // Notificar portaria sobre novo cadastro de visitante
+    await pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [
+      cliente_id, 'novo_cadastro', 'Novo cadastro de visitante', 'Visitante: ' + (nome||'').toUpperCase() + (empresa ? ' | Empresa: ' + empresa : '') + ' | Aguardando ativacao'
+    ]);
     res.status(201).json({ mensagem: 'Conta criada. Aguarde ativação da portaria.', visitante: result.rows[0] });
   } catch (err) {
     console.error('Erro ao cadastrar visitante:', err);
