@@ -650,6 +650,7 @@
 </style>
 </head>
 <body>
+<audio id="somNotificacao" src="/sounds/notificacao.mp3" preload="auto"></audio>
 <div class="toast-container" id="toastContainer"></div>
 <a href="#mainContent" class="skip-link">Pular para conteudo principal</a>
 <noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
@@ -3153,43 +3154,38 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
-// Som de notificacao via arquivo MP3
-var _somNotificacao = null;
-var _somReady = false;
+// === SISTEMA DE SOM ===
+var _somDesbloqueado = false;
 
-function initSomNotificacao(){
-  try{
-    var base = window.location.origin;
-    _somNotificacao = new Audio(base + '/sounds/notificacao.mp3');
-    _somNotificacao.volume = 1.0;
-    _somNotificacao.preload = 'auto';
-    _somNotificacao.load();
-    _somNotificacao.addEventListener('canplaythrough', function(){ _somReady = true; });
-  }catch(e){}
+// Tenta desbloquear o audio em qualquer interacao do usuario
+function desbloquearSom(){
+  if(_somDesbloqueado) return;
+  var a = document.getElementById('somNotificacao');
+  if(!a) return;
+  a.volume = 1.0;
+  var p = a.play();
+  if(p && p.then){
+    p.then(function(){
+      a.pause();
+      a.currentTime = 0;
+      _somDesbloqueado = true;
+    }).catch(function(){});
+  }
 }
-initSomNotificacao();
-
-// Unlock audio no primeiro clique do usuario
-function unlockSom(){
-  try{
-    if(_somNotificacao && _somNotificacao.paused){
-      _somNotificacao.play().then(function(){
-        _somNotificacao.pause();
-        _somNotificacao.currentTime = 0;
-        _somReady = true;
-      }).catch(function(){});
-    }
-  }catch(e){}
-}
-document.addEventListener('click', unlockSom, {once: false});
-document.addEventListener('touchstart', unlockSom, {once: false});
+document.addEventListener('click', desbloquearSom);
+document.addEventListener('touchstart', desbloquearSom);
+document.addEventListener('keydown', desbloquearSom);
 
 function tocarBeepNotificacao(){
   try{
-    if(!_somNotificacao) return;
-    _somNotificacao.currentTime = 0;
-    var p = _somNotificacao.play();
-    if(p && p.catch) p.catch(function(){});
+    var a = document.getElementById('somNotificacao');
+    if(!a) return;
+    a.volume = 1.0;
+    a.currentTime = 0;
+    a.play().catch(function(){
+      // Se ainda nao desbloqueou, tenta desbloquear e tocar
+      desbloquearSom();
+    });
   }catch(e){}
 }
 
@@ -3216,7 +3212,7 @@ function mostrarToast(titulo, descricao, tipo, duracao){
     '<button class="toast-fechar" onclick="fecharToast(this.parentElement)" aria-label="Fechar aviso">&times;</button>';
   container.appendChild(toast);
   // Auto-fechar
-  var tempo = duracao || (tipo === 'patio_liberado' ? 12000 : 7000);
+  var tempo = duracao || 7000;
   setTimeout(function(){ fecharToast(toast); }, tempo);
 }
 
@@ -3306,9 +3302,8 @@ async function buscarNotificoesNovas(){
       // Mostrar toast apenas para notificacoes nao lidas E nao processadas ainda
       if(!n.lida && !_notificacoesProcessadas[n.id] && mostrou < 3){
         _notificacoesProcessadas[n.id] = true;
-        // Tocar som primeiro, depois mostrar toast
-        tocarBeepNotificacao();
         mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo, 7000);
+        tocarBeepNotificacao();
         mostrou++;
       }
     });
