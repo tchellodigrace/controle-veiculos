@@ -3153,23 +3153,43 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
-// Som de notificacao via arquivo MP3 - mais confiavel que Web Audio API
+// Som de notificacao via arquivo MP3
 var _somNotificacao = null;
+var _somReady = false;
+
+function initSomNotificacao(){
+  try{
+    var base = window.location.origin;
+    _somNotificacao = new Audio(base + '/sounds/notificacao.mp3');
+    _somNotificacao.volume = 1.0;
+    _somNotificacao.preload = 'auto';
+    _somNotificacao.load();
+    _somNotificacao.addEventListener('canplaythrough', function(){ _somReady = true; });
+  }catch(e){}
+}
+initSomNotificacao();
+
+// Unlock audio no primeiro clique do usuario
+function unlockSom(){
+  try{
+    if(_somNotificacao && _somNotificacao.paused){
+      _somNotificacao.play().then(function(){
+        _somNotificacao.pause();
+        _somNotificacao.currentTime = 0;
+        _somReady = true;
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
+document.addEventListener('click', unlockSom, {once: false});
+document.addEventListener('touchstart', unlockSom, {once: false});
+
 function tocarBeepNotificacao(){
   try{
-    if(!_somNotificacao){
-      _somNotificacao = new Audio('/sounds/notificacao.mp3');
-      _somNotificacao.volume = 0.8;
-    }
+    if(!_somNotificacao) return;
     _somNotificacao.currentTime = 0;
-    _somNotificacao.play().catch(function(){
-      // Se play falhar, tenta novamente com interacao
-      document.addEventListener('click', function playOnClick(){
-        _somNotificacao.currentTime = 0;
-        _somNotificacao.play().catch(function(){});
-        document.removeEventListener('click', playOnClick);
-      }, {once: true});
-    });
+    var p = _somNotificacao.play();
+    if(p && p.catch) p.catch(function(){});
   }catch(e){}
 }
 
@@ -3196,7 +3216,7 @@ function mostrarToast(titulo, descricao, tipo, duracao){
     '<button class="toast-fechar" onclick="fecharToast(this.parentElement)" aria-label="Fechar aviso">&times;</button>';
   container.appendChild(toast);
   // Auto-fechar
-  var tempo = duracao || (tipo === 'patio_liberado' ? 10000 : 5000);
+  var tempo = duracao || (tipo === 'patio_liberado' ? 12000 : 7000);
   setTimeout(function(){ fecharToast(toast); }, tempo);
 }
 
@@ -3286,9 +3306,9 @@ async function buscarNotificoesNovas(){
       // Mostrar toast apenas para notificacoes nao lidas E nao processadas ainda
       if(!n.lida && !_notificacoesProcessadas[n.id] && mostrou < 3){
         _notificacoesProcessadas[n.id] = true;
-        mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo);
-        // Tocar som de notificacao
+        // Tocar som primeiro, depois mostrar toast
         tocarBeepNotificacao();
+        mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo, 7000);
         mostrou++;
       }
     });
