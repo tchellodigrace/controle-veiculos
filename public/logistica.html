@@ -327,10 +327,10 @@ function getStatusInfo(d){
   if(d.chegou && d.patio_liberado){
     return { label: 'Patio Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
-  if(d.chegou && d.veiculo_no_patio && !d.patio_liberado){
+  if(d.chegou && d.veiculo_no_patio){
     return { label: 'Veiculo no Patio', css: 'no-patio', badge: 'no-patio', cor: '#ff9800' };
   }
-  if(d.chegou && d.registro_id && !d.veiculo_no_patio){
+  if(d.chegou && d.registro_id){
     return { label: 'Aguardando liberacao do patio', css: 'chegou', badge: 'chegou', cor: '#2196F3', emoji: true };
   }
   if(d.chegou){
@@ -350,7 +350,11 @@ function carregarDados(){
       return res.json();
     })
     .then(function(data){
-      if(!data || data.erro) return;
+      if(!data || data.erro){
+        console.warn('[LOGISTICA] Dados nao disponiveis, tentando novamente em 3s...');
+        setTimeout(carregarDados, 3000);
+        return;
+      }
       var motoristas = data.motoristas || [];
       var preRegistros = data.preRegistros || [];
       var checkinsQR = data.checkinsQR || [];
@@ -371,7 +375,8 @@ function carregarDados(){
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
 
       // === Mensagem fixa: veiculos aguardando liberacao do patio ===
-      var aguardando = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio; });
+      // Usa d.chegou && !d.veiculo_no_patio (nao depende exclusivamente de registro_id)
+      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && !d.veiculo_no_patio; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
       var msgBotoes = document.getElementById('msgAguardandoPatioBotoes');
@@ -388,7 +393,7 @@ function carregarDados(){
       }
 
       // === Mensagem: veiculos no patio aguardando finalizacao ===
-      var noPatio = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado; });
+      var noPatio = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado; });
       var msgPatioEl = document.getElementById('msgVeiculoNoPatio');
       var msgPatioDetalhes = document.getElementById('msgVeiculoNoPatioDetalhes');
       var msgPatioBotoes = document.getElementById('msgVeiculoNoPatioBotoes');
@@ -458,10 +463,10 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')">&#x1F6E4;&#xFE0F; Patio Liberado</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.veiculo_no_patio && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Patio Finalizado</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Libere o patio primeiro">&#x2705; Finalizado</button>' : '') +
+              (d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')">&#x1F6E4;&#xFE0F; Patio Liberado</button>' : '') +
+              (d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
+              (d.chegou && !d.saida_logistica && d.veiculo_no_patio && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Patio Finalizado</button>' : '') +
+              (!d.chegou ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Aguardando chegada">&#x2705; Finalizado</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
@@ -855,7 +860,7 @@ async function verificarNotificacoesLog(){
 // Iniciar
 iniciarMapa();
 carregarDados();
-setInterval(carregarDados, 10000);
+setInterval(carregarDados, 5000);
 verificarNotificacoesLog();
 setInterval(verificarNotificacoesLog, 5000);
 </script>
