@@ -2838,19 +2838,4 @@ async function iniciar() {
   });
 }
 
-// === TEMPORARIO: Limpar dados de logistica para teste ===
-app.post('/api/logistica-limpar', apiLimiter, async (req, res) => {
-  try {
-    const { token_limpeza } = req.body;
-    if (token_limpeza !== 'dsrh-limpar-2024') return res.status(403).json({ erro: 'Token invalido' });
-    await pool.query('UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = FALSE, saida_logistica = FALSE, chegada_em = NULL, saida_em = NULL');
-    await pool.query('UPDATE registros SET saida = \'\', patio_liberado = FALSE, veiculo_no_patio = FALSE');
-    await pool.query('DELETE FROM notificacoes WHERE tipo IN (\'entrada\', \'saida\', \'entrega_concluida\', \'veiculo_no_patio\', \'patio_liberado\', \'checkin_qr\')');
-    res.json({ ok: true, mensagem: 'Dados de logistica limpos' });
-  } catch (err) {
-    console.error('Erro ao limpar:', err);
-    res.status(500).json({ erro: 'Erro ao limpar' });
-  }
-});
-
 iniciar();
