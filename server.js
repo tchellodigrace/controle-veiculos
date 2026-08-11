@@ -364,7 +364,7 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
     );
     // Atualizar ou inserir em localizacoes_motoristas para aparecer na logistica
     const updateResult = await pool.query(
-      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, empresa = $8, nome = $9, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND (a_caminho = TRUE OR chegou = FALSE)',
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, empresa = $8, nome = $9, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND saida_logistica = FALSE',
       [cid, placaClean, sanitizarString(cnhUp).substring(0,50), sanitizarString(modeloUp).substring(0,100), sanitizarString(finalidadeUp).substring(0,100), sanitizarString(notaUp).substring(0,100), sanitizarString(obsUp).substring(0,500), sanitizarString(empresaUp).substring(0,100), sanitizarString(motoristaUp).substring(0,100)]
     );
     // Se nao existia registro (chegou direto pela portaria sem app), criar um novo
@@ -940,17 +940,17 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
-        l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua,
-        l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.saida_em,
-        l.finalidade_tipo, l.atualizado_em,
-        CASE WHEN r.id IS NOT NULL THEN TRUE ELSE FALSE END AS atendido_portaria
-      FROM localizacoes_motoristas l
-      LEFT JOIN registros r ON r.cliente_id = l.cliente_id
-        AND r.placa = l.placa
-        AND r.motorista = l.nome
-        AND r.data_registro = CURRENT_DATE
-      WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours'
-      ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC
+        motorista_id, nome, placa, empresa, lat, lng, rua,
+        a_caminho, chegou, chegada_em, saida_logistica, saida_em,
+        finalidade_tipo, atualizado_em,
+        EXISTS(
+          SELECT 1 FROM registros r WHERE r.cliente_id = localizacoes_motoristas.cliente_id
+            AND r.placa = localizacoes_motoristas.placa
+            AND r.data_registro = CURRENT_DATE
+        ) AS atendido_portaria
+      FROM localizacoes_motoristas
+      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours'
+      ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC
     `, [req.usuario.cliente_id]);
     res.json(result.rows);
   } catch (err) {
@@ -1038,7 +1038,7 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
     // Atualizar localizacoes_motoristas: marcar motorista como "chegou" no rastreamento/logistica
     await pool.query(
-      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND a_caminho = TRUE AND chegou = FALSE',
+      'UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(), cnh = $3, modelo = $4, finalidade = $5, nota = $6, obs = $7, atualizado_em = NOW() WHERE cliente_id = $1 AND placa = $2 AND saida_logistica = FALSE',
       [cid, d.placa, sanitizarString(d.cnh||'').substring(0,50), sanitizarString(d.modelo||'').substring(0,100), sanitizarString(d.finalidade||'').substring(0,100), sanitizarString(d.nota||'').substring(0,100), sanitizarString(d.obs||'').substring(0,500)]
     ).catch(() => {});
     res.status(201).json(registro.rows[0]);
@@ -2070,7 +2070,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros, checkinsQR] = await Promise.all([
-      pool.query("SELECT l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua, l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.finalidade_tipo, l.saida_em, l.cnh, l.modelo, l.finalidade, l.nota, l.obs, l.atualizado_em, COALESCE(r.patio_liberado, FALSE) AS patio_liberado, COALESCE(r.veiculo_no_patio, FALSE) AS veiculo_no_patio, r.id AS registro_id FROM localizacoes_motoristas l LEFT JOIN registros r ON r.cliente_id = l.cliente_id AND r.placa = l.placa AND r.saida = '' AND r.data_registro = CURRENT_DATE WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC", [cid]),
+      pool.query("SELECT l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua, l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.finalidade_tipo, l.saida_em, l.cnh, l.modelo, l.finalidade, l.nota, l.obs, l.atualizado_em, COALESCE(r.patio_liberado, FALSE) AS patio_liberado, COALESCE(r.veiculo_no_patio, FALSE) AS veiculo_no_patio, r.id AS registro_id FROM localizacoes_motoristas l LEFT JOIN LATERAL (SELECT id, patio_liberado, veiculo_no_patio FROM registros WHERE cliente_id = l.cliente_id AND placa = l.placa AND saida = '' AND data_registro = CURRENT_DATE ORDER BY id DESC LIMIT 1) r ON true WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid]),
       pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\' ORDER BY criado_em DESC LIMIT 200', [cid])
     ]);
