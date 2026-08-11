@@ -58,6 +58,7 @@
   .motorista-card .mc-rua{ color:#4a5568; }
   .motorista-card .mc-tempo{ color:#9aa4ad; font-size:10px; margin-top:4px; }
   .motorista-card.chegou-card{ background:#e8f0fe; border-color:#2196F3; }
+  .motorista-card.no-patio{ background:#fff3e0; border-color:#ff9800; }
   .motorista-card.concluido-card{ background:#e8f5e9; border-color:#4caf50; opacity:.85; }
   .motorista-card.concluido-card:hover{ opacity:1; }
 
@@ -315,7 +316,7 @@ function getStatusInfo(d){
     return { label: 'Veiculo no Patio', css: 'no-patio', badge: 'no-patio', cor: '#ff9800' };
   }
   if(d.chegou && d.registro_id && !d.veiculo_no_patio){
-    return { label: 'Aguardando liberacao do patio', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
+    return { label: 'Aguardando liberacao do patio', css: 'chegou', badge: 'chegou', cor: '#2196F3', emoji: true };
   }
   if(d.chegou){
     return { label: 'No local', css: 'chegou', badge: 'chegou', cor: '#ff9800' };
@@ -382,12 +383,13 @@ function carregarDados(){
         var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
         var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
         var placaJS = d.placa ? ('\'' + String(d.placa).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\'') : 'null';
+        var statusLabelPrefix = (st.emoji ? '&#x23F3; ' : '');
         listaHtml +=
           '<div class="motorista-card ' + st.css + '">' +
             '<div class="mc-topo" style="cursor:pointer" onclick="focarMapa(' + d.lat + ',' + d.lng + ')">' +
               '<div class="mc-cor" style="background:' + st.cor + '"></div>' +
               '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
-              '<div class="status-badge ' + st.badge + '">' + st.label + '</div>' +
+              '<div class="status-badge ' + st.badge + '">' + statusLabelPrefix + st.label + '</div>' +
             '</div>' +
             '<div class="mc-info">' +
               (d.placa ? '<div>Placa: <b>' + esc(d.placa) + '</b></div>' : '') +

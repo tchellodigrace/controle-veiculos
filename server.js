@@ -1,3 +1,6 @@
+// FIX: Garantir horario do Brasil (America/Sao_Paulo) no servidor (Render UTC)
+process.env.TZ = process.env.TZ || 'America/Sao_Paulo';
+
 require('dotenv').config();
 const express = require('express');
 const crypto = require('crypto');
@@ -938,7 +941,7 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
     const result = await pool.query(`
       SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, saida_em, finalidade_tipo, atualizado_em
       FROM localizacoes_motoristas
-      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '2 hours'
+      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours'
       ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC
     `, [req.usuario.cliente_id]);
     res.json(result.rows);
