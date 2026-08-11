@@ -288,7 +288,6 @@ var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e6
 
 function getStatusInfo(d){
   if(d.saida_logistica){
-    // Concluido - determinar se foi coleta ou entrega
     var tipo = (d.finalidade_tipo || '').toLowerCase();
     var tipoLabel = 'Concluida';
     if(tipo.indexOf('coleta') >= 0) tipoLabel = 'Coleta Concluida';
@@ -300,8 +299,11 @@ function getStatusInfo(d){
   if(d.chegou && d.patio_liberado){
     return { label: 'Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
-  if(d.chegou){
+  if(d.chegou && d.registro_id){
     return { label: 'Aguardando liberacao', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
+  }
+  if(d.chegou){
+    return { label: 'No local', css: 'chegou', badge: 'chegou', cor: '#ff9800' };
   }
   return { label: 'A caminho', css: '', badge: 'a-caminho', cor: '#ff9800' };
 }
@@ -397,8 +399,10 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Libere o veiculo para o patio primeiro">&#x2705; Finalizado</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
@@ -627,6 +631,25 @@ document.addEventListener('keydown', function(e){
 });
 
 // === ACOES DE LOGISTICA ===
+
+// === LIBERAR VEICULO PARA O PATIO (avisa portaria) ===
+async function liberarVeiculoPatio(placa){
+  try {
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/liberar-portaria', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ placa: placa })
+    });
+    if(!res.ok){
+      var err = await res.json();
+      alert(err.erro || 'Erro ao notificar portaria');
+      return;
+    }
+    carregarDados();
+  } catch(e){
+    alert('Erro de conexao: ' + e.message);
+  }
+}
 
 // === FINALIZAR VEICULO (set patio_liberado + notificar portaria) ===
 async function finalizarVeiculo(placa){

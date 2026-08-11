@@ -2139,6 +2139,30 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
   }
 });
 
+// === LOGISTICA: Liberar veiculo para o patio (avisa portaria) ===
+app.post('/api/logistica/:token/liberar-portaria', apiLimiter, async (req, res) => {
+  try {
+    const { placa } = req.body;
+    if (!placa) return res.status(400).json({ erro: 'Placa obrigatoria' });
+    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
+    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
+    const cid = cliente.rows[0].id;
+
+    // Criar notificacao para a portaria: veiculo liberado para o patio
+    const descricaoNotif = 'Logistica liberou o veiculo placa ' + placa + ' para o patio. Portaria pode encaminhar o motorista.';
+    await pool.query(
+      'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [cid, 'liberar_portaria', 'Veiculo liberado para o patio', descricaoNotif]
+    );
+
+    logAuditoria(cid, 'Logistica', 'Liberar veiculo para o patio', 'veiculo', placa, 'Portaria notificada para encaminhar motorista - placa ' + placa);
+    res.json({ ok: true, mensagem: 'Portaria notificada: veiculo liberado para o patio' });
+  } catch (err) {
+    console.error('Erro ao liberar veiculo para portaria:', err);
+    res.status(500).json({ erro: 'Erro ao notificar portaria' });
+  }
+});
+
 // === LOGISTICA: Finalizar veiculo (descarga concluida, patio liberado) ===
 app.post('/api/logistica/:token/finalizar-veiculo', apiLimiter, async (req, res) => {
   try {
