@@ -959,7 +959,7 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   }
 });
 
-// ENDPOINT TEMPORARIO - Limpar rastreamento (remover apos uso)
+// Limpar rastreamento ao vivo do cliente
 app.post('/api/localizacoes/limpar', authMiddleware, async (req, res) => {
   try {
     await pool.query('DELETE FROM localizacoes_motoristas WHERE cliente_id = $1', [req.usuario.cliente_id]);

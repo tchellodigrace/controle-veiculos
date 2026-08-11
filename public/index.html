@@ -1053,6 +1053,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <h3 style="margin:0;font-size:14px;color:#26313a;font-weight:700">&#x1F4CD; RASTREAMENTO AO VIVO</h3>
           <span id="rastreamentoCount" style="font-size:13px;color:#666">0 motoristas a caminho</span>
+          <button onclick="limparRastreamento()" style="font-size:11px;padding:4px 12px;border:1px solid #e0e0e0;background:#fff;color:#e53935;border-radius:6px;cursor:pointer;font-weight:600" title="Limpar todos os motoristas do rastreamento">&#x1F5D1; Limpar</button>
         </div>
         <div style="display:grid;grid-template-columns:280px 1fr;gap:12px" id="rastreamentoGrid">
           <!-- Lista lateral de motoristas -->
@@ -2974,6 +2975,19 @@ function iniciarPollingRastreamento(){
 
 function pararPollingRastreamento(){
   if(pollingRastreamento){ clearInterval(pollingRastreamento); pollingRastreamento = null; }
+}
+
+async function limparRastreamento(){
+  if(!confirm('Tem certeza que deseja limpar todos os motoristas do rastreamento ao vivo?')) return;
+  try {
+    var res = await fetch(API + '/api/localizacoes/limpar', { method: 'POST', headers: getHeaders() });
+    if(!res.ok) return;
+    var data = await res.json();
+    if(data.ok){
+      mostrarToast('Sucesso', 'Rastreamento limpo!', 'sucesso');
+      carregarLocalizacoes();
+    }
+  } catch(e){}
 }
 
 async function carregarLocalizacoes(){
