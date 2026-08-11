@@ -2986,9 +2986,10 @@ async function carregarLocalizacoes(){
     var badgeEl = document.getElementById('badgeRastreamento');
     var listaEl = document.getElementById('listaMotoristasRastreamento');
     var listaContainerEl = document.getElementById('motoristaListaContainer');
-    var aCaminhoCount = dados.filter(function(d){ return d.a_caminho; }).length;
-    var chegouCount = dados.filter(function(d){ return d.chegou; }).length;
-    countEl.textContent = aCaminhoCount + ' a caminho' + (chegouCount > 0 ? ', ' + chegouCount + ' chegou' : '');
+    var aCaminhoCount = dados.filter(function(d){ return d.a_caminho && !d.saida_logistica; }).length;
+    var chegouCount = dados.filter(function(d){ return d.chegou && !d.saida_logistica; }).length;
+    var finalizadoCount = dados.filter(function(d){ return d.saida_logistica; }).length;
+    countEl.textContent = aCaminhoCount + ' a caminho' + (chegouCount > 0 ? ', ' + chegouCount + ' chegou' : '') + (finalizadoCount > 0 ? ', ' + finalizadoCount + ' finalizado' : '');
     if(dados.length > 0){
       badgeEl.textContent = dados.length;
       badgeEl.style.display = 'inline';
@@ -3005,19 +3006,29 @@ async function carregarLocalizacoes(){
     dados.forEach(function(d, idx){
       var cor = cores[idx % cores.length];
       var chegou = !!d.chegou;
+      var finalizado = !!d.saida_logistica;
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
       var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+      var horaSaida = d.saida_em ? new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
       var card = document.createElement('div');
-      card.className = 'motorista-card' + (chegou ? ' chegou-card' : '');
+      if(finalizado){
+        card.className = 'motorista-card';
+        card.style.opacity = '0.55';
+        card.style.background = '#f5f5f5';
+        card.style.borderColor = '#e0e0e0';
+      } else {
+        card.className = 'motorista-card' + (chegou ? ' chegou-card' : '');
+      }
       card.innerHTML =
         '<div class="mc-topo">' +
-          '<div class="mc-cor" style="background:' + (chegou ? '#2196F3' : cor) + '"></div>' +
-          '<div class="mc-nome">' + esc(d.nome || 'Motorista') + '</div>' +
-          (chegou ? '<div style="font-size:10px;background:#2196F3;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Chegou</div>' : '') +
+          '<div class="mc-cor" style="background:' + (finalizado ? '#9e9e9e' : (chegou ? '#2196F3' : cor)) + '"></div>' +
+          '<div class="mc-nome"' + (finalizado ? ' style="color:#9e9e9e"' : '') + '>' + esc(d.nome || 'Motorista') + '</div>' +
+          (finalizado ? '<div style="font-size:10px;background:#9e9e9e;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Finalizado</div>' : '') +
+          (chegou && !finalizado ? '<div style="font-size:10px;background:#2196F3;color:#fff;padding:2px 8px;border-radius:10px;font-weight:700">Chegou</div>' : '') +
         '</div>' +
-        (d.placa ? '<div class="mc-placa">Placa: ' + esc(d.placa) + '</div>' : '') +
-        (d.rua ? '<div class="mc-rua">📍 ' + esc(d.rua) + '</div>' : '') +
-        '<div class="mc-tempo">' + (chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo) + '</div>';
+        (d.placa ? '<div class="mc-placa"' + (finalizado ? ' style="color:#9e9e9e"' : '') + '>Placa: ' + esc(d.placa) + '</div>' : '') +
+        (d.rua ? '<div class="mc-rua"' + (finalizado ? ' style="color:#9e9e9e"' : '') + '>📍 ' + esc(d.rua) + '</div>' : '') +
+        '<div class="mc-tempo"' + (finalizado ? ' style="color:#9e9e9e"' : '') + '>' + (finalizado && horaSaida ? 'Saida as ' + horaSaida : (chegou && horaChegada ? 'Chegou as ' + horaChegada : 'Atualizado: ' + tempo)) + '</div>';
       card.onclick = (function(dd, lat, lng){
         return function(){
           if(mapaRastreamento){
@@ -3035,27 +3046,29 @@ async function carregarLocalizacoes(){
     var bounds = [];
     dados.forEach(function(d, idx){
       if(d.lat == null || d.lng == null) return;
-      var cor = cores[idx % cores.length];
+      var finalizado = !!d.saida_logistica;
+      var cor = finalizado ? '#9e9e9e' : cores[idx % cores.length];
       var icone = L.divIcon({
         className: '',
         html: '<div style="position:relative;width:36px;height:36px">' +
-          '<div style="width:36px;height:36px;background:' + cor + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>' +
+          '<div style="width:36px;height:36px;background:' + cor + (finalizado ? ';opacity:.6' : '') + ';border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>' +
           '<div style="position:absolute;top:6px;left:50%;transform:translateX(-50%) rotate(45deg);color:#fff;font-size:12px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.4)">' + (idx + 1) + '</div>' +
         '</div>',
         iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
       });
       var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapaRastreamento);
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
-      var statusText = d.a_caminho ? '<span style="color:#28a745;font-weight:700">🚛 A caminho</span>' : '<span style="color:#2196F3;font-weight:700">📍 Chegou</span>';
+      var statusText = finalizado ? '<span style="color:#9e9e9e;font-weight:700">✅ Finalizado</span>' : (d.a_caminho ? '<span style="color:#28a745;font-weight:700">🚛 A caminho</span>' : '<span style="color:#2196F3;font-weight:700">📍 Chegou</span>');
       var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+      var horaSaida = d.saida_em ? ' | Saida: ' + new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
       var ruaText = d.rua ? '<span style="color:#2a6f7e">📍</span> ' + esc(d.rua) : '';
       marker.bindPopup(
         '<div style="min-width:180px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
             '<div style="width:14px;height:14px;border-radius:50%;background:' + cor + ';border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>' +
-            '<b style="font-size:14px">' + esc(d.nome || 'Motorista') + '</b>' +
+            '<b style="font-size:14px"' + (finalizado ? ' style="color:#9e9e9e"' : '') + '>' + esc(d.nome || 'Motorista') + '</b>' +
           '</div>' +
-          statusText + horaChegada + '<br>' +
+          statusText + horaChegada + horaSaida + '<br>' +
           (d.placa ? 'Placa: <b>' + esc(d.placa) + '</b><br>' : '') +
           (d.empresa ? 'Empresa: ' + esc(d.empresa) + '<br>' : '') +
           (ruaText ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid #e0e0e0">' + ruaText + '</div>' : '') +
@@ -3152,7 +3165,7 @@ document.addEventListener('click', function(e){
   }
 });
 
-var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
+var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '✅', veiculo_no_patio: '🚛', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
 // === SISTEMA DE SOM (audio global + fallback beep) ===
 var _somGlobal = null;
@@ -3206,7 +3219,8 @@ function mostrarToast(titulo, descricao, tipo, duracao){
   var toast = document.createElement('div');
   var classeTipo = 'toast';
   var icone = '🔔';
-  if(tipo === 'patio_liberado'){ classeTipo += ' toast-destaque'; icone = '🅿️'; }
+  if(tipo === 'patio_liberado'){ classeTipo += ' toast-destaque'; icone = '✅'; }
+  else if(tipo === 'veiculo_no_patio'){ classeTipo += ' toast-destaque'; icone = '🚛'; }
   else if(tipo === 'entrega_concluida'){ classeTipo += ' toast-sucesso'; icone = '📦'; }
   else if(tipo === 'checkin_qr'){ classeTipo += ' toast-destaque'; icone = '📱'; }
   else if(tipo === 'entrada'){ icone = '🚚'; }

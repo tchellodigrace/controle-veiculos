@@ -66,6 +66,7 @@
   .status-badge.a-caminho{ background:#ff9800; }
   .status-badge.chegou{ background:#2196F3; }
   .status-badge.concluido{ background:#4caf50; }
+  .status-badge.no-patio{ background:#ff9800; }
 
   /* Botoes de acao */
   .mc-acoes{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -126,6 +127,17 @@
   }
   .btn-liberar-portaria:hover{ background:linear-gradient(135deg,#0d47a1,#1565c0); transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
   .btn-liberar-portaria:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  /* Botao Patio Liberado (laranja) */
+  .btn-patio-liberado{
+    padding:7px 10px; border:none; border-radius:8px; font-size:10px;
+    font-weight:700; cursor:pointer; transition:.15s;
+    display:flex; align-items:center; justify-content:center; gap:4px;
+    background:linear-gradient(135deg,#e65100,#ff9800); color:#fff;
+    white-space:normal; line-height:1.2;
+  }
+  .btn-patio-liberado:hover{ background:linear-gradient(135deg,#bf360c,#e65100); transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .btn-patio-liberado:disabled{ opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
 
   /* Pre-registros */
   .pr-card{
@@ -226,12 +238,12 @@
         <h3>&#x1F4E6; Entregas e Coletas</h3>
       </div>
       <!-- Mensagem fixa: veiculos aguardando liberacao / a caminho do patio -->
-      <div id="msgAguardandoPatio" style="display:none;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:2px solid #ff9800;border-radius:10px;padding:14px 16px;margin:12px 12px 0 12px;font-size:13px;color:#e65100;">
+      <div id="msgAguardandoPatio" style="display:none;background:linear-gradient(135deg,#e3f2fd,#bbdefb);border:2px solid #2196F3;border-radius:10px;padding:14px 16px;margin:12px 12px 0 12px;font-size:13px;color:#0d47a1;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:18px">&#x1F6E4;&#xFE0F;</span>
-          <b style="font-size:14px;color:#bf360c">Status dos veiculos no patio</b>
+          <span style="font-size:18px">&#x23F3;</span>
+          <b style="font-size:14px;color:#0d47a1">Aguardando liberacao do patio</b>
         </div>
-        <div id="msgAguardandoPatioDetalhes" style="color:#795548;line-height:1.5"></div>
+        <div id="msgAguardandoPatioDetalhes" style="color:#1565c0;line-height:1.5"></div>
       </div>
       <div class="lista-section" id="listaContainer">
         <div style="text-align:center;color:#9aa4ad;font-size:13px;padding:20px">Carregando...</div>
@@ -289,18 +301,21 @@ var cores = ['#28a745','#2196F3','#ff5722','#9c27b0','#ff9800','#00bcd4','#e91e6
 function getStatusInfo(d){
   if(d.saida_logistica){
     var tipo = (d.finalidade_tipo || '').toLowerCase();
-    var tipoLabel = 'Concluida';
-    if(tipo.indexOf('coleta') >= 0) tipoLabel = 'Coleta Concluida';
-    else if(tipo.indexOf('entrega') >= 0) tipoLabel = 'Entrega Concluida';
-    else if(tipo.indexOf('retorno') >= 0) tipoLabel = 'Retorno Concluido';
-    else tipoLabel = 'Visita Concluida';
-    return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#4caf50' };
+    var tipoLabel = 'Finalizado';
+    if(tipo.indexOf('coleta') >= 0) tipoLabel = 'Coleta Finalizada';
+    else if(tipo.indexOf('entrega') >= 0) tipoLabel = 'Entrega Finalizada';
+    else if(tipo.indexOf('retorno') >= 0) tipoLabel = 'Retorno Finalizado';
+    else tipoLabel = 'Finalizado';
+    return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#9e9e9e' };
   }
   if(d.chegou && d.patio_liberado){
-    return { label: 'Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
+    return { label: 'Patio Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
-  if(d.chegou && d.registro_id){
-    return { label: 'Aguardando liberacao', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
+  if(d.chegou && d.veiculo_no_patio && !d.patio_liberado){
+    return { label: 'Veiculo no Patio', css: 'no-patio', badge: 'no-patio', cor: '#ff9800' };
+  }
+  if(d.chegou && d.registro_id && !d.veiculo_no_patio){
+    return { label: 'Aguardando liberacao do patio', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
   }
   if(d.chegou){
     return { label: 'No local', css: 'chegou', badge: 'chegou', cor: '#ff9800' };
@@ -339,23 +354,13 @@ function carregarDados(){
       if(concluidoCount > 0) countParts.push(concluidoCount + ' concluido');
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
 
-      // === Mensagem fixa: veiculos aguardando liberacao / finalizados ===
-      // So mostra quando portaria JA confirmou chegada (existe registro_id)
-      var aguardando = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado; });
-      var finalizados = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado; });
+      // === Mensagem fixa: veiculos aguardando liberacao do patio ===
+      var aguardando = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
-      if(aguardando.length > 0 || finalizados.length > 0){
-        var detalhesHtml = '';
-        if(aguardando.length > 0){
-          detalhesHtml += '<div style="margin-bottom:6px"><b style="color:#bf360c">&#x23F3; Aguardando liberacao do patio:</b><br>' +
-            aguardando.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
-        }
-        if(finalizados.length > 0){
-          detalhesHtml += '<div style="margin-bottom:0"><b style="color:#1b7d2c">&#x2705; Finalizados (pátio liberado):</b><br>' +
-            finalizados.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
-        }
-        msgDetalhes.innerHTML = detalhesHtml;
+      if(aguardando.length > 0){
+        msgDetalhes.innerHTML = '<div>' +
+          aguardando.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
         msgEl.style.display = 'block';
       } else {
         msgEl.style.display = 'none';
@@ -399,10 +404,10 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Libere o veiculo para o patio primeiro">&#x2705; Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')">&#x1F6E4;&#xFE0F; Patio Liberado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.veiculo_no_patio && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Patio Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Libere o patio primeiro">&#x2705; Finalizado</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
@@ -632,17 +637,18 @@ document.addEventListener('keydown', function(e){
 
 // === ACOES DE LOGISTICA ===
 
-// === LIBERAR VEICULO PARA O PATIO (avisa portaria) ===
-async function liberarVeiculoPatio(placa){
+// === PATIO LIBERADO (operador confirma veiculo no patio, avisa portaria) ===
+async function patioLiberado(placa){
+  if(!confirm('Confirmar liberacao do patio para o veiculo placa ' + placa + '? A portaria sera notificada.')) return;
   try {
-    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/liberar-portaria', {
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/patio-liberado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ placa: placa })
     });
     if(!res.ok){
       var err = await res.json();
-      alert(err.erro || 'Erro ao notificar portaria');
+      alert(err.erro || 'Erro ao liberar patio');
       return;
     }
     carregarDados();
@@ -651,9 +657,9 @@ async function liberarVeiculoPatio(placa){
   }
 }
 
-// === FINALIZAR VEICULO (set patio_liberado + notificar portaria) ===
+// === FINALIZAR VEICULO (descarga concluida, patio finalizado + notificar portaria) ===
 async function finalizarVeiculo(placa){
-  if(!confirm('Confirmar finalizacao da descarga? A portaria sera notificada que o patio esta liberado.')) return;
+  if(!confirm('Confirmar finalizacao da descarga? A portaria sera notificada que o patio esta finalizado.')) return;
   try {
     var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/finalizar-veiculo', {
       method: 'POST',
@@ -755,7 +761,8 @@ function mostrarToastLog(titulo, descricao, tipo){
   var toast = document.createElement('div');
   var bg = '#fff', border = '#e3e7eb', corTitulo = '#1a1a2e', icone = '🔔';
   if(tipo === 'entrada'){ bg = '#e9f1fa'; border = '#2f6fb0'; icone = '🚛'; }
-  else if(tipo === 'patio_liberado'){ bg = '#fff8e1'; border = '#e08a1e'; icone = '🅿️'; }
+  else if(tipo === 'patio_liberado'){ bg = '#fff8e1'; border = '#e08a1e'; icone = '&#x2705;'; }
+  else if(tipo === 'veiculo_no_patio'){ bg = '#fff8e1'; border = '#e08a1e'; icone = '&#x1F6E4;&#xFE0F;'; }
   toast.style.cssText = 'background:' + bg + ';border-left:4px solid ' + border + ';border-radius:10px;padding:14px 16px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:flex-start;gap:12px;animation:toastSlideIn .3s ease;max-width:380px';
   var hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
   toast.innerHTML = '<div style="font-size:24px;flex-shrink:0">' + icone + '</div>' +
