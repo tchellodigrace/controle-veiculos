@@ -163,6 +163,51 @@
     background:#e8f5e9; border:1px solid #a5d6a7; border-radius:10px;
     padding:12px 16px; font-size:13px; color:#1b7d2c; margin-bottom:16px;
   }
+
+  /* Alerta sonoro intermitente */
+  .alerta-overlay{
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,.6); z-index:200;
+    align-items:center; justify-content:center; padding:16px;
+    animation:alertaPulse 1.5s ease-in-out infinite;
+  }
+  .alerta-overlay.mostrar{ display:flex; }
+  @keyframes alertaPulse{
+    0%,100%{ background:rgba(0,0,0,.6); }
+    50%{ background:rgba(230,81,0,.25); }
+  }
+  .alerta-card{
+    background:#fff; border-radius:20px; padding:32px 24px;
+    max-width:380px; width:100%; text-align:center;
+    box-shadow:0 0 40px rgba(255,152,0,.6), 0 20px 60px rgba(0,0,0,.3);
+    animation:alertaBounce 0.8s ease-in-out infinite alternate;
+  }
+  @keyframes alertaBounce{
+    0%{ transform:scale(1); }
+    100%{ transform:scale(1.03); }
+  }
+  .alerta-card .alerta-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:80px; height:80px; border-radius:50%;
+    background:linear-gradient(135deg,#ff9800,#e65100);
+    margin-bottom:20px; animation:alertaIconPulse 1s ease-in-out infinite;
+  }
+  @keyframes alertaIconPulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,152,0,.5); }
+    50%{ box-shadow:0 0 0 20px rgba(255,152,0,0); }
+  }
+  .alerta-card .alerta-icon svg{ width:44px; height:44px; }
+  .alerta-card h2{ color:#e65100; font-size:22px; margin-bottom:10px; font-weight:800; }
+  .alerta-card p{ color:#4a5568; font-size:14px; line-height:1.6; margin-bottom:24px; }
+  .alerta-card .btn-fechar-alerta{
+    width:100%; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#e65100,#ff9800); color:#fff;
+    font-size:16px; font-weight:800; cursor:pointer;
+    box-shadow:0 4px 16px rgba(230,81,0,.4);
+    transition:all .2s;
+  }
+  .alerta-card .btn-fechar-alerta:hover{ transform:translateY(-1px); box-shadow:0 6px 20px rgba(230,81,0,.5); }
+  .alerta-card .btn-fechar-alerta:active{ transform:scale(.98); }
 </style>
 </head>
 <body>
@@ -249,6 +294,25 @@
       Mantenha esta pagina aberta durante o trajeto.<br>O GPS sera atualizado automaticamente.
     </div>
     <button onclick="fecharSucesso()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#2a6f7e;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Entendido</button>
+  </div>
+</div>
+
+<!-- Alerta sonoro intermitente -->
+<div class="alerta-overlay" id="alertaOverlay">
+  <div class="alerta-card">
+    <div class="alerta-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 3h15v13H1z"/>
+        <path d="M16 8h4l3 3v5h-7V8z"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/>
+        <circle cx="18.5" cy="18.5" r="2.5"/>
+        <path d="M8 16v5"/>
+        <path d="M16 16v5"/>
+      </svg>
+    </div>
+    <h2>Veiculo Liberado para o Patio!</h2>
+    <p>A logistica liberou seu veiculo para entrar no patio.<br>Dirija-se ao patio de descarga.</p>
+    <button class="btn-fechar-alerta" onclick="fecharAlerta()">Entendi, desativar alarme</button>
   </div>
 </div>
 
@@ -452,12 +516,117 @@
     return d.innerHTML;
   }
 
+  // === ALERTA SONORO INTERMITENTE (PATIO LIBERADO) ===
+  var alertaAtivo = false;
+  var alertaIntervalSom = null;
+  var alertaAudioCtx = null;
+  var notifInterval = null;
+
+  function tocarBeep(){
+    try {
+      if(!alertaAudioCtx) alertaAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = alertaAudioCtx.createOscillator();
+      var gain = alertaAudioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(alertaAudioCtx.destination);
+      osc.frequency.setValueAtTime(880, alertaAudioCtx.currentTime);
+      osc.frequency.setValueAtTime(1100, alertaAudioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(880, alertaAudioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.3, alertaAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, alertaAudioCtx.currentTime + 0.4);
+      osc.start(alertaAudioCtx.currentTime);
+      osc.stop(alertaAudioCtx.currentTime + 0.4);
+    } catch(e){}
+  }
+
+  function iniciarAlertaSonoro(){
+    if(alertaAtivo) return;
+    alertaAtivo = true;
+    document.getElementById('alertaOverlay').classList.add('mostrar');
+    // Tocar beep imediatamente
+    tocarBeep();
+    // Beep intermitente a cada 2 segundos
+    alertaIntervalSom = setInterval(function(){
+      if(alertaAtivo) tocarBeep();
+    }, 2000);
+  }
+
+  window.fecharAlerta = function(){
+    alertaAtivo = false;
+    if(alertaIntervalSom){ clearInterval(alertaIntervalSom); alertaIntervalSom = null; }
+    document.getElementById('alertaOverlay').classList.remove('mostrar');
+    // Marcar notificacao como lida no servidor
+    if(TOKEN){
+      fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/notificacoes/ler', {
+        method:'POST', headers:{ 'Content-Type':'application/json' }
+      }).catch(function(){});
+    }
+  };
+
+  function buscarNotificacoesMotorista(){
+    if(!TOKEN || alertaAtivo) return;
+    fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/notificacoes')
+      .then(function(res){
+        if(!res.ok) return [];
+        return res.json();
+      })
+      .then(function(notifs){
+        if(notifs && notifs.length > 0){
+          iniciarAlertaSonoro();
+        }
+      })
+      .catch(function(){});
+  }
+
+  // Iniciar polling de notificacoes a cada 5s (para motorista em transito ou aguardando)
+  function iniciarPollingNotificacoes(){
+    if(notifInterval) clearInterval(notifInterval);
+    notifInterval = setInterval(buscarNotificacoesMotorista, 5000);
+  }
+
   // Manter pagina viva
   document.addEventListener('visibilitychange', function(){
     if(!document.hidden && checkinData && checkinData.status_checkin === 'em_transito'){
       iniciarGPS();
     }
+    // Retomar beep se a aba voltou ao foco com alerta ativo
+    if(!document.hidden && alertaAtivo && !alertaIntervalSom){
+      alertaIntervalSom = setInterval(function(){
+        if(alertaAtivo) tocarBeep();
+      }, 2000);
+    }
+    // Pausar beep quando aba perde foco
+    if(document.hidden && alertaIntervalSom){
+      clearInterval(alertaIntervalSom);
+      alertaIntervalSom = null;
+    }
   });
+
+  // Iniciar polling quando os dados do despacho forem carregados
+  var _origThen = null;
+  function iniciarPollingAposCarregamento(){
+    fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN))
+      .then(function(res){
+        if(!res.ok) throw new Error('not found');
+        return res.json();
+      })
+      .then(function(data){
+        // Verificar se ja tem notificacoes pendentes ao carregar
+        return fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/notificacoes')
+          .then(function(r){ return r.ok ? r.json() : []; })
+          .then(function(notifs){
+            if(notifs && notifs.length > 0){
+              // Ja tem notificacao pendente, mostrar alerta
+              iniciarAlertaSonoro();
+            }
+            // Iniciar polling de qualquer forma
+            iniciarPollingNotificacoes();
+          });
+      })
+      .catch(function(){});
+  }
+  // Disparar polling apos 3 segundos (tempo para a pagina carregar)
+  setTimeout(iniciarPollingAposCarregamento, 3000);
 
 })();
 </script>

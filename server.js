@@ -2403,6 +2403,47 @@ app.get('/api/motorista-despacho/:token', apiLimiter, async (req, res) => {
   }
 });
 
+// GET: notificacoes para o motorista (alertas do patio liberado, etc.)
+app.get('/api/motorista-despacho/:token/notificacoes', apiLimiter, async (req, res) => {
+  try {
+    const despacho = await pool.query(
+      'SELECT cliente_id, placa FROM pre_registros WHERE motorista_token = $1 AND origem = \'checkin_qr\'',
+      [req.params.token]
+    );
+    if (!despacho.rows.length) return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    const cid = despacho.rows[0].cliente_id;
+    const placa = despacho.rows[0].placa;
+    // Buscar notificacoes do tipo veiculo_no_patio nao lidas para esta placa
+    const result = await pool.query(
+      "SELECT id, tipo, titulo, descricao, criado_em FROM notificacoes WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND lida = FALSE ORDER BY criado_em DESC LIMIT 5",
+      [cid, placa]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar notificacoes motorista:', err);
+    res.status(500).json({ erro: 'Erro ao buscar notificacoes' });
+  }
+});
+
+// POST: marcar notificacao como lida pelo motorista
+app.post('/api/motorista-despacho/:token/notificacoes/ler', apiLimiter, async (req, res) => {
+  try {
+    const despacho = await pool.query(
+      'SELECT cliente_id FROM pre_registros WHERE motorista_token = $1 AND origem = \'checkin_qr\'',
+      [req.params.token]
+    );
+    if (!despacho.rows.length) return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    await pool.query(
+      "UPDATE notificacoes SET lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND lida = FALSE",
+      [despacho.rows[0].cliente_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao marcar notificacao lida:', err);
+    res.status(500).json({ erro: 'Erro ao marcar notificacao' });
+  }
+});
+
 // POST: motorista inicia transito (muda status para em_transito + salva GPS inicial)
 app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (req, res) => {
   try {
