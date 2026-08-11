@@ -9,12 +9,9 @@ const pool = new Pool({
   max: 20
 });
 
-pool.on('error', (err) => {
-  console.error('Erro fatal no pool do PostgreSQL:', err.message);
-});
-
-pool.on('connect', () => {
-  // Silencioso - conexao bem sucedida
+// Garantir que PostgreSQL retorne timestamps no timezone do Brasil
+pool.on('connect', (client) => {
+  client.query("SET TIME ZONE 'America/Sao_Paulo'").catch(() => {});
 });
 
 pool.on('remove', () => {

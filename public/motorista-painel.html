@@ -384,7 +384,7 @@
       checkinData.status_checkin = 'em_transito';
       atualizarStatusUI('em_transito', checkinData.tipo_checkin);
       if(data.hora_inicio){
-        document.getElementById('horaInicio').textContent = 'Inicio: ' + new Date(data.hora_inicio).toLocaleString('pt-BR');
+        document.getElementById('horaInicio').textContent = 'Inicio: ' + new Date(data.hora_inicio).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
       }
       document.getElementById('sucessoOverlay').classList.add('mostrar');
     })

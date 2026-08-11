@@ -285,6 +285,11 @@ var CLIENTE_ID = params.get('cliente_id');
 var EMPRESA = params.get('empresa') || '---';
 var checkinsCache = [];
 
+// Funcoes de horario garantidas no timezone do Brasil (America/Sao_Paulo)
+var TZ_BR = { timeZone: 'America/Sao_Paulo' };
+function horaBr(ts){ return ts ? new Date(ts).toLocaleTimeString('pt-BR', TZ_BR) : ''; }
+function dataHoraBr(ts){ return ts ? new Date(ts).toLocaleString('pt-BR', TZ_BR) : '---'; }
+
 if(!TOKEN || !CLIENTE_ID){
   document.querySelector('.container').innerHTML = '<div style="text-align:center;padding:60px"><h2 style="color:#cc0000">Link invalido</h2><p style="color:#666;margin-top:8px">Este link expirou ou foi desativado.</p></div>';
 }
@@ -426,8 +431,8 @@ function carregarDados(){
         temAtivos = true;
         var st = getStatusInfo(d);
         var cor = cores[idx % cores.length];
-        var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
-        var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+        var tempo = dataHoraBr(d.atualizado_em);
+        var horaChegada = horaBr(d.chegada_em);
         var placaJS = d.placa ? ('\'' + String(d.placa).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\'') : 'null';
         var statusLabelPrefix = (st.emoji ? '&#x23F3; ' : '');
         listaHtml +=
@@ -470,8 +475,8 @@ function carregarDados(){
       motoristas.forEach(function(d, idx){
         if(!d.saida_logistica) return;
         var st = getStatusInfo(d);
-        var horaSaida = d.saida_em ? new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
-        var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+        var horaSaida = horaBr(d.saida_em);
+        var horaChegada = horaBr(d.chegada_em);
         listaHtml +=
           '<div class="motorista-card concluido-card' + (d.lat ? '" onclick="focarMapa(' + d.lat + ',' + d.lng + ')"' : '"') + '>' +
             '<div class="mc-topo">' +
@@ -544,7 +549,7 @@ function carregarDados(){
               (c.descricao_material ? '<div>Material: ' + esc(c.descricao_material) + '</div>' : '') +
               '<div style="display:flex;align-items:center;gap:8px;margin-top:2px">' +
                 '<span>' + tipoLabel + '</span>' +
-                '<span style="color:#9aa4ad">' + (c.criado_em ? new Date(c.criado_em).toLocaleString('pt-BR') : '---') + '</span>' +
+                '<span style="color:#9aa4ad">' + dataHoraBr(c.criado_em) + '</span>' +
               '</div>' +
             '</div>' +
           '</div>';
@@ -579,13 +584,13 @@ function carregarDados(){
           iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -38]
         });
         var marker = L.marker([d.lat, d.lng], { icon: icone }).addTo(mapa);
-        var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '---';
+        var tempo = dataHoraBr(d.atualizado_em);
         var statusPopup = '';
         if(d.saida_logistica){
-          var horaSaida = d.saida_em ? ' as ' + new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
+          var horaSaida = d.saida_em ? ' as ' + horaBr(d.saida_em) : '';
           statusPopup = '<span style="color:#4caf50;font-weight:700">&#x2705; ' + st.label + '</span>' + horaSaida;
         } else {
-          var horaChegada = d.chegada_em ? ' as ' + new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
+          var horaChegada = d.chegada_em ? ' as ' + horaBr(d.chegada_em) : '';
           statusPopup = d.a_caminho
             ? '<span style="color:#ff9800;font-weight:700">&#x1F69A; A caminho</span>'
             : '<span style="color:#2196F3;font-weight:700">&#x1F4CD; Chegou</span>' + horaChegada;
@@ -660,7 +665,7 @@ function verDetalhesCheckin(idx){
   if(d.quantidade_peso) linhas.push({ label: 'Qtd/Peso', valor: d.quantidade_peso });
   if(d.nome_recebedor) linhas.push({ label: 'Recebedor', valor: d.nome_recebedor });
   if(d.data_previsao) linhas.push({ label: 'Previsão', valor: new Date(d.data_previsao + 'T00:00:00').toLocaleDateString('pt-BR') });
-  if(d.criado_em) linhas.push({ label: 'Check-in em', valor: new Date(d.criado_em).toLocaleString('pt-BR') });
+  if(d.criado_em) linhas.push({ label: 'Check-in em', valor: dataHoraBr(d.criado_em) });
   if(d.obs) linhas.push({ label: 'Observação', valor: d.obs });
 
   body.innerHTML = linhas.map(function(l){
@@ -740,9 +745,9 @@ function imprimirMotorista(motoristaId){
       var m = data.motoristas.find(function(d){ return d.motorista_id === motoristaId; });
       if(!m){ alert('Motorista nao encontrado'); return; }
       var st = getStatusInfo(m);
-      var horaChegada = m.chegada_em ? new Date(m.chegada_em).toLocaleTimeString('pt-BR') : '---';
-      var horaSaida = m.saida_em ? new Date(m.saida_em).toLocaleTimeString('pt-BR') : '';
-      var dataHora = m.chegada_em ? new Date(m.chegada_em).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+      var horaChegada = horaBr(m.chegada_em) || '---';
+      var horaSaida = horaBr(m.saida_em);
+      var dataHora = m.chegada_em ? dataHoraBr(m.chegada_em) : dataHoraBr(new Date().toISOString());
 
       var win = window.open('', '_blank', 'width=400,height=600');
       win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Ficha Motorista</title>' +
