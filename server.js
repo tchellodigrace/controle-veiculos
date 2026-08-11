@@ -939,10 +939,18 @@ app.post('/api/motorista/cheguei', motoristaAuthMiddleware, apiLimiter, async (r
 app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, saida_em, finalidade_tipo, atualizado_em
-      FROM localizacoes_motoristas
-      WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours'
-      ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC
+      SELECT
+        l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua,
+        l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.saida_em,
+        l.finalidade_tipo, l.atualizado_em,
+        CASE WHEN r.id IS NOT NULL THEN TRUE ELSE FALSE END AS atendido_portaria
+      FROM localizacoes_motoristas l
+      LEFT JOIN registros r ON r.cliente_id = l.cliente_id
+        AND r.placa = l.placa
+        AND r.motorista = l.nome
+        AND r.data_registro = CURRENT_DATE
+      WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours'
+      ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC
     `, [req.usuario.cliente_id]);
     res.json(result.rows);
   } catch (err) {

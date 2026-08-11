@@ -2986,8 +2986,8 @@ async function carregarLocalizacoes(){
     var badgeEl = document.getElementById('badgeRastreamento');
     var listaEl = document.getElementById('listaMotoristasRastreamento');
     var listaContainerEl = document.getElementById('motoristaListaContainer');
-    var aCaminhoCount = dados.filter(function(d){ return d.a_caminho && !d.chegou && !d.saida_logistica; }).length;
-    var atendidoCount = dados.filter(function(d){ return d.chegou && !d.saida_logistica; }).length;
+    var aCaminhoCount = dados.filter(function(d){ return d.a_caminho && !d.chegou && !d.saida_logistica && !d.atendido_portaria; }).length;
+    var atendidoCount = dados.filter(function(d){ return d.atendido_portaria && !d.saida_logistica; }).length;
     var finalizadoCount = dados.filter(function(d){ return d.saida_logistica; }).length;
     countEl.textContent = aCaminhoCount + ' a caminho' + (atendidoCount > 0 ? ', ' + atendidoCount + ' atendido' : '') + (finalizadoCount > 0 ? ', ' + finalizadoCount + ' finalizado' : '');
     if(dados.length > 0){
@@ -3005,9 +3005,8 @@ async function carregarLocalizacoes(){
     listaContainerEl.innerHTML = '';
     dados.forEach(function(d, idx){
       var cor = cores[idx % cores.length];
-      var chegou = !!d.chegou;
       var finalizado = !!d.saida_logistica;
-      var atendido = chegou && !finalizado; // Chegou e portaria confirmou = atendido
+      var atendido = !!d.atendido_portaria && !finalizado;
       var tempo = d.atualizado_em ? new Date(d.atualizado_em).toLocaleString('pt-BR') : '—';
       var horaChegada = d.chegada_em ? new Date(d.chegada_em).toLocaleTimeString('pt-BR') : '';
       var horaSaida = d.saida_em ? new Date(d.saida_em).toLocaleTimeString('pt-BR') : '';
@@ -3048,7 +3047,7 @@ async function carregarLocalizacoes(){
     dados.forEach(function(d, idx){
       if(d.lat == null || d.lng == null) return;
       var finalizado = !!d.saida_logistica;
-      var atendido = !!d.chegou && !finalizado;
+      var atendido = !!d.atendido_portaria && !finalizado;
       var inativo = finalizado || atendido;
       var cor = inativo ? '#9e9e9e' : cores[idx % cores.length];
       var icone = L.divIcon({
