@@ -407,18 +407,19 @@ function carregarDados(){
       var vazioEl = document.getElementById('mapaVazio');
       if(motoristas.length > 0){ vazioEl.style.display = 'none'; } else { vazioEl.style.display = 'flex'; }
 
-      // === REORDENAR: motoristas com acao pendente primeiro (registro_id + chegou), depois a_caminho ===
+      // === REORDENAR: novos motoristas primeiro, finalizados por ultimo ===
       var motoristasOrdenados = motoristas.slice().sort(function(a, b){
         // Finalizados por ultimo
         if(a.saida_logistica && !b.saida_logistica) return 1;
         if(!a.saida_logistica && b.saida_logistica) return -1;
-        // Com registro_id (portaria confirmou) primeiro
-        if(a.registro_id && a.chegou && !(b.registro_id && b.chegou)) return -1;
-        if(!(a.registro_id && a.chegou) && b.registro_id && b.chegou) return 1;
-        // No patio antes de aguardando
-        if(a.veiculo_no_patio && !b.veiculo_no_patio) return -1;
-        if(!a.veiculo_no_patio && b.veiculo_no_patio) return 1;
-        return 0;
+        // Patio liberado (finalizado) antes de no patio
+        if(a.patio_liberado && !b.patio_liberado) return 1;
+        if(!a.patio_liberado && b.patio_liberado) return -1;
+        // No patio antes de aguardando liberacao
+        if(a.veiculo_no_patio && !b.veiculo_no_patio) return 1;
+        if(!a.veiculo_no_patio && b.veiculo_no_patio) return -1;
+        // Mais recentes primeiro (maior atualizado_em no topo)
+        return (b.atualizado_em || '').localeCompare(a.atualizado_em || '');
       });
 
       // Montar lista lateral

@@ -267,7 +267,7 @@ app.get('/api/verificar-token', authMiddleware, (req, res) => {
 app.get('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro, patio_liberado FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id ASC',
+      'SELECT id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro, patio_liberado, veiculo_no_patio FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE ORDER BY id DESC',
       [req.usuario.cliente_id]
     );
     res.json(result.rows);
