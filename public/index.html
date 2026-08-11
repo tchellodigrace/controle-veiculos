@@ -1646,9 +1646,8 @@ async function atualizar(){
     const iconSaida = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
     const iconExcluir = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>`;
     dados.forEach((d,i) => {
-      const podeSair = d.saida ? false : d.patio_liberado;
-      const saidaTitle = d.saida ? 'Saída já registrada' : (!d.patio_liberado ? 'Aguardando liberação do pátio pela Logística' : 'Marcar saída');
-      const saidaBadge = d.saida ? d.saida : (d.patio_liberado ? '<span class="badge-ativo" style="background:#e65100;color:#fff">Saída Finalizada</span>' : '<span class="badge-aguardando">Aguardando pátio</span>');
+      const podeSair = false; // botão sempre desativado — a saída é registrada automaticamente quando a logística finaliza
+      const saidaBadge = d.saida ? d.saida : (d.patio_liberado ? '<span class="badge-ativo" style="background:#e65100;color:#fff">Saída Finalizada</span>' : (d.veiculo_no_patio ? '<span class="badge-ativo" style="background:#ff9800;color:#fff">Veículo no Pátio</span>' : '<span class="badge-aguardando">Aguardando pátio</span>'));
       tabela.innerHTML += `
       <tr>
         <td>${i+1}</td>
@@ -1665,7 +1664,7 @@ async function atualizar(){
         <td>${esc(d.nota) || "—"}</td>
         <td>
           <div class="acoes-tabela">
-            <button class="icon-btn btn-saida" title="${saidaTitle}" aria-label="${saidaTitle}" ${!podeSair ? "disabled" : ""} onclick="marcarSaida(${d.id})">${iconSaida}</button>
+            ${!d.saida && !d.patio_liberado ? '<button class="icon-btn btn-saida" title="Aguardando liberação do pátio pela Logística" aria-label="Aguardando liberação do pátio" disabled>${iconSaida}</button>' : ''}
             <button class="icon-btn btn-excluir" title="Excluir" aria-label="Excluir registro de veículo" onclick="excluir(${d.id})">${iconExcluir}</button>
           </div>
         </td>
