@@ -650,7 +650,7 @@
 </style>
 </head>
 <body>
-<audio id="somNotificacao" src="/sounds/notificacao.mp3" preload="auto"></audio>
+<audio id="somNotificacao" src="/sounds/notificacao.mp3" preload="auto" style="display:none"></audio>
 <div class="toast-container" id="toastContainer"></div>
 <a href="#mainContent" class="skip-link">Pular para conteudo principal</a>
 <noscript><div style="text-align:center;padding:40px;font-family:sans-serif;color:#fff;background:#1a1a2e;min-height:100vh;display:flex;align-items:center;justify-content:center"><div><h1>JavaScript necessario</h1><p>Este sistema requer JavaScript habilitado.</p></div></div></noscript>
@@ -3154,39 +3154,63 @@ document.addEventListener('click', function(e){
 
 var notificacaoIconesPorTipo = { entrada: '🚛', saida: '✅', checkin_qr: '📱', entrega_concluida: '📦', patio_liberado: '🅿️', liberar_portaria: '🚛', novo_cadastro: '👤' };
 
-// === SISTEMA DE SOM ===
-var _somDesbloqueado = false;
+// === SISTEMA DE SOM (AudioContext + MP3 decodeado) ===
+var _audioCtx = null;
+var _somBuffer = null;
+var _somCarregado = false;
 
-// Tenta desbloquear o audio em qualquer interacao do usuario
-function desbloquearSom(){
-  if(_somDesbloqueado) return;
-  var a = document.getElementById('somNotificacao');
-  if(!a) return;
-  a.volume = 1.0;
-  var p = a.play();
-  if(p && p.then){
-    p.then(function(){
-      a.pause();
-      a.currentTime = 0;
-      _somDesbloqueado = true;
-    }).catch(function(){});
-  }
-}
-document.addEventListener('click', desbloquearSom);
-document.addEventListener('touchstart', desbloquearSom);
-document.addEventListener('keydown', desbloquearSom);
+// Carregar MP3 e decodificar na memoria
+(function preloadSom(){
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    fetch('/sounds/notificacao.mp3')
+      .then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(function(buf){ return _audioCtx.decodeAudioData(buf); })
+      .then(function(decoded){ _somBuffer = decoded; _somCarregado = true; })
+      .catch(function(){});
+  } catch(e){}
+})();
+
+// Desbloquear AudioContext no primeiro clique do usuario
+document.addEventListener('click', function unlock(){
+  if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+});
+document.addEventListener('touchstart', function unlock(){
+  if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+});
+document.addEventListener('keydown', function unlock(){
+  if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+});
 
 function tocarBeepNotificacao(){
-  try{
-    var a = document.getElementById('somNotificacao');
-    if(!a) return;
-    a.volume = 1.0;
-    a.currentTime = 0;
-    a.play().catch(function(){
-      // Se ainda nao desbloqueou, tenta desbloquear e tocar
-      desbloquearSom();
-    });
-  }catch(e){}
+  try {
+    // Garantir que o AudioContext esta ativo
+    if(_audioCtx && _audioCtx.state === 'suspended') _audioCtx.resume();
+
+    if(_somCarregado && _somBuffer){
+      // Tocar o MP3 decodeado via AudioContext
+      var source = _audioCtx.createBufferSource();
+      source.buffer = _somBuffer;
+      source.connect(_audioCtx.destination);
+      source.start(0);
+    } else {
+      // Fallback: beep sintetizado se MP3 nao carregou
+      var ctx = _audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if(ctx.state === 'suspended') ctx.resume();
+      var freqs = [880, 1100, 1320, 1100];
+      freqs.forEach(function(f, i){
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.connect(g); g.connect(ctx.destination);
+        osc.frequency.value = f; osc.type = 'sine';
+        var t = ctx.currentTime + i * 0.12;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.3, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.start(t); osc.stop(t + 0.12);
+      });
+    }
+  } catch(e){}
 }
 
 // === TOAST NOTIFICATION SYSTEM ===
