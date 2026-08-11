@@ -333,9 +333,10 @@ function carregarDados(){
       if(concluidoCount > 0) countParts.push(concluidoCount + ' concluido');
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
 
-      // === Mensagem fixa: veiculos aguardando liberacao do patio ===
-      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && !d.patio_liberado; });
-      var aCaminhoPatio = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && d.patio_liberado; });
+      // === Mensagem fixa: veiculos aguardando liberacao / a caminho do patio ===
+      // So mostra "aguardando" quando portaria JA confirmou chegada (existe registro_id)
+      var aguardando = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado; });
+      var aCaminhoPatio = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
       if(aguardando.length > 0 || aCaminhoPatio.length > 0){
@@ -392,9 +393,9 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x1F6E4; Patio Liberado</button>' +
-              (d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
-              (d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
+              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.registro_id ? 'disabled title="Aguardando confirmacao da portaria"' : '') + '>&#x1F6E4; Patio Liberado</button>' +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
