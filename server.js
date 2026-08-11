@@ -2206,11 +2206,11 @@ app.post('/api/logistica/:token/finalizar-veiculo', apiLimiter, async (req, res)
       [cid, placa, '']
     );
 
-    // Criar notificacao para a portaria: Patio Finalizado
-    const descricaoNotif = 'Logistica finalizou a descarga do veiculo placa: ' + placa;
+    // Criar notificacao para a portaria: Saída Finalizada
+    const descricaoNotif = 'Logistica finalizou a descarga do veiculo placa: ' + placa + ' - Portaria pode marcar a saida.';
     await pool.query(
       'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
-      [cid, 'patio_liberado', 'Patio Finalizado', descricaoNotif]
+      [cid, 'patio_liberado', 'Saída Finalizada', descricaoNotif]
     );
 
     logAuditoria(cid, 'Logistica', 'Veiculo finalizado', 'veiculo', placa, 'Patio finalizado para portaria - placa ' + placa);
