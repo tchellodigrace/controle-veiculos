@@ -326,10 +326,13 @@
       document.getElementById('trackingInfo').classList.add('ativo');
       iniciarGPS();
     } else if(status === 'confirmado'){
-      badge.className = 'status-badge concluido';
+      badge.className = 'status-badge em_transito';
       icon.innerHTML = '&#x2705;';
-      label.textContent = 'Confirmado na portaria';
-      btn.style.display = 'none';
+      label.textContent = 'Confirmado - Pode iniciar';
+      btn.style.display = 'flex';
+      btn.disabled = false;
+      btn.className = 'btn-action btn-iniciar';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Estou a Caminho';
     } else if(isChegada){
       // Chegada: motorista ja esta na portaria, nao precisa do botao
       badge.className = 'status-badge aguardando';
@@ -337,11 +340,13 @@
       label.textContent = 'Aguardando na portaria';
       btn.style.display = 'none';
     } else {
-      // Partida: aguardando saida
+      // Partida NAO confirmada: aguardando portaria ativar
       badge.className = 'status-badge aguardando';
       icon.innerHTML = '&#x23F3;';
-      label.textContent = 'Aguardando saida';
+      label.textContent = 'Aguardando confirmacao da portaria';
       btn.style.display = 'flex';
+      btn.disabled = true;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Aguardando ativacao...';
     }
   }
 
@@ -384,7 +389,12 @@
       document.getElementById('sucessoOverlay').classList.add('mostrar');
     })
     .catch(function(ex){
-      alert('Erro ao iniciar transito: ' + (ex.message || 'Tente novamente'));
+      var msg = ex.message || 'Tente novamente';
+      if(msg.indexOf('confirmacao') >= 0 || msg.indexOf('Aguardando') >= 0){
+        alert('Aguarde! A portaria ainda nao confirmou seu despacho. Voce so podera iniciar o transito apos a ativacao.');
+      } else {
+        alert('Erro ao iniciar transito: ' + msg);
+      }
       var btn = document.getElementById('btnIniciar');
       btn.disabled = false;
       btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Estou a Caminho';

@@ -1020,11 +1020,25 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
   try {
     if (!/^\d+$/.test(req.params.id)) return res.status(400).json({ erro: 'ID invalido' });
     const cid = req.usuario.cliente_id;
-    const pre = await pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
+    const pre = await pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, origem, tipo_checkin, criado_em FROM pre_registros WHERE id = $1 AND cliente_id = $2', [req.params.id, cid]);
     if (pre.rows.length === 0) return res.status(404).json({ erro: 'Pré-registro não encontrado' });
     const d = pre.rows[0];
-    const hora = new Date().toLocaleTimeString('pt-BR'); // Sempre do servidor
-    const hoje = new Date().toLocaleDateString('en-CA'); // Sempre do servidor
+
+    // Check-in QR de PARTIDA: nao criar registro nem deletar, apenas marcar como confirmado
+    // para o motorista poder iniciar o transito no app
+    if (d.origem === 'checkin_qr' && d.tipo_checkin === 'partida') {
+      await pool.query("UPDATE pre_registros SET status_checkin = 'confirmado' WHERE id = $1 AND cliente_id = $2", [req.params.id, cid]);
+      res.json({ ok: true, mensagem: 'Despacho de partida confirmado. Motorista pode iniciar o transito.' });
+      logAuditoria(cid, req.usuario?.nome || '', 'Confirmacao despacho partida', 'veiculo', d.placa, 'Motorista: ' + (d.motorista||'') + ' | Empresa: ' + d.empresa);
+      // Notificar motorista via WhatsApp
+      whatsapp.notificarCheckinQR(pool, cid, { empresa: d.empresa, motorista: d.motorista, placa: d.placa, finalidade: d.finalidade }).catch(() => {});
+      pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)', [cid, 'checkin_qr', 'Despacho confirmado', 'Motorista: ' + (d.motorista||'') + ' | Placa: ' + d.placa + ' | Empresa: ' + d.empresa + ' - Despacho de partida confirmado.']).catch(() => {});
+      return;
+    }
+
+    // Demais casos (chegada, check-in normal, etc): fluxo original - criar registro + deletar pre-registro
+    const hora = new Date().toLocaleTimeString('pt-BR');
+    const hoje = new Date().toLocaleDateString('en-CA');
     const pos = await pool.query(
       `SELECT COALESCE(MAX(posicao), 0) + 1 AS prox FROM registros WHERE cliente_id = $1 AND data_registro = $2`,
       [cid, hoje]
@@ -2402,6 +2416,10 @@ app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (r
     }
     if (checkTipo.rows[0].tipo_checkin !== 'partida') {
       return res.status(400).json({ erro: 'Este check-in e de chegada. Inicio de transito nao se aplica.' });
+    }
+    // BLOQUEIO: motorista s pode iniciar transito apos a portaria confirmar
+    if (checkTipo.rows[0].status_checkin !== 'confirmado') {
+      return res.status(403).json({ erro: 'Aguardando confirmacao da portaria. Você só pode iniciar o transito após a portaria ativar seu despacho.' });
     }
     if (checkTipo.rows[0].status_checkin === 'em_transito') {
       return res.status(200).json({ id: checkTipo.rows[0].id, status_checkin: 'em_transito', ja_iniciado: true });
