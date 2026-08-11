@@ -2514,6 +2514,87 @@ app.post('/api/motorista-despacho/:token/iniciar-transito', apiLimiter, async (r
   }
 });
 
+// POST: motorista chegou ao destino (marca chegada + cria registro na portaria)
+app.post('/api/motorista-despacho/:token/cheguei', apiLimiter, async (req, res) => {
+  try {
+    const checkTipo = await pool.query(
+      `SELECT id, cliente_id, tipo_checkin, status_checkin, motorista, placa, empresa, cnh, modelo, finalidade, nota, obs
+       FROM pre_registros WHERE motorista_token = $1 AND origem = 'checkin_qr'`,
+      [req.params.token]
+    );
+    if (!checkTipo.rows.length) {
+      return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    }
+    const pre = checkTipo.rows[0];
+
+    // Ja chegou antes
+    if (pre.status_checkin === 'chegou') {
+      return res.status(200).json({ id: pre.id, status_checkin: 'chegou', ja_chegou: true });
+    }
+
+    // Somente motoristas em transito podem marcar chegada
+    if (pre.status_checkin !== 'em_transito') {
+      return res.status(400).json({ erro: 'Motorista nao esta em transito. Status atual: ' + pre.status_checkin });
+    }
+
+    const { lat, lng } = req.body;
+    const cid = pre.cliente_id;
+
+    // Marcar como chegou no pre-registro
+    await pool.query(
+      `UPDATE pre_registros SET status_checkin = 'chegou', transito_fim = NOW() WHERE id = $1`,
+      [pre.id]
+    );
+
+    // Atualizar localizacoes_motoristas: marcar chegada
+    await pool.query(
+      `UPDATE localizacoes_motoristas SET a_caminho = FALSE, chegou = TRUE, chegada_em = NOW(),
+        lat = COALESCE($3, lat), lng = COALESCE($4, lng), atualizado_em = NOW(),
+        cnh = $5, modelo = $6, finalidade = $7, nota = $8, obs = $9
+       WHERE cliente_id = $1 AND motorista_id = $2 AND saida_logistica = FALSE`,
+      [cid, pre.id, lat || null, lng || null,
+       sanitizarString(pre.cnh || '').substring(0, 20),
+       sanitizarString(pre.modelo || '').substring(0, 100),
+       sanitizarString(pre.finalidade || '').substring(0, 100),
+       sanitizarString(pre.nota || '').substring(0, 50),
+       sanitizarString(pre.obs || '').substring(0, 500)]
+    ).catch(() => {});
+
+    // Verificar se ja existe registro na portaria para esta placa hoje
+    const dupReg = await pool.query(
+      `SELECT id FROM registros WHERE cliente_id = $1 AND placa = $2 AND data_registro = CURRENT_DATE AND saida = ''`,
+      [cid, pre.placa]
+    );
+
+    if (dupReg.rows.length === 0) {
+      // Criar registro na portaria
+      const hora = new Date().toLocaleTimeString('pt-BR');
+      const hoje = new Date().toLocaleDateString('en-CA');
+      const pos = await pool.query(
+        `SELECT COALESCE(MAX(posicao), 0) + 1 AS prox FROM registros WHERE cliente_id = $1 AND data_registro = $2`,
+        [cid, hoje]
+      );
+      await pool.query(
+        `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao, origem)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'checkin_qr')`,
+        [cid, hora, pre.placa, pre.modelo, pre.finalidade, pre.empresa, pre.motorista, pre.cnh, hora, pre.nota || '', pre.obs, hoje, pos.rows[0].prox]
+      ).catch(() => {});
+    }
+
+    // Notificar portaria e logistica
+    pool.query('INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
+      [cid, 'entrada', 'Veiculo chegou - aguardando liberacao do patio', 'Motorista: ' + pre.motorista + ' | Placa: ' + pre.placa + ' | Empresa: ' + pre.empresa]).catch(() => {});
+    whatsapp.notificarEntrada(pool, cid, { empresa: pre.empresa, motorista: pre.motorista, placa: pre.placa, finalidade: pre.finalidade, hora: new Date().toLocaleTimeString('pt-BR') }).catch(() => {});
+    email.notificarEntrada(pool, cid, { empresa: pre.empresa, motorista: pre.motorista, placa: pre.placa, finalidade: pre.finalidade, hora: new Date().toLocaleTimeString('pt-BR') }).catch(() => {});
+
+    logAuditoria(cid, 'Motorista (Cheguei)', 'Chegada no destino', 'veiculo', pre.placa, 'Motorista: ' + pre.motorista + ' | Empresa: ' + pre.empresa);
+    res.json({ id: pre.id, status_checkin: 'chegou', mensagem: 'Chegada registrada. Leve a nota fiscal a portaria.' });
+  } catch (err) {
+    console.error('Erro ao registrar chegada:', err);
+    res.status(500).json({ erro: 'Erro ao registrar chegada' });
+  }
+});
+
 // POST: atualizar GPS do motorista
 app.post('/api/motorista-despacho/:token/gps', apiLimiter, async (req, res) => {
   try {

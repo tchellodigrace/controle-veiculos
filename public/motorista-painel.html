@@ -57,6 +57,7 @@
   }
   .status-badge.aguardando{ background:#fff3e0; color:#e65100; }
   .status-badge.em_transito{ background:#e8f5e9; color:#1b7d2c; }
+  .status-badge.chegou{ background:#fff8e1; color:#e65100; }
   .status-badge.concluido{ background:#e3f2fd; color:#1565c0; }
 
   .status-icon{ width:20px; height:20px; font-size:16px; }
@@ -81,6 +82,14 @@
     background:linear-gradient(135deg,#28a745,#20c997);
     box-shadow:0 4px 16px rgba(40,167,69,.4);
   }
+
+  .btn-iniciar.chegou{
+    background:linear-gradient(135deg,#e65100,#ff9800);
+    color:#fff;
+    box-shadow:0 4px 16px rgba(230,81,0,.4);
+  }
+  .btn-iniciar.chegou:hover{ transform:translateY(-1px); box-shadow:0 6px 20px rgba(230,81,0,.5); }
+  .btn-iniciar.chegou:active{ transform:scale(0.98); }
 
   /* Botão WhatsApp */
   .btn-whatsapp{
@@ -262,7 +271,7 @@
     <div class="resumo" id="resumoContainer"></div>
 
     <!-- Botao Iniciar Transito -->
-    <button class="btn-action btn-iniciar" id="btnIniciar" onclick="iniciarTransito()">
+    <button class="btn-action btn-iniciar" id="btnIniciar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
       </svg>
@@ -313,6 +322,24 @@
     <h2>Veiculo Liberado para o Patio!</h2>
     <p>A logistica liberou seu veiculo para entrar no patio.<br>Dirija-se ao patio de descarga.</p>
     <button class="btn-fechar-alerta" onclick="fecharAlerta()">Entendi, desativar alarme</button>
+  </div>
+</div>
+
+<!-- Modal Cheguei - nota fiscal -->
+<div class="sucesso-overlay" id="chegueiOverlay">
+  <div class="sucesso-card" style="border-top:4px solid #e65100">
+    <div class="check-icon" style="background:linear-gradient(135deg,#e65100,#ff9800)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+        <circle cx="12" cy="10" r="3"/>
+      </svg>
+    </div>
+    <h2 style="color:#e65100">Voce chegou ao destino!</h2>
+    <p><b>Leve a nota fiscal a portaria.</b></p>
+    <div class="destaque" style="background:#fff8e1;border-color:#ffe082;color:#e65100">
+      Apos entregara nota fiscal, aguarde o alerta sonoro para entrar no Patio. A logistica ira liberar sua entrada.
+    </div>
+    <button onclick="fecharModalCheguei()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#e65100;color:#fff;font-size:15px;font-weight:700;cursor:pointer">Entendi, aguardando liberacao</button>
   </div>
 </div>
 
@@ -385,16 +412,25 @@
       icon.innerHTML = '&#x1F69A;';
       label.textContent = 'Em transito';
       btn.className = 'btn-action btn-iniciar em_transito';
-      btn.disabled = true;
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Transito em andamento';
+      btn.disabled = false;
+      btn.onclick = function(){ window.cheguei(); };
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Cheguei';
       document.getElementById('trackingInfo').classList.add('ativo');
       iniciarGPS();
+    } else if(status === 'chegou'){
+      // Motorista chegou: aguardando liberacao do patio
+      badge.className = 'status-badge chegou';
+      icon.innerHTML = '&#x1F4CD;';
+      label.textContent = 'Aguardando liberacao do patio';
+      btn.style.display = 'none';
+      document.getElementById('trackingInfo').classList.remove('ativo');
     } else if(status === 'confirmado'){
       badge.className = 'status-badge em_transito';
       icon.innerHTML = '&#x2705;';
       label.textContent = 'Confirmado - Pode iniciar';
       btn.style.display = 'flex';
       btn.disabled = false;
+      btn.onclick = function(){ window.iniciarTransito(); };
       btn.className = 'btn-action btn-iniciar';
       btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Estou a Caminho';
     } else if(isChegada){
@@ -502,6 +538,54 @@
 
   window.fecharSucesso = function(){
     document.getElementById('sucessoOverlay').classList.remove('mostrar');
+  };
+
+  // === CHEGUEI: motorista avisa que chegou ao destino ===
+  window.cheguei = function(){
+    if(!TOKEN || !checkinData) return;
+    var btn = document.getElementById('btnIniciar');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:3px;margin:0"></div> Registrando chegada...';
+
+    // Obter GPS
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(function(pos){
+        enviarCheguei(pos.coords.latitude, pos.coords.longitude);
+      }, function(){
+        enviarCheguei(null, null);
+      }, { enableHighAccuracy:true, timeout:10000 });
+    } else {
+      enviarCheguei(null, null);
+    }
+  };
+
+  function enviarCheguei(lat, lng){
+    fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/cheguei', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ lat:lat, lng:lng })
+    })
+    .then(function(res){
+      if(!res.ok) return res.json().then(function(e){ throw new Error(e.erro || 'Erro'); });
+      return res.json();
+    })
+    .then(function(data){
+      checkinData.status_checkin = 'chegou';
+      atualizarStatusUI('chegou', checkinData.tipo_checkin);
+      // Mostrar modal com instrucoes da nota fiscal
+      document.getElementById('chegueiOverlay').classList.add('mostrar');
+    })
+    .catch(function(ex){
+      var msg = ex.message || 'Tente novamente';
+      alert('Erro ao registrar chegada: ' + msg);
+      var btn = document.getElementById('btnIniciar');
+      btn.disabled = false;
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Cheguei';
+    });
+  }
+
+  window.fecharModalCheguei = function(){
+    document.getElementById('chegueiOverlay').classList.remove('mostrar');
   };
 
   function mostrarErro(){
