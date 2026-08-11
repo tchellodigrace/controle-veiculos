@@ -2413,9 +2413,9 @@ app.get('/api/motorista-despacho/:token/notificacoes', apiLimiter, async (req, r
     if (!despacho.rows.length) return res.status(404).json({ erro: 'Despacho nao encontrado' });
     const cid = despacho.rows[0].cliente_id;
     const placa = despacho.rows[0].placa;
-    // Buscar notificacoes do tipo veiculo_no_patio nao lidas para esta placa
+    // Buscar notificacoes do tipo veiculo_no_patio NAO lidas pelo motorista para esta placa
     const result = await pool.query(
-      "SELECT id, tipo, titulo, descricao, criado_em FROM notificacoes WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND lida = FALSE ORDER BY criado_em DESC LIMIT 5",
+      "SELECT id, tipo, titulo, descricao, criado_em FROM notificacoes WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND COALESCE(motorista_lida, FALSE) = FALSE ORDER BY criado_em DESC LIMIT 5",
       [cid, placa]
     );
     res.json(result.rows);
@@ -2434,7 +2434,7 @@ app.post('/api/motorista-despacho/:token/notificacoes/ler', apiLimiter, async (r
     );
     if (!despacho.rows.length) return res.status(404).json({ erro: 'Despacho nao encontrado' });
     await pool.query(
-      "UPDATE notificacoes SET lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND lida = FALSE",
+      "UPDATE notificacoes SET motorista_lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND COALESCE(motorista_lida, FALSE) = FALSE",
       [despacho.rows[0].cliente_id]
     );
     res.json({ ok: true });
@@ -2912,6 +2912,7 @@ async function iniciar() {
       "ALTER TABLE clientes ADD COLUMN IF NOT EXISTS email_destinatario VARCHAR(200) DEFAULT ''",
       "CREATE TABLE IF NOT EXISTS notificacoes (id SERIAL PRIMARY KEY, cliente_id INTEGER REFERENCES clientes(id) ON DELETE CASCADE, tipo VARCHAR(30) NOT NULL, titulo VARCHAR(200) NOT NULL, descricao TEXT DEFAULT '', lida BOOLEAN DEFAULT FALSE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
       "CREATE INDEX IF NOT EXISTS idx_notificacoes_cliente ON notificacoes(cliente_id, lida, criado_em DESC)",
+      "ALTER TABLE notificacoes ADD COLUMN IF NOT EXISTS motorista_lida BOOLEAN DEFAULT FALSE",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS telefone_motorista VARCHAR(30) DEFAULT ''",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS descricao_material TEXT DEFAULT ''",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS quantidade_peso VARCHAR(100) DEFAULT ''",
