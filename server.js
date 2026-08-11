@@ -959,6 +959,17 @@ app.get('/api/localizacoes', authMiddleware, apiLimiter, async (req, res) => {
   }
 });
 
+// ENDPOINT TEMPORARIO - Limpar rastreamento (remover apos uso)
+app.post('/api/localizacoes/limpar', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM localizacoes_motoristas WHERE cliente_id = $1', [req.usuario.cliente_id]);
+    res.json({ ok: true, mensagem: 'Rastreamento limpo' });
+  } catch (err) {
+    console.error('Erro ao limpar localizacoes:', err);
+    res.status(500).json({ erro: 'Erro ao limpar' });
+  }
+});
+
 // Endpoint para o motorista verificar seu proprio status de rastreamento
 app.get('/api/motorista/status', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
   try {
