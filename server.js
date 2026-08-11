@@ -1070,7 +1070,7 @@ app.post('/api/contas-motoristas', authMiddleware, apiLimiter, async (req, res) 
     const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, usuario, nome, empresa',
+      'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1, $2, $3, $4, $5, $6, FALSE) RETURNING id, usuario, nome, empresa',
       [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), empresa||'']
     );
     res.status(201).json(result.rows[0]);
@@ -1254,7 +1254,7 @@ app.post('/api/contas-visitantes', authMiddleware, apiLimiter, async (req, res) 
     const senhaExibicao = senha.substring(0, 20);
     const cid = req.usuario.cliente_id;
     const result = await pool.query(
-      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa, telefone, setor_visitado) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, usuario, nome',
+      'INSERT INTO contas_visitantes (cliente_id, usuario, senha, senha_exibicao, nome, cpf, rg, empresa, telefone, setor_visitado, ativo) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE) RETURNING id, usuario, nome',
       [cid, usuario.toLowerCase(), senhaHash, senhaExibicao, nome.toUpperCase(), cpf||'', rg||'', empresa||'', telefone||'', setor_visitado||'']
     );
     res.status(201).json(result.rows[0]);
@@ -2067,7 +2067,7 @@ app.get('/api/logistica/:token/notificacoes', apiLimiter, async (req, res) => {
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
     const result = await pool.query(
-      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE ORDER BY criado_em DESC LIMIT 10',
+      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE AND tipo NOT IN (\'liberar_portaria\') ORDER BY criado_em DESC LIMIT 10',
       [cid]
     );
     res.json(result.rows);
