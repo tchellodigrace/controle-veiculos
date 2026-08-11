@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS contas_motoristas (
   nome VARCHAR(200) NOT NULL,
   empresa VARCHAR(200) DEFAULT '',
   senha_exibicao VARCHAR(100) DEFAULT '',
-  ativo BOOLEAN DEFAULT TRUE,
+  ativo BOOLEAN DEFAULT FALSE,
   trocar_senha BOOLEAN DEFAULT FALSE,
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(cliente_id, usuario)

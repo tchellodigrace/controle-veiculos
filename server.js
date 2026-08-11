@@ -379,7 +379,7 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
         var senhaTemp = placaClean.toLowerCase() + '@Portaria';
         var senhaHash = await bcrypt.hash(senhaTemp, 10);
         await pool.query(
-          'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1,$2,$3,$4,$5,$6,TRUE)',
+          'INSERT INTO contas_motoristas (cliente_id, usuario, senha, senha_exibicao, nome, empresa, ativo) VALUES ($1,$2,$3,$4,$5,$6,FALSE)',
           [cid, usuarioGen, senhaHash, senhaTemp.substring(0,20), motoristaUp, empresaUp]
         ).catch(() => {});
       }
@@ -2048,7 +2048,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros, checkinsQR] = await Promise.all([
-      pool.query("SELECT motorista_id, nome, placa, empresa, lat, lng, rua, a_caminho, chegou, chegada_em, saida_logistica, finalidade_tipo, saida_em, cnh, modelo, finalidade, nota, obs, atualizado_em FROM localizacoes_motoristas WHERE cliente_id = $1 AND (a_caminho = TRUE OR chegou = TRUE OR saida_logistica = TRUE) AND atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY saida_logistica ASC, chegou ASC, atualizado_em DESC", [cid]),
+      pool.query("SELECT l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua, l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.finalidade_tipo, l.saida_em, l.cnh, l.modelo, l.finalidade, l.nota, l.obs, l.atualizado_em, COALESCE(r.patio_liberado, FALSE) AS patio_liberado FROM localizacoes_motoristas l LEFT JOIN registros r ON r.cliente_id = l.cliente_id AND r.placa = l.placa AND r.saida = '' AND r.data_registro = CURRENT_DATE WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid]),
       pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\' ORDER BY criado_em DESC LIMIT 200', [cid])
     ]);
@@ -2067,7 +2067,7 @@ app.get('/api/logistica/:token/notificacoes', apiLimiter, async (req, res) => {
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
     const result = await pool.query(
-      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE AND tipo NOT IN (\'liberar_portaria\') ORDER BY criado_em DESC LIMIT 10',
+      'SELECT id, tipo, titulo, descricao, lida, criado_em FROM notificacoes WHERE cliente_id = $1 AND lida = FALSE AND tipo NOT IN (\'liberar_portaria\', \'patio_liberado\') ORDER BY criado_em DESC LIMIT 10',
       [cid]
     );
     res.json(result.rows);
@@ -2190,11 +2190,11 @@ app.post('/api/logistica/:token/liberar-portaria', apiLimiter, async (req, res) 
 
     // Criar notificacao para a portaria com a mensagem especifica
     const descricaoNotif = placa
-      ? 'Logistica autorizou: portaria pode liberar o veiculo placa ' + placa + ' para o patio'
-      : 'Logistica autorizou: portaria pode liberar veiculo para o patio';
+      ? 'Logistica liberou: veiculo placa ' + placa + ' a caminho do patio'
+      : 'Logistica liberou: veiculo a caminho do patio';
     await pool.query(
       'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
-      [cid, 'liberar_portaria', 'Portaria pode liberar o veiculo para o patio', descricaoNotif]
+      [cid, 'liberar_portaria', 'Veiculo a caminho do patio', descricaoNotif]
     );
 
     logAuditoria(cid, 'Logistica', 'Liberar veiculo para portaria', 'veiculo', placa || '', 'Portaria notificada para liberar veiculo' + (placa ? ' placa ' + placa : ''));
@@ -2765,7 +2765,9 @@ async function iniciar() {
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS motorista_token VARCHAR(100) DEFAULT ''",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_inicio TIMESTAMP DEFAULT NULL",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lat DECIMAL(10,7) DEFAULT NULL",
-      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lng DECIMAL(10,7) DEFAULT NULL"
+      "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lng DECIMAL(10,7) DEFAULT NULL",
+      "ALTER TABLE contas_motoristas ALTER COLUMN ativo SET DEFAULT FALSE",
+      "UPDATE contas_motoristas SET ativo = FALSE WHERE ativo IS NULL"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}

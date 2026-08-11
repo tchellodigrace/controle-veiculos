@@ -3206,11 +3206,13 @@ function mostrarToast(titulo, descricao, tipo, duracao){
   var toast = document.createElement('div');
   var classeTipo = 'toast';
   var icone = '🔔';
-  if(tipo === 'patio_liberado'){ classeTipo += ' toast-destaque'; icone = '🍿'; }
+  if(tipo === 'patio_liberado'){ classeTipo += ' toast-destaque'; icone = '🅿️'; }
   else if(tipo === 'entrega_concluida'){ classeTipo += ' toast-sucesso'; icone = '📦'; }
   else if(tipo === 'checkin_qr'){ classeTipo += ' toast-destaque'; icone = '📱'; }
   else if(tipo === 'entrada'){ icone = '🚚'; }
   else if(tipo === 'saida'){ classeTipo += ' toast-sucesso'; icone = '✅'; }
+  else if(tipo === 'liberar_portaria'){ classeTipo += ' toast-destaque'; icone = '🚛'; }
+  else if(tipo === 'novo_cadastro'){ classeTipo += ' toast-destaque'; icone = '👤'; }
   toast.className = classeTipo;
   var hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
   toast.innerHTML = '<div class="toast-icone">' + icone + '</div>' +

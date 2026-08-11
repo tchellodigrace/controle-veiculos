@@ -221,11 +221,11 @@
       <div class="card-header">
         <h3>&#x1F4E6; Entregas e Coletas</h3>
       </div>
-      <!-- Mensagem fixa: veiculos aguardando liberacao do patio -->
+      <!-- Mensagem fixa: veiculos aguardando liberacao / a caminho do patio -->
       <div id="msgAguardandoPatio" style="display:none;background:linear-gradient(135deg,#fff3e0,#ffe0b2);border:2px solid #ff9800;border-radius:10px;padding:14px 16px;margin:12px 12px 0 12px;font-size:13px;color:#e65100;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <span style="font-size:18px">&#x1F6E4;&#xFE0F;</span>
-          <b style="font-size:14px;color:#bf360c">Veiculo aguardando liberacao do patio</b>
+          <b style="font-size:14px;color:#bf360c">Status dos veiculos no patio</b>
         </div>
         <div id="msgAguardandoPatioDetalhes" style="color:#795548;line-height:1.5"></div>
       </div>
@@ -293,6 +293,9 @@ function getStatusInfo(d){
     else tipoLabel = 'Visita Concluida';
     return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
+  if(d.chegou && d.patio_liberado){
+    return { label: 'A caminho do patio', css: 'chegou', badge: 'chegou', cor: '#1565c0' };
+  }
   if(d.chegou){
     return { label: 'Chegou', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
   }
@@ -331,14 +334,21 @@ function carregarDados(){
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
 
       // === Mensagem fixa: veiculos aguardando liberacao do patio ===
-      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica; });
+      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && !d.patio_liberado; });
+      var aCaminhoPatio = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && d.patio_liberado; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
-      if(aguardando.length > 0){
-        var detalhes = aguardando.map(function(d){
-          return (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : '');
-        }).join('<br>');
-        msgDetalhes.innerHTML = detalhes;
+      if(aguardando.length > 0 || aCaminhoPatio.length > 0){
+        var detalhesHtml = '';
+        if(aguardando.length > 0){
+          detalhesHtml += '<div style="margin-bottom:6px"><b style="color:#bf360c">&#x1F6E4;&#xFE0F; Aguardando liberacao do patio:</b><br>' +
+            aguardando.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
+        }
+        if(aCaminhoPatio.length > 0){
+          detalhesHtml += '<div style="margin-bottom:0"><b style="color:#1565c0">&#x1F69A; A caminho do patio:</b><br>' +
+            aCaminhoPatio.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
+        }
+        msgDetalhes.innerHTML = detalhesHtml;
         msgEl.style.display = 'block';
       } else {
         msgEl.style.display = 'none';
@@ -383,7 +393,8 @@ function carregarDados(){
               '</div>' : '') +
             '<div class="mc-acoes">' +
               '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.chegou ? 'disabled' : '') + '>&#x1F6E4; Patio Liberado</button>' +
-              (d.chegou && !d.saida_logistica ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
+              (d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
+              (d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
