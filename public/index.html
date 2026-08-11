@@ -3347,16 +3347,22 @@ async function buscarNotificoesNovas(){
     var notifs = await res.json();
     if(!notifs || !notifs.length) return;
     var mostrou = 0;
+    var temPatioLiberado = false;
     for(var i = 0; i < notifs.length; i++){
       var n = notifs[i];
-      if(!n.lida && !_idsJaMostrados[n.id] && mostrou < 3){
+      if(!n.lida && !_idsJaMostrados[n.id]){
         _idsJaMostrados[n.id] = true;
         mostrarToast(n.titulo || 'Notificacao', n.descricao || '', n.tipo, 7000);
         mostrou++;
+        if(n.tipo === 'patio_liberado') temPatioLiberado = true;
       }
     }
     // Tocar som UMA VEZ (mesmo que multiplos toasts)
     if(mostrou > 0) tocarBeepNotificacao();
+    // Recarregar registros da portaria quando logistica liberar o patio
+    if(temPatioLiberado){
+      setTimeout(function(){ atualizar(); }, 1500);
+    }
   }catch(e){}
 }
 
