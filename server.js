@@ -347,7 +347,7 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
     if (errObs) return res.status(400).json({ erro: errObs });
     // Detecção de duplicado: mesma placa sem saída no mesmo dia
     const dup = await pool.query(
-      `SELECT id FROM registros WHERE cliente_id = $1 AND placa = $2 AND data_registro = CURRENT_DATE AND saida = ''`,
+      `SELECT id FROM registros WHERE cliente_id = $1 AND placa = $2 AND data_registro = CURRENT_DATE AND COALESCE(saida, '') = ''`,
       [req.usuario.cliente_id, placaClean]
     );
     if (dup.rows.length > 0) return res.status(409).json({ erro: 'Ja existe um registro com esta placa aguardando saida. Verifique a tabela.' });
@@ -358,8 +358,8 @@ app.post('/api/registros', authMiddleware, apiLimiter, async (req, res) => {
       [cid]
     );
     const result = await pool.query(
-      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro`,
+      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, posicao, veiculo_no_patio, patio_liberado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, FALSE, FALSE) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro, veiculo_no_patio, patio_liberado`,
       [cid, hora, placaClean, sanitizarString(modeloUp).substring(0,100), sanitizarString(finalidadeUp).substring(0,50), sanitizarString(empresaUp).substring(0,100), sanitizarString(motoristaUp).substring(0,100), sanitizarString(cnhUp).substring(0,20), hora, sanitizarString(notaUp).substring(0,50), sanitizarString(obsUp).substring(0,500), pos.rows[0].prox]
     );
     // Atualizar ou inserir em localizacoes_motoristas para aparecer na logistica
@@ -602,15 +602,15 @@ app.get('/api/resumo', authMiddleware, apiLimiter, async (req, res) => {
       pool.query(`
         SELECT
           COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE saida = '')::int AS aguardando,
-          COUNT(*) FILTER (WHERE saida != '')::int AS saidas
+          COUNT(*) FILTER (WHERE COALESCE(saida, '') = '')::int AS aguardando,
+          COUNT(*) FILTER (WHERE COALESCE(saida, '') != '')::int AS saidas
         FROM registros WHERE cliente_id = $1 AND data_registro = CURRENT_DATE
       `, [req.usuario.cliente_id]),
       pool.query(`
         SELECT
           COUNT(*)::int AS visitantes_total,
-          COUNT(*) FILTER (WHERE saida = '')::int AS visitantes_aguardando,
-          COUNT(*) FILTER (WHERE saida != '')::int AS visitantes_saidas
+          COUNT(*) FILTER (WHERE COALESCE(saida, '') = '')::int AS visitantes_aguardando,
+          COUNT(*) FILTER (WHERE COALESCE(saida, '') != '')::int AS visitantes_saidas
         FROM visitantes WHERE cliente_id = $1 AND data_registro = CURRENT_DATE
       `, [req.usuario.cliente_id]),
       pool.query(
@@ -1081,8 +1081,8 @@ app.post('/api/pre-registros/:id/confirmar', authMiddleware, apiLimiter, async (
     );
     const posicao = pos.rows[0].prox;
     const registro = await pool.query(
-      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro`,
+      `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao, veiculo_no_patio, patio_liberado)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, FALSE, FALSE) RETURNING id, cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, saida, nota, obs, posicao, data_registro, veiculo_no_patio, patio_liberado`,
       [cid, hora, d.placa, d.modelo, d.finalidade, d.empresa, d.motorista, d.cnh, hora, d.nota || '', d.obs, hoje, posicao]
     );
     await pool.query('DELETE FROM pre_registros WHERE id = $1', [req.params.id]);
@@ -2120,7 +2120,7 @@ app.get('/api/logistica/:token', apiLimiter, async (req, res) => {
     const cid = cliente.rows[0].id;
     console.log('[LOGISTICA] Buscando dados para cliente:', cid, cliente.rows[0].empresa);
     const [localizacoes, preRegistros, checkinsQR] = await Promise.all([
-      pool.query("SELECT l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua, l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.finalidade_tipo, l.saida_em, l.cnh, l.modelo, l.finalidade, l.nota, l.obs, l.atualizado_em, COALESCE(r.patio_liberado, FALSE) AS patio_liberado, COALESCE(r.veiculo_no_patio, FALSE) AS veiculo_no_patio, r.id AS registro_id FROM localizacoes_motoristas l LEFT JOIN LATERAL (SELECT id, patio_liberado, veiculo_no_patio FROM registros WHERE cliente_id = l.cliente_id AND placa = l.placa AND data_registro = CURRENT_DATE ORDER BY saida = '' DESC, id DESC LIMIT 1) r ON true WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC", [cid]),
+      pool.query("SELECT l.motorista_id, l.nome, l.placa, l.empresa, l.lat, l.lng, l.rua, l.a_caminho, l.chegou, l.chegada_em, l.saida_logistica, l.finalidade_tipo, l.saida_em, l.cnh, l.modelo, l.finalidade, l.nota, l.obs, l.atualizado_em, COALESCE(r.patio_liberado, FALSE) AS patio_liberado, COALESCE(r.veiculo_no_patio, FALSE) AS veiculo_no_patio, r.id AS registro_id FROM localizacoes_motoristas l LEFT JOIN LATERAL (SELECT id, patio_liberado, veiculo_no_patio FROM registros WHERE cliente_id = l.cliente_id AND placa = l.placa AND data_registro = CURRENT_DATE ORDER BY COALESCE(saida, '') = '' DESC, id DESC LIMIT 1) r ON true WHERE l.cliente_id = $1 AND (l.a_caminho = TRUE OR l.chegou = TRUE OR l.saida_logistica = TRUE) AND l.atualizado_em > NOW() - INTERVAL '24 hours' ORDER BY l.saida_logistica ASC, l.chegou ASC, l.atualizado_em DESC", [cid]),
       pool.query('SELECT id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, criado_em FROM pre_registros WHERE cliente_id = $1 ORDER BY id DESC LIMIT 50', [cid]),
       pool.query('SELECT id, cliente_id, empresa, motorista, cnh, placa, modelo, finalidade, nota, obs, telefone_motorista, descricao_material, quantidade_peso, nome_recebedor, data_previsao, tipo_checkin, status_checkin, criado_em FROM pre_registros WHERE cliente_id = $1 AND origem = \'checkin_qr\' ORDER BY criado_em DESC LIMIT 200', [cid])
     ]);
@@ -2222,9 +2222,19 @@ app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) =>
 
     // Marcar veiculo_no_patio no registro da portaria
     const resReg = await pool.query(
-      'UPDATE registros SET veiculo_no_patio = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
-      [cid, placa, '']
+      'UPDATE registros SET veiculo_no_patio = TRUE WHERE cliente_id = $1 AND placa = $2 AND COALESCE(saida, \'\') = \'\' AND data_registro = CURRENT_DATE',
+      [cid, placa]
     );
+    console.log('[PATIO-LIBERADO] UPDATE veiculo_no_patio:', resReg.rowCount, 'linhas | cliente:', cid, 'placa:', placa);
+
+    // Se nao encontrou com saida vazia, tentar sem filtro de saida (para registros antigos)
+    if(resReg.rowCount === 0){
+      const fallback = await pool.query(
+        'UPDATE registros SET veiculo_no_patio = TRUE WHERE cliente_id = $1 AND placa = $2 AND veiculo_no_patio IS NULL AND data_registro = CURRENT_DATE',
+        [cid, placa]
+      );
+      console.log('[PATIO-LIBERADO] FALLBACK UPDATE:', fallback.rowCount, 'linhas');
+    }
 
     // Criar notificacao para a portaria: veiculo liberado para o patio
     const descricaoNotif = 'Logistica liberou o veiculo placa ' + placa + ' para o patio. Veiculo a caminho do patio.';
@@ -2251,10 +2261,17 @@ app.post('/api/logistica/:token/finalizar-veiculo', apiLimiter, async (req, res)
     const cid = cliente.rows[0].id;
 
     // Marcar patio_liberado no registro da portaria para habilitar o botao Marcar Saida
-    await pool.query(
-      'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
-      [cid, placa, '']
+    const resPat = await pool.query(
+      'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND COALESCE(saida, \'\') = \'\' AND data_registro = CURRENT_DATE',
+      [cid, placa]
     );
+    console.log('[FINALIZAR] UPDATE patio_liberado:', resPat.rowCount, 'linhas | cliente:', cid, 'placa:', placa);
+    if(resPat.rowCount === 0){
+      await pool.query(
+        'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND patio_liberado IS NULL AND data_registro = CURRENT_DATE',
+        [cid, placa]
+      ).catch(() => {});
+    }
 
     // Criar notificacao para a portaria: Saída Finalizada
     const descricaoNotif = 'Logistica finalizou a descarga do veiculo placa: ' + placa + ' - Portaria pode marcar a saida.';
@@ -2454,6 +2471,7 @@ app.get('/api/motorista-despacho/:token/notificacoes', apiLimiter, async (req, r
       "SELECT id, tipo, titulo, descricao, criado_em FROM notificacoes WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND COALESCE(motorista_lida, FALSE) = FALSE ORDER BY criado_em DESC LIMIT 5",
       [cid, placa]
     );
+    console.log('[NOTIF-MOTORISTA] Token:', req.params.token ? req.params.token.substring(0,10) + '...' : 'vazio', '| cliente:', cid, '| placa:', placa, '| notifs:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar notificacoes motorista:', err);
@@ -2562,9 +2580,11 @@ app.post('/api/motorista-despacho/:token/cheguei', apiLimiter, async (req, res) 
       [req.params.token]
     );
     if (!checkTipo.rows.length) {
+      console.log('[CHEGUEI] Token nao encontrado:', req.params.token ? req.params.token.substring(0,10) + '...' : 'vazio');
       return res.status(404).json({ erro: 'Despacho nao encontrado' });
     }
     const pre = checkTipo.rows[0];
+    console.log('[CHEGUEI] Despacho encontrado:', pre.id, '| status:', pre.status_checkin, '| placa:', pre.placa);
 
     // Ja chegou antes
     if (pre.status_checkin === 'chegou') {
@@ -2601,7 +2621,7 @@ app.post('/api/motorista-despacho/:token/cheguei', apiLimiter, async (req, res) 
 
     // Verificar se ja existe registro na portaria para esta placa hoje
     const dupReg = await pool.query(
-      `SELECT id FROM registros WHERE cliente_id = $1 AND placa = $2 AND data_registro = CURRENT_DATE AND saida = ''`,
+      `SELECT id FROM registros WHERE cliente_id = $1 AND placa = $2 AND data_registro = CURRENT_DATE AND COALESCE(saida, '') = ''`,
       [cid, pre.placa]
     );
 
@@ -2614,8 +2634,8 @@ app.post('/api/motorista-despacho/:token/cheguei', apiLimiter, async (req, res) 
         [cid, hoje]
       );
       await pool.query(
-        `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao, origem)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'checkin_qr')`,
+        `INSERT INTO registros (cliente_id, chegada, placa, modelo, finalidade, empresa, motorista, cnh, entrada, nota, obs, data_registro, posicao, origem, veiculo_no_patio, patio_liberado)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'checkin_qr', FALSE, FALSE)`,
         [cid, hora, pre.placa, pre.modelo, pre.finalidade, pre.empresa, pre.motorista, pre.cnh, hora, pre.nota || '', pre.obs, hoje, pos.rows[0].prox]
       ).catch(() => {});
     }
@@ -2964,7 +2984,14 @@ async function iniciar() {
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lat DECIMAL(10,7) DEFAULT NULL",
       "ALTER TABLE pre_registros ADD COLUMN IF NOT EXISTS transito_lng DECIMAL(10,7) DEFAULT NULL",
       "ALTER TABLE contas_motoristas ALTER COLUMN ativo SET DEFAULT FALSE",
-      "UPDATE contas_motoristas SET ativo = FALSE WHERE ativo IS NULL"
+      "UPDATE contas_motoristas SET ativo = FALSE WHERE ativo IS NULL",
+      // Corrigir dados existentes: garantir que colunas booleanas criticas nao sejam NULL
+      "UPDATE registros SET veiculo_no_patio = FALSE WHERE veiculo_no_patio IS NULL",
+      "UPDATE registros SET patio_liberado = FALSE WHERE patio_liberado IS NULL",
+      "UPDATE localizacoes_motoristas SET chegou = FALSE WHERE chegou IS NULL",
+      "UPDATE localizacoes_motoristas SET a_caminho = FALSE WHERE a_caminho IS NULL",
+      "UPDATE localizacoes_motoristas SET saida_logistica = FALSE WHERE saida_logistica IS NULL",
+      "UPDATE notificacoes SET motorista_lida = FALSE WHERE motorista_lida IS NULL"
     ];
     for (const col of migrateCols) {
       try { await pool.query(col); } catch(e) {}
