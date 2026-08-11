@@ -974,22 +974,58 @@ app.post('/api/localizacoes/limpar', authMiddleware, async (req, res) => {
 app.get('/api/motorista/status', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT a_caminho, chegou, saida_logistica, chegada_em, saida_em FROM localizacoes_motoristas WHERE motorista_id = $1 AND cliente_id = $2 ORDER BY atualizado_em DESC LIMIT 1',
+      'SELECT a_caminho, chegou, saida_logistica, chegada_em, saida_em, placa FROM localizacoes_motoristas WHERE motorista_id = $1 AND cliente_id = $2 ORDER BY atualizado_em DESC LIMIT 1',
       [req.motorista.id, req.motorista.cliente_id]
     );
     if (!result.rows.length) return res.json({ ativo: false });
     const d = result.rows[0];
+
+    // Verificar se ha notificacao de patio liberado pendente para este motorista
+    var patio_liberado_alert = false;
+    if (d.chegou && d.placa) {
+      const notifResult = await pool.query(
+        "SELECT id FROM notificacoes WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND COALESCE(motorista_lida, FALSE) = FALSE LIMIT 1",
+        [req.motorista.cliente_id, d.placa]
+      );
+      patio_liberado_alert = notifResult.rows.length > 0;
+    }
+
     res.json({
       ativo: true,
       a_caminho: d.a_caminho,
       chegou: d.chegou,
       saida_logistica: d.saida_logistica,
       chegada_em: d.chegada_em,
-      saida_em: d.saida_em
+      saida_em: d.saida_em,
+      patio_liberado_alert: patio_liberado_alert
     });
   } catch (err) {
     console.error('Erro ao buscar status motorista:', err);
     res.status(500).json({ erro: 'Erro ao buscar status' });
+  }
+});
+
+// Endpoint para o motorista (JWT) marcar notificacao de patio como lida
+app.post('/api/motorista/notificacoes/ler', motoristaAuthMiddleware, apiLimiter, async (req, res) => {
+  try {
+    // Buscar placa do motorista
+    const motResult = await pool.query(
+      'SELECT placa FROM localizacoes_motoristas WHERE motorista_id = $1 AND cliente_id = $2 ORDER BY atualizado_em DESC LIMIT 1',
+      [req.motorista.id, req.motorista.cliente_id]
+    );
+    if (!motResult.rows.length || !motResult.rows[0].placa) {
+      return res.json({ ok: true });
+    }
+    const placa = motResult.rows[0].placa;
+    // Marcar apenas notificacoes desta placa
+    await pool.query(
+      "UPDATE notificacoes SET motorista_lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND COALESCE(motorista_lida, FALSE) = FALSE",
+      [req.motorista.cliente_id, placa]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Erro ao marcar notificacao lida:', err);
+    res.status(500).json({ erro: 'Erro ao marcar notificacao' });
   }
 });
 

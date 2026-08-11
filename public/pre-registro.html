@@ -119,6 +119,53 @@
   .autocomplete-list .ac-item.active{ background:#e8f5e9; color:#2a6f7e; font-weight:600; }
   .autocomplete-list .ac-item .ac-match{ font-weight:700; color:#2a6f7e; }
   .campo input.ac-input{ border-radius:8px 8px 0 0; }
+
+  /* === OVERLAYS: Cheguei + Alerta Patio Liberado === */
+  .overlay-modal{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
+    z-index:200; align-items:center; justify-content:center; padding:16px;
+  }
+  .overlay-modal.mostrar{ display:flex; }
+  .overlay-card{
+    background:#fff; border-radius:18px; padding:28px 24px; max-width:380px; width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.3); animation:overlayIn .25s ease; text-align:center;
+  }
+  @keyframes overlayIn{ 0%{ transform:scale(0); opacity:0; } 60%{ transform:scale(1.08); } 100%{ transform:scale(1); opacity:1; } }
+  .overlay-card .ov-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:72px; border-radius:50%; margin-bottom:16px;
+  }
+  .overlay-card .ov-icon svg{ width:36px; height:36px; }
+  .overlay-card h2{ margin:0 0 8px; font-size:20px; font-weight:800; }
+  .overlay-card p{ margin:0 0 20px; font-size:14px; line-height:1.6; color:#4a5568; }
+  .overlay-card .ov-btn{
+    width:100%; padding:14px; border:none; border-radius:12px;
+    font-size:16px; font-weight:800; cursor:pointer; transition:.2s;
+  }
+  /* Cheguei overlay */
+  #chegueiOverlay .ov-icon{ background:linear-gradient(135deg,#e65100,#ff9800); }
+  #chegueiOverlay .ov-icon svg{ stroke:#fff; }
+  #chegueiOverlay h2{ color:#e65100; }
+  #chegueiOverlay .ov-btn{ background:#e65100; color:#fff; box-shadow:0 4px 16px rgba(230,81,0,.4); }
+  #chegueiOverlay .ov-btn:hover{ transform:translateY(-1px); }
+  /* Alerta pátio liberado */
+  #alertaPatioOverlay{
+    animation:alertaBgPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes alertaBgPulse{ 0%,100%{ background:rgba(0,0,0,.6); } 50%{ background:rgba(230,81,0,.2); } }
+  #alertaPatioOverlay .ov-card{
+    animation:alertaBgPulse 1.5s ease-in-out infinite, overlayIn .25s ease;
+    box-shadow:0 0 40px rgba(255,152,0,.6), 0 20px 60px rgba(0,0,0,.3);
+  }
+  #alertaPatioOverlay .ov-icon{
+    background:linear-gradient(135deg,#ff9800,#e65100);
+    animation:iconPulse 1s ease-in-out infinite;
+  }
+  @keyframes iconPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,152,0,.5); } 50%{ box-shadow:0 0 0 20px rgba(255,152,0,0); } }
+  #alertaPatioOverlay .ov-icon svg{ stroke:#fff; }
+  #alertaPatioOverlay h2{ color:#e65100; font-size:22px; }
+  #alertaPatioOverlay .ov-btn{ background:linear-gradient(135deg,#e65100,#ff9800); color:#fff; box-shadow:0 4px 16px rgba(230,81,0,.4); }
+  #alertaPatioOverlay .ov-btn:hover{ transform:translateY(-1px); }
 </style>
 </head>
 <body>
@@ -283,6 +330,30 @@
 
 <!-- Container para toasts do motorista -->
 <div id="toastMotoristaContainer" style="position:fixed;top:16px;left:0;right:0;z-index:10000;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none"></div>
+
+<!-- MODAL: Cheguei - nota fiscal -->
+<div class="overlay-modal" id="chegueiOverlay">
+  <div class="overlay-card" style="border-top:4px solid #e65100">
+    <div class="ov-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    </div>
+    <h2>Voce chegou!</h2>
+    <p>Agora apresente sua <b>nota fiscal</b> na portaria da empresa, e apos isso aguarde a sua vez, o seu veiculo sera chamado para o patio!</p>
+    <button class="ov-btn" onclick="fecharModalCheguei()">Entendi</button>
+  </div>
+</div>
+
+<!-- MODAL: Alerta Patio Liberado (com beep intermitente) -->
+<div class="overlay-modal" id="alertaPatioOverlay">
+  <div class="overlay-card">
+    <div class="ov-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/><path d="M8 16v5"/><path d="M16 16v5"/></svg>
+    </div>
+    <h2>Seu Veiculo foi liberado para entrar no Patio!</h2>
+    <p>Por favor siga a direcao que a portaria lhe informou para a entrada.</p>
+    <button class="ov-btn" onclick="fecharAlertaPatio()">Entendi, desativar alarme</button>
+  </div>
+</div>
 
 <script>
 var API = window.location.origin;
@@ -750,6 +821,8 @@ async function cheguei(){
   btn.onclick = null; // impedir clique adicional
   // Toast: chegada registrada
   mostrarToastMotorista('Voce chegou!', 'Chegada registrada no sistema. Aguardando confirmacao da portaria.', 'chegada');
+  // === MOSTRAR MODAL: nota fiscal ===
+  document.getElementById('chegueiOverlay').classList.add('mostrar');
   // Manter verificacao de status para saber quando a portaria confirmar
   if(verificarStatusInterval === null){
     verificarStatusInterval = setInterval(verificarStatusPortaria, 10000);
@@ -782,6 +855,10 @@ async function verificarStatusPortaria(){
     if(!res.ok) return;
     var data = await res.json();
     var btn = document.getElementById('btnCaminho');
+    // === VERIFICAR ALERTA: patio liberado ===
+    if(data.patio_liberado_alert && !alertaPatioAtivo){
+      iniciarAlertaPatio();
+    }
     if(data.ativo && data.chegou && !data.saida_logistica){
       // Portaria marcou chegada - parar GPS e mostrar "Ja cheguei"
       if(gpsWatchId !== null){ navigator.geolocation.clearWatch(gpsWatchId); gpsWatchId = null; }
@@ -844,7 +921,85 @@ function sair(){
   btn.textContent = '🚛 Estou a Caminho';
   btn.classList.remove('parando');
   btn.onclick = function(){ iniciarRastreamento(); };
+  // Fechar alertas
+  try{ fecharAlertaPatio(); }catch(e){}
+  try{ fecharModalCheguei(); }catch(e){}
 }
+
+function fecharModalCheguei(){
+  document.getElementById('chegueiOverlay').classList.remove('mostrar');
+}
+
+// === ALERTA SONORO INTERMITENTE: PATIO LIBERADO ===
+var alertaPatioAtivo = false;
+var alertaPatioSomInterval = null;
+var alertaPatioAudioCtx = null;
+
+function tocarBeepAlerta(){
+  try {
+    if(!alertaPatioAudioCtx) alertaPatioAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = alertaPatioAudioCtx.createOscillator();
+    var gain = alertaPatioAudioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(alertaPatioAudioCtx.destination);
+    osc.frequency.setValueAtTime(880, alertaPatioAudioCtx.currentTime);
+    osc.frequency.setValueAtTime(1100, alertaPatioAudioCtx.currentTime + 0.1);
+    osc.frequency.setValueAtTime(880, alertaPatioAudioCtx.currentTime + 0.2);
+    gain.gain.setValueAtTime(0.3, alertaPatioAudioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, alertaPatioAudioCtx.currentTime + 0.4);
+    osc.start(alertaPatioAudioCtx.currentTime);
+    osc.stop(alertaPatioAudioCtx.currentTime + 0.4);
+  } catch(e){}
+}
+
+function iniciarAlertaPatio(){
+  if(alertaPatioAtivo) return;
+  alertaPatioAtivo = true;
+  document.getElementById('alertaPatioOverlay').classList.add('mostrar');
+  tocarBeepAlerta();
+  alertaPatioSomInterval = setInterval(function(){
+    if(alertaPatioAtivo) tocarBeepAlerta();
+  }, 2000);
+}
+
+function fecharAlertaPatio(){
+  alertaPatioAtivo = false;
+  if(alertaPatioSomInterval){ clearInterval(alertaPatioSomInterval); alertaPatioSomInterval = null; }
+  document.getElementById('alertaPatioOverlay').classList.remove('mostrar');
+  // Beep de confirmacao
+  try {
+    if(!alertaPatioAudioCtx) alertaPatioAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = alertaPatioAudioCtx.createOscillator();
+    var gain = alertaPatioAudioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(alertaPatioAudioCtx.destination);
+    osc.frequency.setValueAtTime(660, alertaPatioAudioCtx.currentTime);
+    gain.gain.setValueAtTime(0.2, alertaPatioAudioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, alertaPatioAudioCtx.currentTime + 0.3);
+    osc.start(alertaPatioAudioCtx.currentTime);
+    osc.stop(alertaPatioAudioCtx.currentTime + 0.3);
+  } catch(e){}
+  // Marcar notificacao como lida
+  if(tokenMotorista){
+    fetch(API + '/api/motorista/notificacoes/ler', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + tokenMotorista }
+    }).catch(function(){});
+  }
+}
+
+// Retomar/pausar beep quando aba muda de foco
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && alertaPatioAtivo && !alertaPatioSomInterval){
+    alertaPatioSomInterval = setInterval(function(){
+      if(alertaPatioAtivo) tocarBeepAlerta();
+    }, 2000);
+  }
+  if(document.hidden && alertaPatioSomInterval){
+    clearInterval(alertaPatioSomInterval);
+    alertaPatioSomInterval = null;
+  }
+});
 </script>
 </body>
 </html>
