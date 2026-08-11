@@ -2425,17 +2425,20 @@ app.get('/api/motorista-despacho/:token/notificacoes', apiLimiter, async (req, r
   }
 });
 
-// POST: marcar notificacao como lida pelo motorista
+// POST: marcar notificacao como lida pelo motorista (APENAS para a placa deste despacho)
 app.post('/api/motorista-despacho/:token/notificacoes/ler', apiLimiter, async (req, res) => {
   try {
     const despacho = await pool.query(
-      'SELECT cliente_id FROM pre_registros WHERE motorista_token = $1 AND origem = \'checkin_qr\'',
+      'SELECT cliente_id, placa FROM pre_registros WHERE motorista_token = $1 AND origem = \'checkin_qr\'',
       [req.params.token]
     );
     if (!despacho.rows.length) return res.status(404).json({ erro: 'Despacho nao encontrado' });
+    const cid = despacho.rows[0].cliente_id;
+    const placa = despacho.rows[0].placa;
+    // Marcar APENAS notificacoes deste tipo E desta placa como lidas pelo motorista
     await pool.query(
-      "UPDATE notificacoes SET motorista_lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND COALESCE(motorista_lida, FALSE) = FALSE",
-      [despacho.rows[0].cliente_id]
+      "UPDATE notificacoes SET motorista_lida = TRUE WHERE cliente_id = $1 AND tipo = 'veiculo_no_patio' AND descricao LIKE '%' || $2 || '%' AND COALESCE(motorista_lida, FALSE) = FALSE",
+      [cid, placa]
     );
     res.json({ ok: true });
   } catch (err) {

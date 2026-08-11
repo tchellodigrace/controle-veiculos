@@ -636,6 +636,19 @@
     alertaAtivo = false;
     if(alertaIntervalSom){ clearInterval(alertaIntervalSom); alertaIntervalSom = null; }
     document.getElementById('alertaOverlay').classList.remove('mostrar');
+    // Tocar beep final para confirmar desativacao
+    try {
+      if(!alertaAudioCtx) alertaAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = alertaAudioCtx.createOscillator();
+      var gain = alertaAudioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(alertaAudioCtx.destination);
+      osc.frequency.setValueAtTime(660, alertaAudioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, alertaAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, alertaAudioCtx.currentTime + 0.3);
+      osc.start(alertaAudioCtx.currentTime);
+      osc.stop(alertaAudioCtx.currentTime + 0.3);
+    } catch(e){}
     // Marcar notificacao como lida no servidor
     if(TOKEN){
       fetch(API + '/api/motorista-despacho/' + encodeURIComponent(TOKEN) + '/notificacoes/ler', {
@@ -653,10 +666,11 @@
       })
       .then(function(notifs){
         if(notifs && notifs.length > 0){
+          console.log('[MOTORISTA] Notificacao de patio detectada:', notifs.length);
           iniciarAlertaSonoro();
         }
       })
-      .catch(function(){});
+      .catch(function(err){ console.warn('[MOTORISTA] Erro ao buscar notificacoes:', err); });
   }
 
   // Iniciar polling de notificacoes a cada 5s (para motorista em transito ou aguardando)

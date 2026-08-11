@@ -324,16 +324,16 @@ function getStatusInfo(d){
     else tipoLabel = 'Finalizado';
     return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#9e9e9e' };
   }
-  if(d.chegou && d.patio_liberado){
+  if(!!d.chegou && !!d.patio_liberado){
     return { label: 'Patio Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
-  if(d.chegou && d.veiculo_no_patio){
+  if(!!d.chegou && !!d.veiculo_no_patio){
     return { label: 'Veiculo no Patio', css: 'no-patio', badge: 'no-patio', cor: '#ff9800' };
   }
-  if(d.chegou && d.registro_id){
+  if(!!d.chegou && !!d.registro_id){
     return { label: 'Aguardando liberacao do patio', css: 'chegou', badge: 'chegou', cor: '#2196F3', emoji: true };
   }
-  if(d.chegou){
+  if(!!d.chegou){
     return { label: 'No local', css: 'chegou', badge: 'chegou', cor: '#ff9800' };
   }
   return { label: 'A caminho', css: '', badge: 'a-caminho', cor: '#ff9800' };
@@ -363,9 +363,9 @@ function carregarDados(){
       // Contadores
       var aCaminhoCount = 0, chegouCount = 0, concluidoCount = 0;
       motoristas.forEach(function(d){
-        if(d.saida_logistica) concluidoCount++;
-        else if(d.chegou) chegouCount++;
-        else if(d.a_caminho) aCaminhoCount++;
+        if(!!d.saida_logistica) concluidoCount++;
+        else if(!!d.chegou) chegouCount++;
+        else if(!!d.a_caminho) aCaminhoCount++;
       });
 
       var countParts = [];
@@ -376,7 +376,7 @@ function carregarDados(){
 
       // === Mensagem fixa: veiculos aguardando liberacao do patio ===
       // Usa d.chegou && !d.veiculo_no_patio (nao depende exclusivamente de registro_id)
-      var aguardando = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && !d.veiculo_no_patio; });
+      var aguardando = motoristas.filter(function(d){ return !!d.chegou && !d.saida_logistica && !d.veiculo_no_patio; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
       var msgBotoes = document.getElementById('msgAguardandoPatioBotoes');
@@ -393,7 +393,7 @@ function carregarDados(){
       }
 
       // === Mensagem: veiculos no patio aguardando finalizacao ===
-      var noPatio = motoristas.filter(function(d){ return d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado; });
+      var noPatio = motoristas.filter(function(d){ return !!d.chegou && !d.saida_logistica && !!d.veiculo_no_patio && !d.patio_liberado; });
       var msgPatioEl = document.getElementById('msgVeiculoNoPatio');
       var msgPatioDetalhes = document.getElementById('msgVeiculoNoPatioDetalhes');
       var msgPatioBotoes = document.getElementById('msgVeiculoNoPatioBotoes');
@@ -414,15 +414,26 @@ function carregarDados(){
 
       // === REORDENAR: novos motoristas primeiro, finalizados por ultimo ===
       var motoristasOrdenados = motoristas.slice().sort(function(a, b){
-        // Finalizados por ultimo
-        if(a.saida_logistica && !b.saida_logistica) return 1;
-        if(!a.saida_logistica && b.saida_logistica) return -1;
+        var aFinal = !!(a.saida_logistica);
+        var bFinal = !!(b.saida_logistica);
+        var aNoPatio = !!(a.veiculo_no_patio);
+        var bNoPatio = !!(b.veiculo_no_patio);
+        var aPatioLib = !!(a.patio_liberado);
+        var bPatioLib = !!(b.patio_liberado);
+        var aChegou = !!(a.chegou);
+        var bChegou = !!(b.chegou);
+        // Finalizados SEMPRE por ultimo
+        if(aFinal && !bFinal) return 1;
+        if(!aFinal && bFinal) return -1;
         // Patio liberado (finalizado) antes de no patio
-        if(a.patio_liberado && !b.patio_liberado) return 1;
-        if(!a.patio_liberado && b.patio_liberado) return -1;
-        // No patio antes de aguardando liberacao
-        if(a.veiculo_no_patio && !b.veiculo_no_patio) return 1;
-        if(!a.veiculo_no_patio && b.veiculo_no_patio) return -1;
+        if(aPatioLib && !bPatioLib) return 1;
+        if(!aPatioLib && bPatioLib) return -1;
+        // No patio antes de aguardando liberacao (chegou SEM no_patio precisa de acao)
+        if(aNoPatio && !bNoPatio) return 1;
+        if(!aNoPatio && bNoPatio) return -1;
+        // Chegou antes de a caminho
+        if(aChegou && !bChegou) return -1;
+        if(!aChegou && bChegou) return 1;
         // Mais recentes primeiro (maior atualizado_em no topo)
         return (b.atualizado_em || '').localeCompare(a.atualizado_em || '');
       });
@@ -464,9 +475,9 @@ function carregarDados(){
               '</div>' : '') +
             '<div class="mc-acoes">' +
               (d.chegou && !d.saida_logistica && !d.veiculo_no_patio ? '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')">&#x1F6E4;&#xFE0F; Patio Liberado</button>' : '') +
-              (d.chegou && !d.saida_logistica && d.veiculo_no_patio && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
-              (d.chegou && !d.saida_logistica && d.veiculo_no_patio && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Patio Finalizado</button>' : '') +
-              (!d.chegou ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Aguardando chegada">&#x2705; Finalizado</button>' : '') +
+              (d.chegou && !d.saida_logistica && !!d.veiculo_no_patio && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
+              (d.chegou && !d.saida_logistica && !!d.veiculo_no_patio && !!d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Patio Finalizado</button>' : '') +
+              (!d.chegou && !d.saida_logistica ? '<button class="btn-finalizado" disabled style="opacity:.4" title="Aguardando chegada">&#x2705; Finalizado</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
