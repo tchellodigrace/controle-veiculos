@@ -2139,69 +2139,33 @@ app.post('/api/logistica/:token/entrega-concluida', apiLimiter, async (req, res)
   }
 });
 
-// === LOGISTICA: Patio Liberado (avisar portaria + liberar saida do veiculo) ===
-app.post('/api/logistica/:token/patio-liberado', apiLimiter, async (req, res) => {
+// === LOGISTICA: Finalizar veiculo (descarga concluida, patio liberado) ===
+app.post('/api/logistica/:token/finalizar-veiculo', apiLimiter, async (req, res) => {
   try {
     const { placa } = req.body;
+    if (!placa) return res.status(400).json({ erro: 'Placa obrigatoria' });
     const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
     if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
     const cid = cliente.rows[0].id;
 
     // Marcar patio_liberado no registro da portaria para habilitar o botao Marcar Saida
-    if (placa) {
-      await pool.query(
-        'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
-        [cid, placa, '']
-      );
-    }
+    await pool.query(
+      'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
+      [cid, placa, '']
+    );
 
-    // Criar notificacao para a portaria
-    const descricaoNotif = placa
-      ? 'Logistica liberou a saida do veiculo placa: ' + placa
-      : 'Logistica informou: patio esta liberado para entrada de novo veiculo.';
+    // Criar notificacao para a portaria: Patio Liberado
+    const descricaoNotif = 'Logistica finalizou a descarga do veiculo placa: ' + placa;
     await pool.query(
       'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
       [cid, 'patio_liberado', 'Patio Liberado', descricaoNotif]
     );
 
-    logAuditoria(cid, 'Logistica', 'Patio liberado', 'veiculo', placa || '', 'Portaria avisada: patio liberado' + (placa ? ' para placa ' + placa : ''));
-    res.json({ ok: true, mensagem: 'Portaria notificada com sucesso' });
+    logAuditoria(cid, 'Logistica', 'Veiculo finalizado', 'veiculo', placa, 'Patio liberado para portaria - placa ' + placa);
+    res.json({ ok: true, mensagem: 'Portaria notificada: patio liberado' });
   } catch (err) {
-    console.error('Erro ao notificar patio liberado:', err);
-    res.status(500).json({ erro: 'Erro ao notificar portaria' });
-  }
-});
-
-// === LOGISTICA: Liberar veiculo para portaria (registro direto) ===
-app.post('/api/logistica/:token/liberar-portaria', apiLimiter, async (req, res) => {
-  try {
-    const { placa } = req.body;
-    const cliente = await pool.query('SELECT id, empresa, logistica_ativo FROM clientes WHERE logistica_token = $1', [req.params.token]);
-    if (!cliente.rows.length || !cliente.rows[0].logistica_ativo) return res.status(403).json({ erro: 'Link invalido ou desativado' });
-    const cid = cliente.rows[0].id;
-
-    // Marcar patio_liberado no registro da portaria
-    if (placa) {
-      await pool.query(
-        'UPDATE registros SET patio_liberado = TRUE WHERE cliente_id = $1 AND placa = $2 AND saida = $3 AND data_registro = CURRENT_DATE',
-        [cid, placa, '']
-      );
-    }
-
-    // Criar notificacao para a portaria com a mensagem especifica
-    const descricaoNotif = placa
-      ? 'Logistica liberou: veiculo placa ' + placa + ' a caminho do patio'
-      : 'Logistica liberou: veiculo a caminho do patio';
-    await pool.query(
-      'INSERT INTO notificacoes (cliente_id, tipo, titulo, descricao) VALUES ($1,$2,$3,$4)',
-      [cid, 'liberar_portaria', 'Veiculo a caminho do patio', descricaoNotif]
-    );
-
-    logAuditoria(cid, 'Logistica', 'Liberar veiculo para portaria', 'veiculo', placa || '', 'Portaria notificada para liberar veiculo' + (placa ? ' placa ' + placa : ''));
-    res.json({ ok: true, mensagem: 'Portaria notificada com sucesso' });
-  } catch (err) {
-    console.error('Erro ao notificar portaria (liberar-portaria):', err);
-    res.status(500).json({ erro: 'Erro ao notificar portaria' });
+    console.error('Erro ao finalizar veiculo:', err);
+    res.status(500).json({ erro: 'Erro ao finalizar veiculo' });
   }
 });
 

@@ -79,10 +79,14 @@
   }
   .btn-entrega-concluida:hover{ background:#43a047; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
   .btn-entrega-concluida:disabled{ background:#a5d6a7; cursor:not-allowed; transform:none; box-shadow:none; }
-  .btn-patio-liberado{
-    background:#ff9800; color:#fff;
+  /* Botao Finalizado */
+  .btn-finalizado{
+    background:#4caf50; color:#fff; font-size:10px; padding:7px 10px;
+    border:none; border-radius:8px; cursor:pointer; font-weight:700;
+    transition:.15s; flex:1 1 0; min-width:0; display:flex;
+    align-items:center; justify-content:center; gap:4px; white-space:normal; line-height:1.2;
   }
-  .btn-patio-liberado:hover{ background:#fb8c00; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
+  .btn-finalizado:hover{ background:#43a047; transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.15); }
 
   /* Informacoes adicionais */
   .mc-adicionais{
@@ -294,10 +298,10 @@ function getStatusInfo(d){
     return { label: tipoLabel, css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
   if(d.chegou && d.patio_liberado){
-    return { label: 'A caminho do patio', css: 'chegou', badge: 'chegou', cor: '#1565c0' };
+    return { label: 'Finalizado', css: 'concluido', badge: 'concluido', cor: '#4caf50' };
   }
   if(d.chegou){
-    return { label: 'Chegou', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
+    return { label: 'Aguardando liberacao', css: 'chegou', badge: 'chegou', cor: '#2196F3' };
   }
   return { label: 'A caminho', css: '', badge: 'a-caminho', cor: '#ff9800' };
 }
@@ -333,21 +337,21 @@ function carregarDados(){
       if(concluidoCount > 0) countParts.push(concluidoCount + ' concluido');
       document.getElementById('motoristaCount').textContent = countParts.length > 0 ? countParts.join(', ') : '0 motoristas';
 
-      // === Mensagem fixa: veiculos aguardando liberacao / a caminho do patio ===
-      // So mostra "aguardando" quando portaria JA confirmou chegada (existe registro_id)
+      // === Mensagem fixa: veiculos aguardando liberacao / finalizados ===
+      // So mostra quando portaria JA confirmou chegada (existe registro_id)
       var aguardando = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado; });
-      var aCaminhoPatio = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado; });
+      var finalizados = motoristas.filter(function(d){ return d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado; });
       var msgEl = document.getElementById('msgAguardandoPatio');
       var msgDetalhes = document.getElementById('msgAguardandoPatioDetalhes');
-      if(aguardando.length > 0 || aCaminhoPatio.length > 0){
+      if(aguardando.length > 0 || finalizados.length > 0){
         var detalhesHtml = '';
         if(aguardando.length > 0){
-          detalhesHtml += '<div style="margin-bottom:6px"><b style="color:#bf360c">&#x1F6E4;&#xFE0F; Aguardando liberacao do patio:</b><br>' +
+          detalhesHtml += '<div style="margin-bottom:6px"><b style="color:#bf360c">&#x23F3; Aguardando liberacao do patio:</b><br>' +
             aguardando.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
         }
-        if(aCaminhoPatio.length > 0){
-          detalhesHtml += '<div style="margin-bottom:0"><b style="color:#1565c0">&#x1F69A; A caminho do patio:</b><br>' +
-            aCaminhoPatio.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
+        if(finalizados.length > 0){
+          detalhesHtml += '<div style="margin-bottom:0"><b style="color:#1b7d2c">&#x2705; Finalizados (pátio liberado):</b><br>' +
+            finalizados.map(function(d){ return '&bull; ' + (d.nome || 'Motorista') + ' - ' + (d.placa || 'Sem placa') + (d.empresa ? ' (' + d.empresa + ')' : ''); }).join('<br>') + '</div>';
         }
         msgDetalhes.innerHTML = detalhesHtml;
         msgEl.style.display = 'block';
@@ -393,9 +397,8 @@ function carregarDados(){
                 (d.obs ? '<div><b>Info Adicionais:</b> ' + esc(d.obs) + '</div>' : '') +
               '</div>' : '') +
             '<div class="mc-acoes">' +
-              '<button class="btn-patio-liberado" onclick="event.stopPropagation(); patioLiberado(' + placaJS + ')" ' + (!d.registro_id ? 'disabled title="Aguardando confirmacao da portaria"' : '') + '>&#x1F6E4; Patio Liberado</button>' +
-              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-liberar-portaria" onclick="event.stopPropagation(); liberarVeiculoPatio(' + placaJS + ')">&#x1F6E2; Liberar veiculo para o patio</button>' : '') +
-              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-liberar-portaria" disabled style="opacity:.5">&#x2705; Liberado para o patio</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && !d.patio_liberado ? '<button class="btn-finalizado" onclick="event.stopPropagation(); finalizarVeiculo(' + placaJS + ')">&#x2705; Finalizado</button>' : '') +
+              (d.registro_id && d.chegou && !d.saida_logistica && d.patio_liberado ? '<button class="btn-finalizado" disabled style="opacity:.5">&#x2705; Finalizado</button>' : '') +
               '<button class="btn-imprimir" onclick="event.stopPropagation(); imprimirMotorista(' + (d.motorista_id || 'null') + ')" title="Imprimir ficha">&#x1F5A8; Imprimir</button>' +
             '</div>' +
           '</div>';
@@ -625,54 +628,20 @@ document.addEventListener('keydown', function(e){
 
 // === ACOES DE LOGISTICA ===
 
-async function patioLiberado(placa){
-  if(!confirm('Avisar a portaria que o patio esta liberado para este veiculo?')) return;
+// === FINALIZAR VEICULO (set patio_liberado + notificar portaria) ===
+async function finalizarVeiculo(placa){
+  if(!confirm('Confirmar finalizacao da descarga? A portaria sera notificada que o patio esta liberado.')) return;
   try {
-    console.log('[LOGISTICA] Enviando patio-liberado, TOKEN:', TOKEN ? TOKEN.substring(0,8) + '...' : 'VAZIO', 'placa:', placa);
-    var body = {};
-    if(placa) body.placa = placa;
-    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/patio-liberado', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    console.log('[LOGISTICA] Resposta patio-liberado status:', res.status);
-    if(!res.ok){
-      var err = await res.json();
-      console.error('[LOGISTICA] Erro patio-liberado:', err);
-      alert(err.erro || 'Erro ao notificar portaria (HTTP ' + res.status + ')');
-      return;
-    }
-    var data = await res.json();
-    alert(data.mensagem || 'Portaria notificada com sucesso');
-  } catch(e){
-    console.error('[LOGISTICA] Excecao patio-liberado:', e);
-    alert('Erro de conexao com o servidor: ' + e.message);
-  }
-}
-
-// === LIBERAR VEICULO PARA PORTARIA ===
-async function liberarVeiculoPatio(placa){
-  try {
-    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/liberar-portaria', {
+    var res = await fetch(API + '/api/logistica/' + encodeURIComponent(TOKEN) + '/finalizar-veiculo', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ placa: placa })
     });
     if(!res.ok){
       var err = await res.json();
-      alert(err.erro || 'Erro ao notificar portaria');
+      alert(err.erro || 'Erro ao finalizar');
       return;
     }
-    // Desabilitar o botao que foi clicado
-    var btns = document.querySelectorAll('.btn-liberar-portaria');
-    btns.forEach(function(b){
-      if(b.textContent.indexOf(placa) > -1 || btns.length === 1){
-        b.disabled = true;
-        b.textContent = '✅ Portaria avisada';
-        b.style.opacity = '0.6';
-      }
-    });
     carregarDados();
   } catch(e){
     alert('Erro de conexao: ' + e.message);
